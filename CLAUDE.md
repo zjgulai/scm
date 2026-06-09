@@ -93,25 +93,25 @@ python3 skills/cross_border_ecommerce/skills_index.py "用户的查询内容"
 cd /Users/pray/project/ecom_ana_overview
 
 # Phase2 MVP
-python main_project_lute/data_example/scripts/generate_phase2_mock_data.py
-python main_project_lute/data_example/scripts/run_phase2_topic2_pipeline.py
-python main_project_lute/data_example/scripts/run_phase2_crossline3_pipeline.py
-python main_project_lute/data_example/scripts/run_phase2_crossline3_voc_agent.py
-python main_project_lute/data_example/scripts/build_phase2_ppt.py
+python main_project_lute/data_example/scripts/phase2/generate_phase2_mock_data.py
+python main_project_lute/data_example/scripts/phase2/run_phase2_topic2_pipeline.py
+python main_project_lute/data_example/scripts/phase2/run_phase2_crossline3_pipeline.py
+python main_project_lute/data_example/scripts/phase2/run_phase2_crossline3_voc_agent.py
+python main_project_lute/data_example/scripts/phase2/build_phase2_ppt.py
 
 # Phase3 专题① VOC
-python main_project_lute/data_example/scripts/generate_phase3_topic1_voc_mock.py
-python main_project_lute/data_example/scripts/run_phase3_topic1_voc_pipeline.py
-python main_project_lute/data_example/scripts/build_phase3_topic1_ppt.py
+python main_project_lute/data_example/scripts/phase3/generate_phase3_topic1_voc_mock.py
+python main_project_lute/data_example/scripts/phase3/run_phase3_topic1_voc_pipeline.py
+python main_project_lute/data_example/scripts/phase3/build_phase3_topic1_ppt.py
 
 # Phase3 专题③ 渠道
-python main_project_lute/data_example/scripts/generate_phase3_topic3_channel_mock.py
-python main_project_lute/data_example/scripts/run_phase3_topic3_channel_pipeline.py
-python main_project_lute/data_example/scripts/build_phase3_topic3_ppt.py
+python main_project_lute/data_example/scripts/phase3/generate_phase3_topic3_channel_mock.py
+python main_project_lute/data_example/scripts/phase3/run_phase3_topic3_channel_pipeline.py
+python main_project_lute/data_example/scripts/phase3/build_phase3_topic3_ppt.py
 
 # Phase3 专题④ 营销
-python main_project_lute/data_example/scripts/run_phase3_topic4_marketing_pipeline.py
-python main_project_lute/data_example/scripts/build_phase3_topic4_ppt.py
+python main_project_lute/data_example/scripts/phase3/run_phase3_topic4_marketing_pipeline.py
+python main_project_lute/data_example/scripts/phase3/build_phase3_topic4_ppt.py
 ```
 
 **产出目录**：

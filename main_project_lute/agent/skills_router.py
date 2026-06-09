@@ -32,7 +32,7 @@ INTENT_SKILL_ALIASES = {
 
 SKILL_PATH_ALIASES = {
     "cbec-voc-insights": "cbec-social-media-analysis",
-    "cbec-basket-analysis": "cbec-category-management",
+    # basket-analysis 已有独立 SKILL.md（skills/cross_border_ecommerce/skills/11-user-behavior-analysis/basket-analysis/）
     # SCM 任务使用独立的 Agent 路由，不再错误嫁接到跨境电商 Skills
     # scm-cost-anomaly-diagnosis → 独立 SCM Agent（scm/ 子项目）
     # scm-inventory-health-diagnosis → 独立 SCM Agent

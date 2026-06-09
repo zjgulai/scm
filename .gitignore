@@ -34,7 +34,7 @@ env/
 # 本地虚拟环境
 .venv/
 
-# 不需要版本控制的目录
+# 不需要版本控制的目录和文件
 books/
 aippt/
 04-数据分析能力升级/
@@ -44,3 +44,8 @@ reason_analysis/
 unnormal_index_detect/
 tools/
 .claude/
+KPI-*.xlsx
+
+# 大型二进制依赖（模板、安装包等，超过50MB）
+ref/aippt/
+ref/books/

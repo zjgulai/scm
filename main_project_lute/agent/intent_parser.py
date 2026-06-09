@@ -6,9 +6,6 @@ Intent Parser - 用户意图识别模块
 - 解析用户自然语言输入
 - 识别分析意图
 - 提取关键参数
-
-测试：
-python -m pytest agent/tests/test_intent_parser.py
 """
 
 import re
@@ -53,7 +50,7 @@ class IntentParser:
             "skill": "margin-attribution",
             "params": {}
         },
-        r"(成本|费用|费率)": {
+        r"(成本|费用)": {
             "intent_type": "analysis",
             "skill": "cost-structure-analysis",
             "params": {}

@@ -6,9 +6,6 @@ Result Formatter - 结果格式化模块
 - 标准化输出格式
 - 生成洞察摘要
 - 准备PPT/图表数据
-
-测试：
-python -m pytest engine/tests/test_result_formatter.py
 """
 
 import sys
@@ -17,9 +14,7 @@ from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, asdict
 import json
 
-# 添加项目路径
-PROJECT_ROOT = Path(__file__).resolve().parents[1].parent  # 指向仓库根目录
-sys.path.insert(0, str(PROJECT_ROOT))
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
 
 @dataclass

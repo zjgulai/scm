@@ -6,21 +6,17 @@ Skills Router - Skills路由模块
 - 调用Skills索引
 - 选择最优Skill
 - 与Agent集成
-
-测试：
-python -m pytest agent/tests/test_skills_router.py
 """
 
 import sys
 from pathlib import Path
 from typing import List, Dict, Optional
 
-# 添加Skills索引路径
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SKILLS_ROOT = PROJECT_ROOT / "skills" / "cross_border_ecommerce"
-SKILLS_INDEX_PATH = SKILLS_ROOT
 
-sys.path.insert(0, str(SKILLS_INDEX_PATH))
+# 动态加载 Skills 索引
+sys.path.insert(0, str(SKILLS_ROOT))
 
 INTENT_SKILL_ALIASES = {
     "margin-attribution": "cbec-margin-attribution",
@@ -37,9 +33,10 @@ INTENT_SKILL_ALIASES = {
 SKILL_PATH_ALIASES = {
     "cbec-voc-insights": "cbec-social-media-analysis",
     "cbec-basket-analysis": "cbec-category-management",
-    "scm-cost-anomaly-diagnosis": "cbec-cost-structure-analysis",
-    "scm-inventory-health-diagnosis": "cbec-inventory-optimization",
-    "scm-executive-summary": "cbec-data-reporting",
+    # SCM 任务使用独立的 Agent 路由，不再错误嫁接到跨境电商 Skills
+    # scm-cost-anomaly-diagnosis → 独立 SCM Agent（scm/ 子项目）
+    # scm-inventory-health-diagnosis → 独立 SCM Agent
+    # scm-executive-summary → 独立 SCM Agent
 }
 
 
@@ -128,7 +125,11 @@ class SkillsRouter:
         if skill_name in INTENT_SKILL_ALIASES:
             return INTENT_SKILL_ALIASES[skill_name]
 
-        if skill_name.startswith(("cbec-", "scm-")):
+        # SCM 任务保持原名（不以 cbec- 前缀嫁接）
+        if skill_name.startswith("scm-"):
+            return skill_name
+
+        if skill_name.startswith("cbec-"):
             return skill_name
 
         return f"cbec-{skill_name}"
@@ -216,6 +217,7 @@ class SkillsRouter:
             "购物篮": "cbec-basket-analysis",
             "连带": "cbec-basket-analysis",
             "杜邦": "cbec-dupont-analysis",
+            # SCM 关键词路由到独立 Agent 任务（scm/ 子项目处理）
             "供应链成本异常": "scm-cost-anomaly-diagnosis",
             "全链路成本率": "scm-cost-anomaly-diagnosis",
             "库存健康": "scm-inventory-health-diagnosis",
@@ -257,7 +259,27 @@ class SkillsRouter:
         if not skills_dir.exists():
             return None
 
-        normalized_name = path_skill_name.replace("cbec-", "")
+        normalized_name = path_skill_name.replace("cbec-", "").replace("scm-", "")
+
+        # SCM 任务路径查找：搜索 scm/ 子项目和 supply-chain 分类
+        if skill_name.startswith("scm-"):
+            # 先搜索 scm 子项目下的 skills
+            scm_skills_dir = PROJECT_ROOT / "scm" / ".agents" / "skills"
+            if scm_skills_dir.exists():
+                for scm_skill in scm_skills_dir.iterdir():
+                    if scm_skill.is_dir():
+                        skill_file = scm_skill / "SKILL.md"
+                        if skill_file.exists():
+                            return skill_file
+            # 再搜索 cbec 供应链分类
+            scm_cbec_dir = skills_dir / "10-supply-chain-analysis"
+            if scm_cbec_dir.exists():
+                for sub_dir in scm_cbec_dir.iterdir():
+                    if sub_dir.is_dir():
+                        skill_file = sub_dir / "SKILL.md"
+                        if skill_file.exists():
+                            return skill_file
+            return None
 
         # 遍历查找
         for category_dir in skills_dir.iterdir():

@@ -9,13 +9,12 @@ Output Module - 输出生成模块
 """
 
 from .chart_engine import ChartEngine
-from .ppt_generator import PPTGenerator, PPTTemplate
+from .ppt_generator import PPTGenerator
 from .report_assembler import ReportAssembler, Report, ReportSection
 
 __all__ = [
     "ChartEngine",
     "PPTGenerator",
-    "PPTTemplate",
     "ReportAssembler",
     "Report",
     "ReportSection"

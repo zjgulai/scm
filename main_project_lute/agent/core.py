@@ -6,41 +6,36 @@ Data Agent Core - Agent核心模块
 - 整合Intent Parser和Skills Router
 - 执行完整的分析流程
 - 返回标准化结果
-
-测试：
-python -m pytest agent/tests/test_agent_core.py
 """
 
-import sys
 from pathlib import Path
 from typing import Dict, Optional, Any
 from dataclasses import dataclass
 
-# 添加项目路径
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(PROJECT_ROOT))
 
-# 添加agent目录到路径
-agent_dir = Path(__file__).parent
-sys.path.insert(0, str(agent_dir))
-
-from intent_parser import IntentParser, Intent
-from skills_router import SkillsRouter, SkillMatch
-
-# 导入Engine模块
-import sys
-engine_path = PROJECT_ROOT / "engine"
-sys.path.insert(0, str(engine_path))
-from skill_loader import SkillLoader
-from data_processor import DataProcessor
-from result_formatter import ResultFormatter
-
-# 导入Output模块
-output_path = PROJECT_ROOT / "output"
-sys.path.insert(0, str(output_path))
-from ppt_generator import PPTGenerator
-from report_assembler import ReportAssembler
-from chart_engine import ChartEngine
+# 相对导入（main_project_lute 作为 package 时生效）
+# 降级到绝对导入（脚本直接运行时生效）
+try:
+    from .intent_parser import IntentParser, Intent
+    from .skills_router import SkillsRouter, SkillMatch
+    from ..engine.skill_loader import SkillLoader
+    from ..engine.data_processor import DataProcessor
+    from ..engine.result_formatter import ResultFormatter
+    from ..output.ppt_generator import PPTGenerator
+    from ..output.report_assembler import ReportAssembler
+    from ..output.chart_engine import ChartEngine
+except ImportError:
+    import sys
+    sys.path.insert(0, str(PROJECT_ROOT))
+    from agent.intent_parser import IntentParser, Intent
+    from agent.skills_router import SkillsRouter, SkillMatch
+    from engine.skill_loader import SkillLoader
+    from engine.data_processor import DataProcessor
+    from engine.result_formatter import ResultFormatter
+    from output.ppt_generator import PPTGenerator
+    from output.report_assembler import ReportAssembler
+    from output.chart_engine import ChartEngine
 
 
 @dataclass

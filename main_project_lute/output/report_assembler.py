@@ -6,20 +6,14 @@ Report Assembler - 报告组装模块
 - 整合多个分析结果
 - 生成综合报告
 - 协调PPT和图表生成
-
-测试：
-python -m pytest output/tests/test_report_assembler.py
 """
 
-import sys
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass
 import json
 
-# 添加项目路径
-PROJECT_ROOT = Path(__file__).resolve().parents[1].parent
-sys.path.insert(0, str(PROJECT_ROOT))
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 RUNTIME_OUTPUT_DIR = PROJECT_ROOT / "tmp" / "outputs"
 
 

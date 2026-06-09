@@ -78,10 +78,11 @@ def main():
         ("分析渠道效果", "channel"),
         ("各平台表现如何", "channel"),
 
-        # SCM Agent运行时接入
-        ("诊断供应链成本异常，按区域和渠道输出驱动项", "scm-cost-anomaly-diagnosis"),
-        ("分析库存健康，识别库龄缺货和调拨候选", "scm-inventory-health-diagnosis"),
-        ("生成供应链管理层摘要，输出5条事实和3个动作", "scm-executive-summary"),
+        # SCM Agent 任务（独立 Agent，不在跨境电商 Skills 目录内）
+        # 意图解析和 fallback 路由应正确识别 SCM 关键词
+        ("诊断供应链成本异常，按区域和渠道输出驱动项", "scm"),
+        ("分析库存健康，识别库龄缺货和调拨候选", "scm"),
+        ("生成供应链管理层摘要，输出5条事实和3个动作", "scm"),
     ]
 
     # 执行测试

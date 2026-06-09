@@ -6,9 +6,6 @@ Skill Loader - Skill加载模块
 - 读取SKILL.md文件
 - 解析Skill元数据
 - 提取分析公式和模板
-
-测试：
-python -m pytest engine/tests/test_skill_loader.py
 """
 
 import sys
@@ -16,10 +13,9 @@ from pathlib import Path
 from typing import Dict, Optional, Any
 import re
 
-# 添加项目路径
-PROJECT_ROOT = Path(__file__).resolve().parents[1].parent  # 指向仓库根目录
+# 仓库根目录
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
 SKILLS_ROOT = PROJECT_ROOT / "skills" / "cross_border_ecommerce"
-sys.path.insert(0, str(PROJECT_ROOT))
 
 
 class SkillMetadata:

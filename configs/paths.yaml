@@ -1,0 +1,49 @@
+# 项目路径配置 — 单一事实来源
+# 所有脚本统一从此读取路径，不再硬编码绝对路径
+
+project:
+  root: "."  # 相对于仓库根
+
+skills:
+  cross_border_ecommerce: "skills/cross_border_ecommerce"
+  mckinsey_ppt: "skills/mckinsey_ppt"
+  cursor: ".cursor/skills"
+  claude: ".claude/skills"
+  agents: ".agents/skills"
+
+main_project:
+  root: "main_project_lute"
+  agent: "main_project_lute/agent"
+  engine: "main_project_lute/engine"
+  output: "main_project_lute/output"
+  data_example: "main_project_lute/data_example"
+  scripts: "main_project_lute/data_example/scripts"
+  data_raw: "main_project_lute/data_example/原始数据"
+
+data_sources:
+  analysis_master: "main_project_lute/data_example/原始数据/专题一：分析数据总表.xlsx"
+  mock_phase2: "main_project_lute/phase2_mock"
+  mock_phase3: "main_project_lute/phase3_mock"
+
+outputs:
+  phase2: "main_project_lute/phase2_outputs"
+  phase3: "main_project_lute/phase3_outputs"
+  tmp: "tmp/outputs"
+  charts: "tmp/outputs/charts"
+
+ref:
+  books: "ref/books"
+  data_index: "ref/data_index"
+  data_report: "ref/data_report"
+  company_info: "ref/company_info"
+
+knowledge_base:
+  root: "knowledge_base"
+  data_ability: "knowledge_base/data_ability"
+  insights: "knowledge_base/insights"
+  reason_analysis: "knowledge_base/reason_analysis"
+
+scm:
+  root: "scm"
+  system_data: "scm/system_data"
+  indicator_tree: "scm/03_指标树图可视化"

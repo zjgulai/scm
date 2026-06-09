@@ -1,55 +1,63 @@
-# 数据分析Skills库
-
-本仓库包含两个专业的Claude Skills库，用于数据分析和PPT制作。
-
-## 📊 母婴跨境电商数据分析Skills库
-
-**目录**: `cross_border_ecommerce_skills/`
-
-专业的母婴跨境电商数据分析Skills库，包含38个专业分析技能，覆盖19个业务领域。
-
-### 核心能力
-- 数据清洗与预处理
-- 指标归因与贡献度分析
-- 财务分析与ROI计算
-- 用户行为与客户分析
-- 营销效果与渠道分析
-- 供应链与风险分析
-
-### 特色功能
-- 母婴行业知识注入
-- 宝宝生命周期分析
-- 品类迁移追踪
-- 订阅制优化
-- 保质期管理
-
-详见: [cross_border_ecommerce_skills/README.md](cross_border_ecommerce_skills/README.md)
-
+---
+title: 母婴跨境电商数据分析项目
+doc_type: knowledge
+module: project-root
+topic: project-overview
+status: stable
+created: 2026-06-02
+updated: 2026-06-02
+owner: self
+source: human+ai
 ---
 
-## 📑 麦肯锡PPT制作Skills库
+# 母婴跨境电商数据分析项目
 
-**目录**: `mckinsey_ppt_skills/`
+本仓库是“主项目 + Skills 库 + 知识库 + 参考资料”的混合型数据分析项目，核心目标是沉淀 Momcozy 等母婴跨境电商场景下的分析方法、数据 Agent 原型、管理层汇报资产和可复用 Skills。
 
-萃取自麦肯锡咨询PPT的精髓，包含18个核心Skills，覆盖完整的PPT制作工作流。
+## 项目分层
 
-### 核心方法论
-- 结论先行
-- 数据驱动
-- 简洁专业
-- 逻辑清晰
+| 目录 | 定位 |
+|---|---|
+| `main_project_lute/` | 主项目工作区，包含 Data Agent 原型、专题规划、mock 数据、Phase2/Phase3 产出与项目总览 |
+| `skills/cross_border_ecommerce/` | 母婴跨境电商数据分析 Skills，覆盖归因、成本、用户、渠道、营销、供应链等场景 |
+| `skills/mckinsey_ppt/` | 管理层汇报与麦肯锡风格 PPT Skills，覆盖内容规划、图表选型、图表生成和表达规范 |
+| `knowledge_base/` | 数据分析方法论、指标体系、归因分析、洞察素材等长期知识沉淀 |
+| `ref/` | 业务参考资料、行业资料、数据索引与角色技能参考 |
+| `scm/` | 供应链成本指标与 KPI 树专题材料 |
+| `archive/` | 历史输出、日志、对话和不再活跃但需保留的材料 |
+| `tmp/` | 临时运行输出、调试文件和一次性中间产物 |
 
-### 特色功能
-- 母婴跨境电商12大业务场景
-- 8大多维分析图表
-- 10大消费者分析图表
-- 8大品牌分析图表
-- 8大渠道分析图表
+## 核心架构
 
-详见: [mckinsey_ppt_skills/README.md](mckinsey_ppt_skills/README.md)
+```text
+用户输入
+  -> main_project_lute/agent/intent_parser.py
+  -> main_project_lute/agent/skills_router.py
+  -> skills/cross_border_ecommerce/skills_index.py
+  -> main_project_lute/engine/skill_loader.py
+  -> main_project_lute/engine/data_processor.py
+  -> main_project_lute/output/
+  -> tmp/outputs/
+```
 
----
+Data Agent 目前是原型系统，入口为 `main_project_lute/run_agent.py`，测试入口为 `main_project_lute/test_agent.py`。
 
-## 使用方式
+## 快速开始
 
-这些Skills可以配合Claude Code使用，详见各子目录的README文档。
+```bash
+python3 main_project_lute/run_agent.py "帮我分析独立站毛利率下降的原因"
+python3 main_project_lute/test_agent.py
+```
+
+## 常用入口
+
+- 主项目架构总览：`main_project_lute/项目总览/目录架构_总览.md`
+- Data Agent 说明：`main_project_lute/README_DataAgent.md`
+- 项目蓝图：`main_project_lute/项目总览/00_项目蓝图_总规划.md`
+- 母婴跨境电商 Skills：`skills/cross_border_ecommerce/README.md`
+- 麦肯锡 PPT Skills：`skills/mckinsey_ppt/README.md`
+- Skills 总览：`SKILLS_INVENTORY.md`
+
+## 目录治理
+
+根目录只保留入口文档、协作说明和顶层资产目录。运行生成的 JSON、Markdown、截图、调试文件默认进入 `tmp/`，历史材料进入 `archive/`，当前有效的项目资产进入 `main_project_lute/`、`skills/`、`knowledge_base/`、`ref/` 或 `scm/`。

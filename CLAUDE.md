@@ -5,7 +5,7 @@
 本项目以 **main_project_lute** 为核心（产品名：卓越商业分析专家AI SaaS），其他目录均为支撑服务。
 
 ```
-shopify_analysis/
+ecom_ana_overview/
 ├── main_project_lute/              # ⭐ 主体项目：数智决策-AI效能作战室
 │   ├── 项目总览/                    # 顶层规划文档
 │   ├── Phase1_故事线与智能体/       # 业务逻辑设计（已完成）
@@ -155,7 +155,7 @@ content = index.get_skill_content('cbec-complex-contribution')
 ## 🚀 Phase2 MVP 快速运行
 
 ```bash
-cd /Users/pray/project/shopify_analysis
+cd /Users/pray/project/ecom_ana_overview
 
 # 1. 生成Mock数据
 python main_project_lute/data_example/scripts/generate_phase2_mock_data.py

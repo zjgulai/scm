@@ -44,7 +44,7 @@ source: human+ai
 ## 快速运行（Phase2）
 
 ```bash
-cd /Users/pray/project/shopify_analysis
+cd /Users/pray/project/ecom_ana_overview
 
 python data_example/scripts/generate_phase2_mock_data.py
 python data_example/scripts/run_phase2_topic2_pipeline.py

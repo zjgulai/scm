@@ -14,8 +14,8 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]  # data_example的parent是shopify_analysis
-MOCK_DIR = PROJECT_ROOT / "phase2_mock"  # phase2_mock在shopify_analysis根目录
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # data_example的parent是ecom_ana_overview
+MOCK_DIR = PROJECT_ROOT / "phase2_mock"  # phase2_mock在ecom_ana_overview根目录
 PHASE2_OUT_DIR = PROJECT_ROOT / "phase2_outputs" / "topic2"
 PHASE2_OUT_DIR.mkdir(parents=True, exist_ok=True)
 

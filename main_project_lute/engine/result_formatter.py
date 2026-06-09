@@ -18,7 +18,7 @@ from dataclasses import dataclass, asdict
 import json
 
 # 添加项目路径
-PROJECT_ROOT = Path(__file__).resolve().parents[1].parent  # 指向shopify_analysis根目录
+PROJECT_ROOT = Path(__file__).resolve().parents[1].parent  # 指向仓库根目录
 sys.path.insert(0, str(PROJECT_ROOT))
 
 

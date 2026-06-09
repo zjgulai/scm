@@ -14,7 +14,7 @@ Phase 2: 交叉线3（订单与退款 → 反哺 VOC 与产品组合）管道骨
 from pathlib import Path
 import pandas as pd
 
-PROJECT_ROOT = Path(__file__).resolve().parents[2]  # shopify_analysis
+PROJECT_ROOT = Path(__file__).resolve().parents[2]  # ecom_ana_overview root
 TOPIC2_OUT_DIR = PROJECT_ROOT / "phase2_outputs" / "topic2"
 MOCK_DIR = PROJECT_ROOT / "phase2_mock"
 IO_DIR = PROJECT_ROOT / "data_example" / "实验管道" / "phase2" / "输入" / "phase2_io"

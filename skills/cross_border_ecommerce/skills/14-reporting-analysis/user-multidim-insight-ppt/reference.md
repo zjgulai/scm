@@ -143,15 +143,15 @@ source: human+ai
 ### 先执行分析脚本
 
 ```bash
-"/Users/pray/project/shopify_analysis/data_example/.venv/bin/python" \
-  "/Users/pray/project/shopify_analysis/data_example/scripts/run_专题一_Sheet10_用户多维洞察.py"
+"/Users/pray/project/ecom_ana_overview/data_example/.venv/bin/python" \
+  "/Users/pray/project/ecom_ana_overview/data_example/scripts/run_专题一_Sheet10_用户多维洞察.py"
 ```
 
 ### 再执行 PPT 脚本
 
 ```bash
-"/Users/pray/project/shopify_analysis/data_example/.venv/bin/python" \
-  "/Users/pray/project/shopify_analysis/data_example/scripts/build_sheet10_management_ppt.py"
+"/Users/pray/project/ecom_ana_overview/data_example/.venv/bin/python" \
+  "/Users/pray/project/ecom_ana_overview/data_example/scripts/build_sheet10_management_ppt.py"
 ```
 
 ## 8. 适合复用的场景关键词

@@ -1,0 +1,87 @@
+[
+  {
+    "query": "[Boundary] 文案润色 or 供应链指标拆解",
+    "should_trigger": false,
+    "why": "description 中显式 Not for 边界，不应触发。"
+  },
+  {
+    "query": "请把《增长黑客》做成双引擎知识萃取，并给我一周行动清单",
+    "should_trigger": true,
+    "why": "书籍萃取+行动转化"
+  },
+  {
+    "query": "这本书值不值得读？请按结构真相、模型迁移、行为内化三段给结论",
+    "should_trigger": true,
+    "why": "直接命中三阶段流程"
+  },
+  {
+    "query": "帮我整理读书笔记，不要鸡汤，要可执行",
+    "should_trigger": true,
+    "why": "读书笔记且强调可执行"
+  },
+  {
+    "query": "把这篇长文提炼成可迁移的思维模型",
+    "should_trigger": true,
+    "why": "长文+模型迁移"
+  },
+  {
+    "query": "帮我润色这段项目周报",
+    "should_trigger": false,
+    "why": "纯润色"
+  },
+  {
+    "query": "把这份供应链方案转成管理层故事线",
+    "should_trigger": false,
+    "why": "应触发 supply-chain-solution-storyline"
+  },
+  {
+    "query": "把指标拆到L0-L3并补Owner",
+    "should_trigger": false,
+    "why": "应触发 supply-chain-indicator-decoding"
+  },
+  {
+    "query": "生成Gamma逐页Prompt",
+    "should_trigger": false,
+    "why": "应触发 gamma-executive-ppt-generation"
+  },
+  {
+    "query": "把这本书总结成3句话发朋友圈",
+    "should_trigger": false,
+    "why": "偏短摘要/文案，不是双引擎萃取"
+  },
+  {
+    "query": "请按结构真相-模型迁移-行为内化拆解《原则》",
+    "should_trigger": true,
+    "why": "命中完整三阶段"
+  },
+  {
+    "query": "润色一下我的读书笔记措辞",
+    "should_trigger": false,
+    "why": "纯润色"
+  },
+  {
+    "query": "这篇长文有哪些可迁移的方法？给我可执行清单",
+    "should_trigger": true,
+    "why": "长文萃取+行动转化"
+  },
+  {
+    "query": "把供应链分析写成管理层故事线",
+    "should_trigger": false,
+    "why": "应触发 solution-storyline"
+  },
+  {
+    "query": "我只要摘录金句，不要分析",
+    "should_trigger": false,
+    "why": "非结构化萃取任务"
+  },
+  {
+    "query": "判断这本书是否值得团队学习，并给周行动表",
+    "should_trigger": true,
+    "why": "价值判断+行为转化"
+  },
+  {
+    "query": "根据这本书做北极星指标树",
+    "should_trigger": false,
+    "why": "应触发 indicator-decoding"
+  }
+]

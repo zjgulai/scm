@@ -1,0 +1,72 @@
+[
+  {
+    "query": "[Boundary] L0-L3指标字典设计 or Gamma Prompt engineering",
+    "should_trigger": false,
+    "why": "description 中显式 Not for 边界，不应触发。"
+  },
+  {
+    "query": "把36%成本率问题讲成管理层可拍板故事线",
+    "should_trigger": true,
+    "why": "核心故事线任务"
+  },
+  {
+    "query": "输出方案评估报告和项目启动汇报",
+    "should_trigger": true,
+    "why": "评估+启动汇报"
+  },
+  {
+    "query": "把零散分析收口到路线图和拍板事项",
+    "should_trigger": true,
+    "why": "叙事收口"
+  },
+  {
+    "query": "把北极星拆成L0-L3",
+    "should_trigger": false,
+    "why": "应触发 supply-chain-indicator-decoding"
+  },
+  {
+    "query": "生成Gamma总Prompt和补丁Prompt",
+    "should_trigger": false,
+    "why": "应触发 gamma-executive-ppt-generation"
+  },
+  {
+    "query": "重跑专题02费率归因脚本",
+    "should_trigger": false,
+    "why": "应触发 momcozy-margin-analysis"
+  },
+  {
+    "query": "输出共创式项目启动汇报，收口到拍板事项",
+    "should_trigger": true,
+    "why": "立项/拍板导向"
+  },
+  {
+    "query": "请拆解北极星指标树到L3",
+    "should_trigger": false,
+    "why": "应触发 indicator-decoding"
+  },
+  {
+    "query": "把方案做成Gamma总Prompt",
+    "should_trigger": false,
+    "why": "应触发 gamma skill"
+  },
+  {
+    "query": "我要四幕叙事+路线图+试点范围",
+    "should_trigger": true,
+    "why": "标准故事线产物"
+  },
+  {
+    "query": "重跑专题05购物篮图表",
+    "should_trigger": false,
+    "why": "应触发 basket-reporting"
+  },
+  {
+    "query": "把诊断结果改写成联合汇报口径",
+    "should_trigger": true,
+    "why": "叙事重构"
+  },
+  {
+    "query": "只做文案润色，不改结构",
+    "should_trigger": false,
+    "why": "非方案叙事任务"
+  }
+]

@@ -1,0 +1,168 @@
+{
+  "package_name": "mckinsey-ppt-skills",
+  "version": "3.0.0",
+  "skill_count": 20,
+  "entry_skill": "mckinsey-ppt-multidim-chart-expert",
+  "skills": [
+    {
+      "name": "mckinsey-ppt-multidim-chart-expert",
+      "path": "skills/00-expert-entry/mckinsey-ppt-multidim-chart-expert",
+      "category": "00-expert-entry",
+      "description": "Use when users need a chart strategy expert for PPT pages with complex trade-offs, such as multi-metric storytelling, combo charts, attribution waterfalls, growth-driver visuals, or uncertainty about chart selection for executive slides.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "mckinsey-core-insight",
+      "path": "skills/01-content-planning/mckinsey-core-insight",
+      "category": "01-content-planning",
+      "description": "Use when users need to extract a single sharp executive insight from complex data, define a conclusion headline, or convert analysis into board-level key messages for PPT pages.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "mckinsey-pyramid-principle",
+      "path": "skills/01-content-planning/mckinsey-pyramid-principle",
+      "category": "01-content-planning",
+      "description": "Use when users need to structure a deck or argument with top-down logic, MECE decomposition, storyline hierarchy, or issue tree framing before writing slide content.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "mckinsey-slide-template",
+      "path": "skills/02-structure-design/mckinsey-slide-template",
+      "category": "02-structure-design",
+      "description": "Use when users need a standard McKinsey-style slide layout, page anatomy, information hierarchy, and title-body structure for business presentations.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "mckinsey-insight-extraction",
+      "path": "skills/03-data-analysis/mckinsey-insight-extraction",
+      "category": "03-data-analysis",
+      "description": "Use when users need to derive actionable insights from charts or datasets, identify key signals and anomalies, and translate observations into business implications.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "mckinsey-chart-classification",
+      "path": "skills/04-chart-selection/mckinsey-chart-classification",
+      "category": "04-chart-selection",
+      "description": "Use when users need a taxonomy of chart families and want to classify business questions into comparison, composition, trend, distribution, relationship, or multi-dimensional chart categories.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "mckinsey-chart-type-guide",
+      "path": "skills/04-chart-selection/mckinsey-chart-type-guide",
+      "category": "04-chart-selection",
+      "description": "Use when users ask which chart to use for a specific business question, decision context, or message type, especially for executive reporting and consulting-style storytelling.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "chartify-chart-generation",
+      "path": "skills/05-chart-creation/chartify-chart-generation",
+      "category": "05-chart-creation",
+      "description": "Use when users need reliable code-based chart generation with Chartify for reusable visuals, automated exports, or implementation-ready chart scripts aligned with PPT storytelling needs.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "mckinsey-bar-chart",
+      "path": "skills/05-chart-creation/mckinsey-bar-chart",
+      "category": "05-chart-creation",
+      "description": "Use when users need to design or optimize bar chart pages for ranked comparisons, gap analysis, or before-after performance views in consulting-style slides.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "mckinsey-combination-chart",
+      "path": "skills/05-chart-creation/mckinsey-combination-chart",
+      "category": "05-chart-creation",
+      "description": "Use when users need combo chart design, including dual-axis, bar-line, or mixed-metric pages that show scale and growth or multiple linked signals together.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "mckinsey-donut-chart",
+      "path": "skills/05-chart-creation/mckinsey-donut-chart",
+      "category": "05-chart-creation",
+      "description": "Use when users need donut or pie-style composition visuals to communicate share, mix, or structure in a concise executive format.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "mckinsey-grouped-chart",
+      "path": "skills/05-chart-creation/mckinsey-grouped-chart",
+      "category": "05-chart-creation",
+      "description": "Use when users need grouped bar comparison across segments, cohorts, channels, or periods with clear side-by-side contrast in one slide.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "mckinsey-multi-dimensional-charts",
+      "path": "skills/05-chart-creation/mckinsey-multi-dimensional-charts",
+      "category": "05-chart-creation",
+      "description": "Use when users need advanced multi-dimensional business visuals such as waterfalls, growth drivers, competitive switching, price-band analysis, or other complex executive analytics charts.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "mckinsey-stacked-chart",
+      "path": "skills/05-chart-creation/mckinsey-stacked-chart",
+      "category": "05-chart-creation",
+      "description": "Use when users need stacked chart design to show composition over time, contribution layers, and structural shifts while preserving total context.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "mckinsey-brand-health-charts",
+      "path": "skills/06-business-application/mckinsey-brand-health-charts",
+      "category": "06-business-application",
+      "description": "Use when users build brand health or brand funnel presentations, including awareness-consideration-conversion, brand equity signals, and competitive brand positioning visuals.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "mckinsey-channel-strategy-charts",
+      "path": "skills/06-business-application/mckinsey-channel-strategy-charts",
+      "category": "06-business-application",
+      "description": "Use when users analyze channel strategy, channel efficiency, mix optimization, acquisition economics, or online-offline performance for executive decisions.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "mckinsey-consumer-analysis-charts",
+      "path": "skills/06-business-application/mckinsey-consumer-analysis-charts",
+      "category": "06-business-application",
+      "description": "Use when users create consumer insights pages such as segmentation, retention, churn, cohort behavior, loyalty, or customer journey analysis for strategy decks.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "mckinsey-maternal-ecommerce-charts",
+      "path": "skills/06-business-application/mckinsey-maternal-ecommerce-charts",
+      "category": "06-business-application",
+      "description": "Use when users need maternal and cross-border e-commerce business charts, including category, pricing, channel, user, and operations analyses tailored to that domain.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "mckinsey-color-standards",
+      "path": "skills/07-design-standards/mckinsey-color-standards",
+      "category": "07-design-standards",
+      "description": "Use when users need McKinsey-style color system guidance, palette governance, and color usage rules to keep slides visually consistent and executive-ready.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    },
+    {
+      "name": "mckinsey-conclusion-first",
+      "path": "skills/08-expression-methodology/mckinsey-conclusion-first",
+      "category": "08-expression-methodology",
+      "description": "Use when users need conclusion-first writing for slide titles and narratives, turning evidence into direct recommendations and action-oriented executive statements.",
+      "has_reference": true,
+      "has_trigger_evals": true
+    }
+  ]
+}

@@ -1,0 +1,77 @@
+[
+  {
+    "query": "[Boundary] Sheet⑤⑥⑦⑧ 购物篮分析 or Gamma Prompt generation",
+    "should_trigger": false,
+    "why": "description 中显式 Not for 边界，不应触发。"
+  },
+  {
+    "query": "请重跑Momcozy专题一和专题二，更新毛利率归因与前后台成本结论",
+    "should_trigger": true,
+    "why": "专题01/02归因刷新"
+  },
+  {
+    "query": "亚马逊vs独立站前台后台成本占比再算一遍",
+    "should_trigger": true,
+    "why": "双平台费率归因"
+  },
+  {
+    "query": "按P1口径更新毛利和费率分析",
+    "should_trigger": true,
+    "why": "明确口径归因分析"
+  },
+  {
+    "query": "帮我做Sheet⑤⑥⑦⑧购物篮关联并写组合营销策略",
+    "should_trigger": false,
+    "why": "应触发 momcozy-product-line-basket-reporting"
+  },
+  {
+    "query": "把供应链36%问题讲成管理层故事线",
+    "should_trigger": false,
+    "why": "应触发 supply-chain-solution-storyline"
+  },
+  {
+    "query": "给我Gamma逐页Prompt",
+    "should_trigger": false,
+    "why": "应触发 gamma-executive-ppt-generation"
+  },
+  {
+    "query": "更新专题01和专题02的毛利率归因，并刷新前后台成本结论",
+    "should_trigger": true,
+    "why": "核心归因刷新场景"
+  },
+  {
+    "query": "请重算Amazon与独立站费率结构，给P1口径结论",
+    "should_trigger": true,
+    "why": "双平台费率归因"
+  },
+  {
+    "query": "我要做专题05购物篮和组合营销",
+    "should_trigger": false,
+    "why": "应触发 basket-reporting"
+  },
+  {
+    "query": "把专题02结果转成Gamma逐页Prompt",
+    "should_trigger": false,
+    "why": "应触发 gamma skill"
+  },
+  {
+    "query": "只帮我润色毛利分析报告",
+    "should_trigger": false,
+    "why": "纯文案编辑"
+  },
+  {
+    "query": "按MAT/YTD拆前后台成本变化并给动作优先级",
+    "should_trigger": true,
+    "why": "归因分析+行动建议"
+  },
+  {
+    "query": "我只要供应链八节点汇报故事线",
+    "should_trigger": false,
+    "why": "应触发 solution-storyline"
+  },
+  {
+    "query": "重跑专题02图表脚本并更新结论文本",
+    "should_trigger": true,
+    "why": "专题02执行更新"
+  }
+]

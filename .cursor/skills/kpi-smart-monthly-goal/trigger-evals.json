@@ -1,0 +1,42 @@
+[
+  {
+    "query": "这份KPI写得不符合SMART，请重写并让领导看得懂",
+    "should_trigger": true,
+    "why": "典型KPI SMART改写场景"
+  },
+  {
+    "query": "指标名称不要带日期，考核标准里加公式",
+    "should_trigger": true,
+    "why": "指标命名规范+口径公式补齐"
+  },
+  {
+    "query": "每个指标增加指标类型，并判断定量还是定性",
+    "should_trigger": true,
+    "why": "KPI结构化字段补全"
+  },
+  {
+    "query": "把KPI内容按Excel模板写入文件",
+    "should_trigger": true,
+    "why": "KPI文档到表格模板落地"
+  },
+  {
+    "query": "请帮我做专题②退款归因分析",
+    "should_trigger": false,
+    "why": "这是业务归因计算，应触发专题分析类skill"
+  },
+  {
+    "query": "把专题结果做成Gamma逐页Prompt",
+    "should_trigger": false,
+    "why": "应触发 gamma-executive-ppt-generation"
+  },
+  {
+    "query": "帮我润色这段汇报文案",
+    "should_trigger": false,
+    "why": "纯文案编辑，不是KPI体系设计"
+  },
+  {
+    "query": "我要做月度KPI，分业绩/项目/重要工作，并加减分项",
+    "should_trigger": true,
+    "why": "典型月度KPI模板构建"
+  }
+]

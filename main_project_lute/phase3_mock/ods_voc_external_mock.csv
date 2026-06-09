@@ -1,0 +1,501 @@
+platform,community_name,post_id,comment_id,user_id,country_code,post_time,content_type,post_text,brand_mention,emotion,likes,replies
+Facebook,MomCozy Fans,POST00000,CMT00000,USER8892,US,2025-10-17,吐槽,推荐这款吸奶器，真的很好用！,Momcozy,positive,295,37
+WhatToExpect,WhatToExpect,POST00001,CMT00001,USER4555,UK,2025-10-13,吐槽,推荐这款吸奶器，真的很好用！,Momcozy,neutral,291,43
+BabyCenter,BabyCenter,POST00002,CMT00002,USER7238,UK,2025-10-01,吐槽,比之前用的品牌噪音小很多,Spectra,negative,311,45
+Mumsnet,Mumsnet,POST00003,CMT00003,USER6011,UK,2025-11-25,对比,性价比高，值得购买,Momcozy,positive,56,28
+WhatToExpect,WhatToExpect,POST00004,CMT00004,USER2407,US,2025-10-13,求助,包装有点简陋，希望能改进,Momcozy,positive,152,44
+Facebook,MomCozy Fans,POST00005,CMT00005,USER7099,FR,2025-10-02,测评,尺寸有点大，携带不便,Spectra,positive,372,12
+Reddit,r/Mommit,POST00006,CMT00006,USER3248,US,2025-10-02,对比,性价比高，值得购买,Momcozy,positive,41,19
+Reddit,r/Mommit,POST00007,CMT00007,USER5378,DE,2025-11-04,吐槽,包装有点简陋，希望能改进,其他,positive,250,6
+Reddit,r/Mommit,POST00008,CMT00008,USER6670,FR,2025-10-04,对比,包装有点简陋，希望能改进,Momcozy,negative,284,8
+Mumsnet,Mumsnet,POST00009,CMT00009,USER9498,FR,2025-11-05,晒单,推荐这款吸奶器，真的很好用！,Spectra,positive,285,23
+WhatToExpect,WhatToExpect,POST00010,CMT00010,USER6398,US,2025-10-15,求助,推荐这款吸奶器，真的很好用！,Spectra,positive,418,21
+WhatToExpect,WhatToExpect,POST00011,CMT00011,USER8378,US,2025-10-21,测评,推荐这款吸奶器，真的很好用！,Momcozy,positive,95,38
+Mumsnet,Mumsnet,POST00012,CMT00012,USER8194,FR,2025-11-27,求助,包装有点简陋，希望能改进,Momcozy,positive,478,33
+Mumsnet,Mumsnet,POST00013,CMT00013,USER2425,FR,2025-11-27,测评,比之前用的品牌噪音小很多,Spectra,positive,178,34
+BabyCenter,BabyCenter,POST00014,CMT00014,USER3436,UK,2025-11-04,吐槽,性价比高，值得购买,Momcozy,positive,234,13
+Mumsnet,Mumsnet,POST00015,CMT00015,USER4382,FR,2025-12-24,求助,尺寸有点大，携带不便,Momcozy,positive,132,43
+BabyCenter,BabyCenter,POST00016,CMT00016,USER7523,FR,2025-12-18,吐槽,尺寸有点大，携带不便,Momcozy,negative,195,6
+Reddit,r/Mommit,POST00017,CMT00017,USER2502,DE,2025-12-23,晒单,用了两周，感觉吸力不够强,Momcozy,neutral,313,33
+Mumsnet,Mumsnet,POST00018,CMT00018,USER2101,UK,2025-11-05,晒单,比之前用的品牌噪音小很多,其他,neutral,50,2
+Facebook,MomCozy Fans,POST00019,CMT00019,USER3379,US,2025-10-07,测评,用了两周，感觉吸力不够强,Momcozy,positive,16,5
+WhatToExpect,WhatToExpect,POST00020,CMT00020,USER1324,FR,2025-11-09,测评,比之前用的品牌噪音小很多,Momcozy,negative,151,34
+WhatToExpect,WhatToExpect,POST00021,CMT00021,USER8160,US,2025-11-03,测评,客服态度很好，物流也快,Momcozy,positive,301,13
+Facebook,MomCozy Fans,POST00022,CMT00022,USER6904,FR,2025-10-03,晒单,用了两周，感觉吸力不够强,Momcozy,positive,307,27
+WhatToExpect,WhatToExpect,POST00023,CMT00023,USER3581,DE,2025-12-23,对比,客服态度很好，物流也快,Momcozy,neutral,83,38
+Facebook,MomCozy Fans,POST00024,CMT00024,USER9684,FR,2025-10-24,晒单,推荐这款吸奶器，真的很好用！,Spectra,neutral,172,34
+WhatToExpect,WhatToExpect,POST00025,CMT00025,USER4959,US,2025-11-11,吐槽,包装有点简陋，希望能改进,Momcozy,neutral,161,2
+WhatToExpect,WhatToExpect,POST00026,CMT00026,USER5934,US,2025-11-06,求助,性价比高，值得购买,Spectra,positive,463,24
+Mumsnet,Mumsnet,POST00027,CMT00027,USER2574,US,2025-10-11,求助,尺寸有点大，携带不便,Momcozy,neutral,129,21
+Mumsnet,Mumsnet,POST00028,CMT00028,USER8768,DE,2025-10-08,晒单,客服态度很好，物流也快,Momcozy,negative,132,38
+BabyCenter,BabyCenter,POST00029,CMT00029,USER6285,UK,2025-10-05,测评,尺寸有点大，携带不便,Momcozy,positive,122,47
+Mumsnet,Mumsnet,POST00030,CMT00030,USER9273,DE,2025-10-16,求助,比之前用的品牌噪音小很多,Momcozy,neutral,396,40
+WhatToExpect,WhatToExpect,POST00031,CMT00031,USER6956,DE,2025-10-07,吐槽,性价比高，值得购买,Spectra,positive,492,26
+BabyCenter,BabyCenter,POST00032,CMT00032,USER1564,DE,2025-11-05,对比,用了两周，感觉吸力不够强,其他,positive,47,30
+WhatToExpect,WhatToExpect,POST00033,CMT00033,USER2928,FR,2025-10-22,晒单,比之前用的品牌噪音小很多,Momcozy,positive,63,28
+Mumsnet,Mumsnet,POST00034,CMT00034,USER7240,UK,2025-11-11,吐槽,包装有点简陋，希望能改进,Momcozy,positive,65,26
+Mumsnet,Mumsnet,POST00035,CMT00035,USER5042,DE,2025-11-27,晒单,比之前用的品牌噪音小很多,Momcozy,positive,384,24
+WhatToExpect,WhatToExpect,POST00036,CMT00036,USER8653,FR,2025-12-19,求助,清洁很方便，适合上班族,Spectra,positive,68,8
+BabyCenter,BabyCenter,POST00037,CMT00037,USER2211,UK,2025-10-10,测评,客服态度很好，物流也快,Momcozy,positive,325,47
+Reddit,r/Mommit,POST00038,CMT00038,USER1386,UK,2025-10-14,吐槽,包装有点简陋，希望能改进,Spectra,neutral,235,25
+Facebook,MomCozy Fans,POST00039,CMT00039,USER5366,DE,2025-10-16,晒单,客服态度很好，物流也快,Spectra,negative,207,42
+Facebook,MomCozy Fans,POST00040,CMT00040,USER9001,UK,2025-12-06,晒单,清洁很方便，适合上班族,Momcozy,negative,394,7
+Reddit,r/Mommit,POST00041,CMT00041,USER9677,US,2025-12-22,吐槽,性价比高，值得购买,Spectra,neutral,301,30
+BabyCenter,BabyCenter,POST00042,CMT00042,USER1604,FR,2025-10-15,吐槽,用了两周，感觉吸力不够强,Momcozy,positive,83,44
+Facebook,MomCozy Fans,POST00043,CMT00043,USER1838,DE,2025-10-08,求助,清洁很方便，适合上班族,Momcozy,neutral,13,32
+Reddit,r/Mommit,POST00044,CMT00044,USER6192,US,2025-12-27,测评,用了两周，感觉吸力不够强,Momcozy,positive,475,27
+Facebook,MomCozy Fans,POST00045,CMT00045,USER7697,DE,2025-11-04,测评,用了两周，感觉吸力不够强,Momcozy,neutral,372,26
+Reddit,r/Mommit,POST00046,CMT00046,USER7985,UK,2025-10-22,测评,清洁很方便，适合上班族,Momcozy,neutral,65,17
+BabyCenter,BabyCenter,POST00047,CMT00047,USER3251,UK,2025-10-20,对比,性价比高，值得购买,Momcozy,positive,250,0
+Facebook,MomCozy Fans,POST00048,CMT00048,USER4549,US,2025-12-03,吐槽,比之前用的品牌噪音小很多,Momcozy,neutral,300,25
+Facebook,MomCozy Fans,POST00049,CMT00049,USER6577,DE,2025-12-17,测评,尺寸有点大，携带不便,Momcozy,neutral,266,0
+BabyCenter,BabyCenter,POST00050,CMT00050,USER2603,DE,2025-10-03,求助,比之前用的品牌噪音小很多,Momcozy,positive,489,49
+WhatToExpect,WhatToExpect,POST00051,CMT00051,USER4787,DE,2025-10-26,求助,性价比高，值得购买,Spectra,negative,454,31
+Mumsnet,Mumsnet,POST00052,CMT00052,USER9867,FR,2025-10-01,晒单,比之前用的品牌噪音小很多,Momcozy,positive,438,24
+BabyCenter,BabyCenter,POST00053,CMT00053,USER3642,US,2025-10-19,求助,比之前用的品牌噪音小很多,Spectra,negative,355,35
+Mumsnet,Mumsnet,POST00054,CMT00054,USER8633,UK,2025-10-18,晒单,包装有点简陋，希望能改进,Momcozy,positive,46,38
+Facebook,MomCozy Fans,POST00055,CMT00055,USER5917,UK,2025-10-17,对比,尺寸有点大，携带不便,Momcozy,positive,48,36
+BabyCenter,BabyCenter,POST00056,CMT00056,USER6875,FR,2025-11-14,对比,比之前用的品牌噪音小很多,Momcozy,positive,434,19
+BabyCenter,BabyCenter,POST00057,CMT00057,USER1754,US,2025-12-27,对比,性价比高，值得购买,Momcozy,positive,269,11
+WhatToExpect,WhatToExpect,POST00058,CMT00058,USER9697,UK,2025-11-11,求助,包装有点简陋，希望能改进,Momcozy,neutral,483,35
+BabyCenter,BabyCenter,POST00059,CMT00059,USER8281,UK,2025-10-15,测评,用了两周，感觉吸力不够强,Momcozy,positive,81,49
+Reddit,r/Mommit,POST00060,CMT00060,USER5016,FR,2025-12-16,对比,比之前用的品牌噪音小很多,Momcozy,neutral,319,37
+Facebook,MomCozy Fans,POST00061,CMT00061,USER7713,FR,2025-10-25,测评,客服态度很好，物流也快,Momcozy,neutral,51,36
+Mumsnet,Mumsnet,POST00062,CMT00062,USER8265,FR,2025-10-22,对比,包装有点简陋，希望能改进,其他,positive,125,2
+BabyCenter,BabyCenter,POST00063,CMT00063,USER3251,US,2025-12-26,测评,清洁很方便，适合上班族,Momcozy,positive,2,45
+Mumsnet,Mumsnet,POST00064,CMT00064,USER2560,DE,2025-10-07,对比,尺寸有点大，携带不便,Momcozy,positive,245,40
+Mumsnet,Mumsnet,POST00065,CMT00065,USER7719,DE,2025-12-02,测评,包装有点简陋，希望能改进,Medela,positive,299,9
+WhatToExpect,WhatToExpect,POST00066,CMT00066,USER4454,US,2025-11-05,晒单,尺寸有点大，携带不便,Momcozy,neutral,396,2
+BabyCenter,BabyCenter,POST00067,CMT00067,USER1312,UK,2025-10-06,吐槽,用了两周，感觉吸力不够强,Medela,negative,483,1
+WhatToExpect,WhatToExpect,POST00068,CMT00068,USER8129,UK,2025-10-04,求助,清洁很方便，适合上班族,Spectra,positive,477,49
+WhatToExpect,WhatToExpect,POST00069,CMT00069,USER5350,US,2025-11-08,对比,尺寸有点大，携带不便,其他,negative,280,18
+Facebook,MomCozy Fans,POST00070,CMT00070,USER7986,DE,2025-12-23,对比,性价比高，值得购买,Momcozy,positive,383,49
+BabyCenter,BabyCenter,POST00071,CMT00071,USER8867,US,2025-10-19,对比,推荐这款吸奶器，真的很好用！,Momcozy,negative,25,31
+Mumsnet,Mumsnet,POST00072,CMT00072,USER6191,US,2025-11-28,求助,推荐这款吸奶器，真的很好用！,Momcozy,positive,268,27
+Reddit,r/Mommit,POST00073,CMT00073,USER6738,DE,2025-10-11,吐槽,包装有点简陋，希望能改进,Spectra,positive,38,32
+BabyCenter,BabyCenter,POST00074,CMT00074,USER1752,UK,2025-11-17,对比,用了两周，感觉吸力不够强,Momcozy,neutral,410,40
+Mumsnet,Mumsnet,POST00075,CMT00075,USER7985,US,2025-12-26,对比,清洁很方便，适合上班族,Momcozy,positive,139,34
+WhatToExpect,WhatToExpect,POST00076,CMT00076,USER6782,FR,2025-12-08,求助,包装有点简陋，希望能改进,Momcozy,positive,182,8
+Mumsnet,Mumsnet,POST00077,CMT00077,USER8064,US,2025-11-19,对比,比之前用的品牌噪音小很多,Momcozy,positive,119,5
+Reddit,r/Mommit,POST00078,CMT00078,USER6522,DE,2025-11-07,测评,客服态度很好，物流也快,Spectra,positive,93,3
+Facebook,MomCozy Fans,POST00079,CMT00079,USER5224,DE,2025-12-18,求助,推荐这款吸奶器，真的很好用！,Momcozy,positive,431,23
+WhatToExpect,WhatToExpect,POST00080,CMT00080,USER1355,DE,2025-12-26,测评,比之前用的品牌噪音小很多,Spectra,positive,350,41
+Reddit,r/Mommit,POST00081,CMT00081,USER9490,FR,2025-11-17,对比,性价比高，值得购买,Momcozy,positive,321,37
+WhatToExpect,WhatToExpect,POST00082,CMT00082,USER8399,UK,2025-10-03,吐槽,性价比高，值得购买,Spectra,positive,322,25
+BabyCenter,BabyCenter,POST00083,CMT00083,USER2416,UK,2025-12-21,吐槽,包装有点简陋，希望能改进,Medela,positive,43,35
+Mumsnet,Mumsnet,POST00084,CMT00084,USER2040,DE,2025-12-08,测评,比之前用的品牌噪音小很多,Medela,neutral,247,45
+Facebook,MomCozy Fans,POST00085,CMT00085,USER1392,US,2025-12-05,求助,推荐这款吸奶器，真的很好用！,Momcozy,negative,422,29
+Facebook,MomCozy Fans,POST00086,CMT00086,USER7363,FR,2025-12-11,求助,用了两周，感觉吸力不够强,Spectra,positive,1,38
+Facebook,MomCozy Fans,POST00087,CMT00087,USER3739,US,2025-10-20,晒单,清洁很方便，适合上班族,Spectra,positive,120,31
+BabyCenter,BabyCenter,POST00088,CMT00088,USER1453,US,2025-10-03,晒单,比之前用的品牌噪音小很多,Medela,positive,47,24
+Reddit,r/Mommit,POST00089,CMT00089,USER3418,DE,2025-11-05,晒单,尺寸有点大，携带不便,Momcozy,negative,386,19
+Facebook,MomCozy Fans,POST00090,CMT00090,USER4543,FR,2025-11-01,求助,用了两周，感觉吸力不够强,Spectra,negative,371,11
+Facebook,MomCozy Fans,POST00091,CMT00091,USER9044,UK,2025-12-25,求助,性价比高，值得购买,Spectra,positive,171,8
+BabyCenter,BabyCenter,POST00092,CMT00092,USER7614,FR,2025-11-13,对比,性价比高，值得购买,Spectra,positive,318,4
+Reddit,r/Mommit,POST00093,CMT00093,USER4401,FR,2025-11-17,测评,客服态度很好，物流也快,Momcozy,positive,15,34
+BabyCenter,BabyCenter,POST00094,CMT00094,USER6660,DE,2025-10-14,晒单,推荐这款吸奶器，真的很好用！,Medela,negative,56,42
+Reddit,r/Mommit,POST00095,CMT00095,USER3233,UK,2025-10-20,晒单,包装有点简陋，希望能改进,Momcozy,positive,150,45
+Reddit,r/Mommit,POST00096,CMT00096,USER8910,FR,2025-11-09,测评,包装有点简陋，希望能改进,Spectra,negative,325,34
+Facebook,MomCozy Fans,POST00097,CMT00097,USER1595,US,2025-11-10,吐槽,比之前用的品牌噪音小很多,Momcozy,positive,252,29
+Reddit,r/Mommit,POST00098,CMT00098,USER2030,FR,2025-12-26,测评,清洁很方便，适合上班族,Momcozy,positive,177,42
+Mumsnet,Mumsnet,POST00099,CMT00099,USER8151,US,2025-10-06,晒单,客服态度很好，物流也快,Spectra,positive,436,37
+WhatToExpect,WhatToExpect,POST00100,CMT00100,USER7085,DE,2025-10-23,晒单,清洁很方便，适合上班族,其他,neutral,236,25
+Reddit,r/Mommit,POST00101,CMT00101,USER4253,DE,2025-11-26,测评,比之前用的品牌噪音小很多,其他,positive,272,13
+Mumsnet,Mumsnet,POST00102,CMT00102,USER4513,FR,2025-10-22,吐槽,比之前用的品牌噪音小很多,其他,neutral,401,36
+BabyCenter,BabyCenter,POST00103,CMT00103,USER9328,FR,2025-12-08,测评,用了两周，感觉吸力不够强,Momcozy,positive,347,34
+WhatToExpect,WhatToExpect,POST00104,CMT00104,USER4870,US,2025-12-04,吐槽,比之前用的品牌噪音小很多,Momcozy,positive,100,36
+Facebook,MomCozy Fans,POST00105,CMT00105,USER2649,DE,2025-11-12,求助,尺寸有点大，携带不便,Spectra,neutral,165,22
+WhatToExpect,WhatToExpect,POST00106,CMT00106,USER5938,FR,2025-11-27,吐槽,比之前用的品牌噪音小很多,Spectra,positive,49,13
+BabyCenter,BabyCenter,POST00107,CMT00107,USER4554,DE,2025-12-12,晒单,包装有点简陋，希望能改进,Spectra,neutral,74,38
+Reddit,r/Mommit,POST00108,CMT00108,USER9212,UK,2025-12-15,求助,清洁很方便，适合上班族,Momcozy,negative,479,49
+Facebook,MomCozy Fans,POST00109,CMT00109,USER9712,US,2025-12-03,求助,用了两周，感觉吸力不够强,Momcozy,positive,240,16
+WhatToExpect,WhatToExpect,POST00110,CMT00110,USER8262,UK,2025-11-22,求助,客服态度很好，物流也快,Momcozy,positive,257,14
+Facebook,MomCozy Fans,POST00111,CMT00111,USER2872,FR,2025-12-28,测评,清洁很方便，适合上班族,Medela,neutral,370,23
+WhatToExpect,WhatToExpect,POST00112,CMT00112,USER9420,FR,2025-11-02,对比,尺寸有点大，携带不便,Spectra,positive,320,17
+Mumsnet,Mumsnet,POST00113,CMT00113,USER5939,US,2025-12-28,晒单,尺寸有点大，携带不便,Momcozy,negative,469,41
+WhatToExpect,WhatToExpect,POST00114,CMT00114,USER4867,DE,2025-11-14,测评,性价比高，值得购买,Spectra,negative,308,7
+Mumsnet,Mumsnet,POST00115,CMT00115,USER8642,FR,2025-10-01,吐槽,清洁很方便，适合上班族,Momcozy,neutral,281,36
+BabyCenter,BabyCenter,POST00116,CMT00116,USER4078,DE,2025-12-07,求助,清洁很方便，适合上班族,Momcozy,negative,489,17
+Mumsnet,Mumsnet,POST00117,CMT00117,USER7552,DE,2025-11-28,求助,客服态度很好，物流也快,Momcozy,positive,403,18
+Mumsnet,Mumsnet,POST00118,CMT00118,USER9074,FR,2025-12-23,对比,包装有点简陋，希望能改进,Momcozy,positive,402,8
+WhatToExpect,WhatToExpect,POST00119,CMT00119,USER1209,US,2025-10-10,求助,清洁很方便，适合上班族,Momcozy,positive,118,14
+WhatToExpect,WhatToExpect,POST00120,CMT00120,USER6193,DE,2025-12-19,晒单,包装有点简陋，希望能改进,Spectra,negative,239,9
+WhatToExpect,WhatToExpect,POST00121,CMT00121,USER6917,UK,2025-12-05,对比,比之前用的品牌噪音小很多,其他,positive,261,42
+WhatToExpect,WhatToExpect,POST00122,CMT00122,USER1378,UK,2025-11-09,吐槽,包装有点简陋，希望能改进,Momcozy,neutral,182,7
+Facebook,MomCozy Fans,POST00123,CMT00123,USER2888,DE,2025-11-12,晒单,包装有点简陋，希望能改进,Momcozy,neutral,234,32
+Facebook,MomCozy Fans,POST00124,CMT00124,USER8777,US,2025-12-03,对比,尺寸有点大，携带不便,Momcozy,negative,280,2
+Mumsnet,Mumsnet,POST00125,CMT00125,USER9893,DE,2025-11-24,测评,清洁很方便，适合上班族,Spectra,positive,234,34
+Reddit,r/Mommit,POST00126,CMT00126,USER2325,UK,2025-11-05,测评,性价比高，值得购买,Momcozy,neutral,382,16
+Reddit,r/Mommit,POST00127,CMT00127,USER4758,UK,2025-11-16,测评,推荐这款吸奶器，真的很好用！,其他,neutral,404,20
+Facebook,MomCozy Fans,POST00128,CMT00128,USER4845,FR,2025-12-25,测评,客服态度很好，物流也快,Momcozy,positive,9,8
+Reddit,r/Mommit,POST00129,CMT00129,USER9424,DE,2025-12-12,对比,推荐这款吸奶器，真的很好用！,Momcozy,neutral,117,35
+Facebook,MomCozy Fans,POST00130,CMT00130,USER1823,FR,2025-10-24,吐槽,包装有点简陋，希望能改进,Momcozy,positive,332,30
+WhatToExpect,WhatToExpect,POST00131,CMT00131,USER3902,FR,2025-12-22,测评,性价比高，值得购买,Momcozy,neutral,102,11
+WhatToExpect,WhatToExpect,POST00132,CMT00132,USER5662,DE,2025-11-16,测评,推荐这款吸奶器，真的很好用！,Momcozy,negative,438,35
+Reddit,r/Mommit,POST00133,CMT00133,USER3711,FR,2025-10-02,晒单,包装有点简陋，希望能改进,Momcozy,negative,142,30
+Reddit,r/Mommit,POST00134,CMT00134,USER2736,DE,2025-11-27,晒单,尺寸有点大，携带不便,Spectra,negative,239,42
+Facebook,MomCozy Fans,POST00135,CMT00135,USER1667,DE,2025-10-19,测评,尺寸有点大，携带不便,Spectra,neutral,61,44
+Facebook,MomCozy Fans,POST00136,CMT00136,USER4190,UK,2025-11-08,测评,比之前用的品牌噪音小很多,Spectra,positive,203,47
+WhatToExpect,WhatToExpect,POST00137,CMT00137,USER7895,FR,2025-12-28,对比,推荐这款吸奶器，真的很好用！,Momcozy,neutral,113,19
+Reddit,r/Mommit,POST00138,CMT00138,USER2231,DE,2025-11-06,晒单,推荐这款吸奶器，真的很好用！,Spectra,positive,443,11
+Reddit,r/Mommit,POST00139,CMT00139,USER7222,US,2025-12-10,对比,性价比高，值得购买,其他,neutral,223,5
+BabyCenter,BabyCenter,POST00140,CMT00140,USER9427,DE,2025-12-02,测评,清洁很方便，适合上班族,Momcozy,neutral,143,7
+Reddit,r/Mommit,POST00141,CMT00141,USER3803,UK,2025-12-11,测评,推荐这款吸奶器，真的很好用！,Momcozy,neutral,403,4
+Reddit,r/Mommit,POST00142,CMT00142,USER4385,DE,2025-10-16,吐槽,清洁很方便，适合上班族,Momcozy,neutral,178,13
+Facebook,MomCozy Fans,POST00143,CMT00143,USER7833,UK,2025-12-22,晒单,尺寸有点大，携带不便,Momcozy,neutral,241,6
+BabyCenter,BabyCenter,POST00144,CMT00144,USER4061,UK,2025-12-14,晒单,清洁很方便，适合上班族,Spectra,positive,421,19
+BabyCenter,BabyCenter,POST00145,CMT00145,USER8280,FR,2025-11-17,对比,比之前用的品牌噪音小很多,Medela,positive,107,26
+WhatToExpect,WhatToExpect,POST00146,CMT00146,USER3362,US,2025-12-23,测评,比之前用的品牌噪音小很多,Spectra,negative,189,46
+BabyCenter,BabyCenter,POST00147,CMT00147,USER1356,US,2025-11-12,求助,比之前用的品牌噪音小很多,Spectra,positive,319,18
+BabyCenter,BabyCenter,POST00148,CMT00148,USER3739,FR,2025-12-07,求助,推荐这款吸奶器，真的很好用！,Spectra,positive,365,0
+Reddit,r/Mommit,POST00149,CMT00149,USER1292,FR,2025-12-25,求助,用了两周，感觉吸力不够强,Spectra,positive,224,6
+BabyCenter,BabyCenter,POST00150,CMT00150,USER4863,DE,2025-10-12,吐槽,客服态度很好，物流也快,Spectra,negative,22,18
+BabyCenter,BabyCenter,POST00151,CMT00151,USER3276,DE,2025-10-12,求助,比之前用的品牌噪音小很多,Momcozy,positive,396,30
+BabyCenter,BabyCenter,POST00152,CMT00152,USER4384,DE,2025-11-07,晒单,包装有点简陋，希望能改进,Spectra,positive,76,36
+Reddit,r/Mommit,POST00153,CMT00153,USER6755,DE,2025-12-06,测评,包装有点简陋，希望能改进,Momcozy,negative,471,5
+Facebook,MomCozy Fans,POST00154,CMT00154,USER8705,DE,2025-10-07,对比,比之前用的品牌噪音小很多,Medela,positive,274,3
+BabyCenter,BabyCenter,POST00155,CMT00155,USER2349,US,2025-10-05,测评,清洁很方便，适合上班族,Momcozy,positive,126,0
+WhatToExpect,WhatToExpect,POST00156,CMT00156,USER4845,UK,2025-11-28,吐槽,推荐这款吸奶器，真的很好用！,Momcozy,neutral,51,2
+BabyCenter,BabyCenter,POST00157,CMT00157,USER9168,UK,2025-12-27,晒单,清洁很方便，适合上班族,Spectra,negative,308,16
+Facebook,MomCozy Fans,POST00158,CMT00158,USER8320,UK,2025-12-22,求助,客服态度很好，物流也快,Medela,positive,117,36
+Reddit,r/Mommit,POST00159,CMT00159,USER1665,DE,2025-12-20,晒单,性价比高，值得购买,Medela,positive,143,45
+Mumsnet,Mumsnet,POST00160,CMT00160,USER5508,FR,2025-12-25,吐槽,用了两周，感觉吸力不够强,Spectra,positive,465,21
+Reddit,r/Mommit,POST00161,CMT00161,USER8258,US,2025-10-05,求助,比之前用的品牌噪音小很多,Momcozy,positive,322,46
+WhatToExpect,WhatToExpect,POST00162,CMT00162,USER5798,UK,2025-10-11,晒单,推荐这款吸奶器，真的很好用！,Momcozy,negative,447,10
+Reddit,r/Mommit,POST00163,CMT00163,USER6752,UK,2025-11-10,求助,清洁很方便，适合上班族,Medela,neutral,374,22
+WhatToExpect,WhatToExpect,POST00164,CMT00164,USER2209,US,2025-10-05,求助,清洁很方便，适合上班族,Momcozy,neutral,152,14
+BabyCenter,BabyCenter,POST00165,CMT00165,USER3098,FR,2025-11-06,晒单,用了两周，感觉吸力不够强,Spectra,negative,441,11
+WhatToExpect,WhatToExpect,POST00166,CMT00166,USER4241,UK,2025-12-07,测评,客服态度很好，物流也快,Momcozy,negative,424,23
+Reddit,r/Mommit,POST00167,CMT00167,USER6406,DE,2025-10-09,测评,用了两周，感觉吸力不够强,Spectra,neutral,414,5
+WhatToExpect,WhatToExpect,POST00168,CMT00168,USER2079,DE,2025-12-15,测评,客服态度很好，物流也快,Medela,neutral,49,49
+BabyCenter,BabyCenter,POST00169,CMT00169,USER9791,UK,2025-11-11,测评,清洁很方便，适合上班族,Momcozy,neutral,64,33
+Reddit,r/Mommit,POST00170,CMT00170,USER3514,UK,2025-10-20,吐槽,包装有点简陋，希望能改进,Spectra,positive,277,19
+BabyCenter,BabyCenter,POST00171,CMT00171,USER2309,UK,2025-10-24,吐槽,包装有点简陋，希望能改进,Momcozy,negative,310,12
+Facebook,MomCozy Fans,POST00172,CMT00172,USER3711,UK,2025-11-02,晒单,清洁很方便，适合上班族,Medela,neutral,162,42
+Facebook,MomCozy Fans,POST00173,CMT00173,USER8332,US,2025-11-22,测评,客服态度很好，物流也快,Spectra,positive,137,41
+Mumsnet,Mumsnet,POST00174,CMT00174,USER7574,UK,2025-11-10,吐槽,比之前用的品牌噪音小很多,Momcozy,neutral,105,1
+Reddit,r/Mommit,POST00175,CMT00175,USER1669,FR,2025-12-07,测评,推荐这款吸奶器，真的很好用！,Momcozy,negative,128,8
+Mumsnet,Mumsnet,POST00176,CMT00176,USER6684,DE,2025-10-04,晒单,性价比高，值得购买,Spectra,negative,298,38
+Reddit,r/Mommit,POST00177,CMT00177,USER9837,DE,2025-11-15,测评,包装有点简陋，希望能改进,Momcozy,negative,486,18
+Facebook,MomCozy Fans,POST00178,CMT00178,USER4196,US,2025-11-22,测评,包装有点简陋，希望能改进,Momcozy,negative,238,19
+Mumsnet,Mumsnet,POST00179,CMT00179,USER2105,DE,2025-10-10,测评,客服态度很好，物流也快,Spectra,neutral,460,17
+Facebook,MomCozy Fans,POST00180,CMT00180,USER9023,UK,2025-10-26,求助,客服态度很好，物流也快,Spectra,negative,393,0
+BabyCenter,BabyCenter,POST00181,CMT00181,USER3440,FR,2025-12-15,对比,包装有点简陋，希望能改进,Momcozy,neutral,40,22
+Mumsnet,Mumsnet,POST00182,CMT00182,USER4034,US,2025-11-23,对比,推荐这款吸奶器，真的很好用！,Momcozy,positive,306,5
+Facebook,MomCozy Fans,POST00183,CMT00183,USER5264,UK,2025-10-26,对比,客服态度很好，物流也快,Spectra,positive,35,47
+Facebook,MomCozy Fans,POST00184,CMT00184,USER5541,FR,2025-11-12,测评,性价比高，值得购买,Momcozy,positive,126,17
+BabyCenter,BabyCenter,POST00185,CMT00185,USER2129,DE,2025-11-01,晒单,推荐这款吸奶器，真的很好用！,Momcozy,positive,403,9
+Reddit,r/Mommit,POST00186,CMT00186,USER7523,UK,2025-10-02,测评,用了两周，感觉吸力不够强,Momcozy,positive,0,4
+Reddit,r/Mommit,POST00187,CMT00187,USER1539,DE,2025-12-16,求助,推荐这款吸奶器，真的很好用！,Momcozy,positive,138,27
+BabyCenter,BabyCenter,POST00188,CMT00188,USER6087,DE,2025-10-27,吐槽,推荐这款吸奶器，真的很好用！,Spectra,positive,404,12
+WhatToExpect,WhatToExpect,POST00189,CMT00189,USER3756,UK,2025-11-17,吐槽,性价比高，值得购买,Momcozy,positive,131,35
+BabyCenter,BabyCenter,POST00190,CMT00190,USER9984,DE,2025-10-22,晒单,用了两周，感觉吸力不够强,其他,neutral,277,5
+BabyCenter,BabyCenter,POST00191,CMT00191,USER4201,UK,2025-11-10,求助,推荐这款吸奶器，真的很好用！,Momcozy,negative,396,14
+Facebook,MomCozy Fans,POST00192,CMT00192,USER8083,FR,2025-11-14,测评,比之前用的品牌噪音小很多,Momcozy,neutral,116,42
+Mumsnet,Mumsnet,POST00193,CMT00193,USER1788,UK,2025-10-18,求助,用了两周，感觉吸力不够强,Momcozy,positive,158,41
+Mumsnet,Mumsnet,POST00194,CMT00194,USER8612,US,2025-11-14,对比,尺寸有点大，携带不便,其他,negative,178,48
+Facebook,MomCozy Fans,POST00195,CMT00195,USER5047,UK,2025-10-08,晒单,尺寸有点大，携带不便,Momcozy,negative,18,30
+BabyCenter,BabyCenter,POST00196,CMT00196,USER8593,US,2025-12-15,测评,用了两周，感觉吸力不够强,Momcozy,positive,76,34
+Reddit,r/Mommit,POST00197,CMT00197,USER3846,US,2025-11-02,对比,推荐这款吸奶器，真的很好用！,Momcozy,positive,437,39
+BabyCenter,BabyCenter,POST00198,CMT00198,USER4227,US,2025-10-01,测评,尺寸有点大，携带不便,Momcozy,negative,430,10
+Mumsnet,Mumsnet,POST00199,CMT00199,USER3511,DE,2025-11-11,晒单,比之前用的品牌噪音小很多,Momcozy,negative,269,33
+Reddit,r/Mommit,POST00200,CMT00200,USER4175,UK,2025-11-18,测评,尺寸有点大，携带不便,Spectra,negative,135,30
+WhatToExpect,WhatToExpect,POST00201,CMT00201,USER9130,FR,2025-12-22,测评,推荐这款吸奶器，真的很好用！,Medela,positive,349,20
+Mumsnet,Mumsnet,POST00202,CMT00202,USER8844,FR,2025-12-20,测评,尺寸有点大，携带不便,Momcozy,neutral,3,26
+Mumsnet,Mumsnet,POST00203,CMT00203,USER1869,DE,2025-11-12,对比,比之前用的品牌噪音小很多,Momcozy,neutral,323,10
+Facebook,MomCozy Fans,POST00204,CMT00204,USER7524,US,2025-10-13,吐槽,用了两周，感觉吸力不够强,Momcozy,positive,475,18
+WhatToExpect,WhatToExpect,POST00205,CMT00205,USER8024,US,2025-10-26,晒单,用了两周，感觉吸力不够强,Momcozy,positive,57,8
+Reddit,r/Mommit,POST00206,CMT00206,USER9333,US,2025-12-01,吐槽,清洁很方便，适合上班族,Momcozy,neutral,302,47
+BabyCenter,BabyCenter,POST00207,CMT00207,USER9234,FR,2025-12-12,对比,清洁很方便，适合上班族,Momcozy,neutral,62,42
+Reddit,r/Mommit,POST00208,CMT00208,USER8413,US,2025-11-27,对比,用了两周，感觉吸力不够强,Momcozy,positive,205,29
+Reddit,r/Mommit,POST00209,CMT00209,USER3877,DE,2025-12-15,求助,清洁很方便，适合上班族,Momcozy,neutral,248,43
+WhatToExpect,WhatToExpect,POST00210,CMT00210,USER7300,DE,2025-11-25,测评,性价比高，值得购买,Momcozy,positive,19,32
+Reddit,r/Mommit,POST00211,CMT00211,USER6985,US,2025-12-05,测评,推荐这款吸奶器，真的很好用！,Medela,positive,492,14
+Reddit,r/Mommit,POST00212,CMT00212,USER3709,DE,2025-11-22,对比,用了两周，感觉吸力不够强,Momcozy,positive,9,48
+Reddit,r/Mommit,POST00213,CMT00213,USER1730,US,2025-12-11,吐槽,尺寸有点大，携带不便,Spectra,positive,270,34
+Facebook,MomCozy Fans,POST00214,CMT00214,USER4229,FR,2025-10-03,求助,推荐这款吸奶器，真的很好用！,Momcozy,positive,278,20
+Reddit,r/Mommit,POST00215,CMT00215,USER1012,FR,2025-12-19,对比,推荐这款吸奶器，真的很好用！,Momcozy,negative,190,8
+Facebook,MomCozy Fans,POST00216,CMT00216,USER6799,DE,2025-10-15,求助,清洁很方便，适合上班族,Spectra,positive,242,40
+BabyCenter,BabyCenter,POST00217,CMT00217,USER2379,FR,2025-11-09,晒单,比之前用的品牌噪音小很多,Medela,positive,491,47
+Facebook,MomCozy Fans,POST00218,CMT00218,USER4923,US,2025-10-25,晒单,推荐这款吸奶器，真的很好用！,Momcozy,negative,88,34
+Mumsnet,Mumsnet,POST00219,CMT00219,USER5784,UK,2025-10-17,晒单,性价比高，值得购买,Medela,positive,146,22
+Reddit,r/Mommit,POST00220,CMT00220,USER5725,UK,2025-11-16,吐槽,清洁很方便，适合上班族,Momcozy,positive,344,15
+BabyCenter,BabyCenter,POST00221,CMT00221,USER3990,FR,2025-11-24,晒单,尺寸有点大，携带不便,Momcozy,positive,282,9
+WhatToExpect,WhatToExpect,POST00222,CMT00222,USER1496,FR,2025-12-04,对比,包装有点简陋，希望能改进,Momcozy,positive,383,31
+Reddit,r/Mommit,POST00223,CMT00223,USER2695,FR,2025-12-13,晒单,客服态度很好，物流也快,Momcozy,neutral,10,21
+BabyCenter,BabyCenter,POST00224,CMT00224,USER8464,DE,2025-10-20,吐槽,推荐这款吸奶器，真的很好用！,Momcozy,positive,318,36
+Facebook,MomCozy Fans,POST00225,CMT00225,USER8377,DE,2025-11-07,对比,性价比高，值得购买,Momcozy,negative,374,9
+Mumsnet,Mumsnet,POST00226,CMT00226,USER4406,DE,2025-12-26,吐槽,用了两周，感觉吸力不够强,Medela,positive,157,36
+WhatToExpect,WhatToExpect,POST00227,CMT00227,USER6873,DE,2025-12-21,晒单,性价比高，值得购买,Momcozy,positive,230,41
+Facebook,MomCozy Fans,POST00228,CMT00228,USER9283,DE,2025-12-13,求助,客服态度很好，物流也快,Spectra,neutral,217,29
+Reddit,r/Mommit,POST00229,CMT00229,USER9469,US,2025-10-18,对比,尺寸有点大，携带不便,其他,neutral,29,38
+BabyCenter,BabyCenter,POST00230,CMT00230,USER1364,US,2025-12-07,吐槽,用了两周，感觉吸力不够强,其他,positive,319,30
+Mumsnet,Mumsnet,POST00231,CMT00231,USER4873,FR,2025-10-03,晒单,性价比高，值得购买,Momcozy,positive,352,31
+Mumsnet,Mumsnet,POST00232,CMT00232,USER6202,US,2025-12-21,对比,性价比高，值得购买,Momcozy,neutral,381,14
+Mumsnet,Mumsnet,POST00233,CMT00233,USER8012,FR,2025-11-06,测评,客服态度很好，物流也快,Momcozy,positive,479,5
+Mumsnet,Mumsnet,POST00234,CMT00234,USER2879,US,2025-10-11,对比,比之前用的品牌噪音小很多,Medela,positive,279,25
+Facebook,MomCozy Fans,POST00235,CMT00235,USER6392,FR,2025-10-27,吐槽,用了两周，感觉吸力不够强,Momcozy,positive,257,24
+Reddit,r/Mommit,POST00236,CMT00236,USER9903,DE,2025-12-25,吐槽,推荐这款吸奶器，真的很好用！,Momcozy,negative,195,40
+Facebook,MomCozy Fans,POST00237,CMT00237,USER8986,DE,2025-11-18,吐槽,尺寸有点大，携带不便,Momcozy,neutral,333,48
+Reddit,r/Mommit,POST00238,CMT00238,USER5893,US,2025-12-07,吐槽,客服态度很好，物流也快,Spectra,positive,22,47
+Facebook,MomCozy Fans,POST00239,CMT00239,USER1295,UK,2025-11-09,晒单,比之前用的品牌噪音小很多,Momcozy,positive,326,26
+Reddit,r/Mommit,POST00240,CMT00240,USER8758,UK,2025-10-11,晒单,用了两周，感觉吸力不够强,Medela,negative,72,41
+Mumsnet,Mumsnet,POST00241,CMT00241,USER4081,US,2025-12-28,晒单,比之前用的品牌噪音小很多,Spectra,positive,216,14
+BabyCenter,BabyCenter,POST00242,CMT00242,USER2559,UK,2025-12-04,晒单,比之前用的品牌噪音小很多,Medela,positive,166,14
+BabyCenter,BabyCenter,POST00243,CMT00243,USER2088,FR,2025-10-25,对比,用了两周，感觉吸力不够强,其他,neutral,186,16
+Mumsnet,Mumsnet,POST00244,CMT00244,USER3670,UK,2025-10-13,吐槽,比之前用的品牌噪音小很多,Momcozy,neutral,204,21
+Facebook,MomCozy Fans,POST00245,CMT00245,USER8002,UK,2025-11-15,对比,用了两周，感觉吸力不够强,其他,neutral,454,41
+BabyCenter,BabyCenter,POST00246,CMT00246,USER5593,US,2025-11-21,求助,推荐这款吸奶器，真的很好用！,其他,neutral,24,25
+Facebook,MomCozy Fans,POST00247,CMT00247,USER2832,UK,2025-10-17,对比,推荐这款吸奶器，真的很好用！,其他,negative,68,23
+Reddit,r/Mommit,POST00248,CMT00248,USER8616,US,2025-10-10,对比,推荐这款吸奶器，真的很好用！,Spectra,positive,433,1
+Reddit,r/Mommit,POST00249,CMT00249,USER2975,US,2025-11-04,测评,推荐这款吸奶器，真的很好用！,Momcozy,negative,130,42
+Reddit,r/Mommit,POST00250,CMT00250,USER1976,UK,2025-10-14,测评,推荐这款吸奶器，真的很好用！,Momcozy,positive,229,23
+Facebook,MomCozy Fans,POST00251,CMT00251,USER4775,UK,2025-11-02,测评,性价比高，值得购买,Medela,positive,381,24
+Mumsnet,Mumsnet,POST00252,CMT00252,USER4644,DE,2025-11-19,求助,用了两周，感觉吸力不够强,Spectra,positive,11,45
+Reddit,r/Mommit,POST00253,CMT00253,USER5332,DE,2025-10-14,对比,性价比高，值得购买,Momcozy,positive,246,24
+WhatToExpect,WhatToExpect,POST00254,CMT00254,USER2845,DE,2025-12-17,晒单,清洁很方便，适合上班族,Momcozy,neutral,116,42
+WhatToExpect,WhatToExpect,POST00255,CMT00255,USER8714,FR,2025-10-26,求助,比之前用的品牌噪音小很多,其他,negative,149,27
+Reddit,r/Mommit,POST00256,CMT00256,USER4499,FR,2025-12-05,求助,性价比高，值得购买,Momcozy,positive,460,10
+Facebook,MomCozy Fans,POST00257,CMT00257,USER2025,UK,2025-12-10,测评,推荐这款吸奶器，真的很好用！,Momcozy,neutral,499,12
+WhatToExpect,WhatToExpect,POST00258,CMT00258,USER5102,US,2025-12-13,晒单,清洁很方便，适合上班族,其他,neutral,177,49
+WhatToExpect,WhatToExpect,POST00259,CMT00259,USER4872,UK,2025-12-01,测评,尺寸有点大，携带不便,Spectra,positive,125,45
+Mumsnet,Mumsnet,POST00260,CMT00260,USER3666,FR,2025-12-17,对比,清洁很方便，适合上班族,Spectra,positive,336,30
+Mumsnet,Mumsnet,POST00261,CMT00261,USER5118,UK,2025-11-05,晒单,比之前用的品牌噪音小很多,Spectra,negative,182,16
+BabyCenter,BabyCenter,POST00262,CMT00262,USER7083,DE,2025-10-12,晒单,比之前用的品牌噪音小很多,Momcozy,neutral,435,2
+Facebook,MomCozy Fans,POST00263,CMT00263,USER1671,UK,2025-12-05,求助,客服态度很好，物流也快,Momcozy,positive,259,14
+Reddit,r/Mommit,POST00264,CMT00264,USER7763,DE,2025-11-15,对比,尺寸有点大，携带不便,Momcozy,positive,185,30
+WhatToExpect,WhatToExpect,POST00265,CMT00265,USER5608,DE,2025-12-05,对比,推荐这款吸奶器，真的很好用！,Momcozy,positive,377,25
+Mumsnet,Mumsnet,POST00266,CMT00266,USER6901,UK,2025-12-01,测评,比之前用的品牌噪音小很多,Medela,neutral,451,20
+Facebook,MomCozy Fans,POST00267,CMT00267,USER8338,DE,2025-10-26,测评,比之前用的品牌噪音小很多,Spectra,positive,28,46
+Mumsnet,Mumsnet,POST00268,CMT00268,USER7594,US,2025-10-22,测评,推荐这款吸奶器，真的很好用！,Medela,neutral,378,13
+Mumsnet,Mumsnet,POST00269,CMT00269,USER5239,US,2025-10-06,吐槽,尺寸有点大，携带不便,Medela,neutral,160,28
+Facebook,MomCozy Fans,POST00270,CMT00270,USER6790,FR,2025-12-25,晒单,推荐这款吸奶器，真的很好用！,Momcozy,neutral,73,40
+Facebook,MomCozy Fans,POST00271,CMT00271,USER2410,DE,2025-11-20,求助,客服态度很好，物流也快,Momcozy,neutral,396,32
+BabyCenter,BabyCenter,POST00272,CMT00272,USER9160,FR,2025-10-24,晒单,客服态度很好，物流也快,其他,negative,492,22
+Mumsnet,Mumsnet,POST00273,CMT00273,USER2631,FR,2025-10-07,晒单,推荐这款吸奶器，真的很好用！,Momcozy,neutral,435,3
+BabyCenter,BabyCenter,POST00274,CMT00274,USER4012,US,2025-10-05,吐槽,用了两周，感觉吸力不够强,其他,positive,53,25
+Reddit,r/Mommit,POST00275,CMT00275,USER9480,FR,2025-10-13,求助,尺寸有点大，携带不便,Spectra,positive,286,41
+Mumsnet,Mumsnet,POST00276,CMT00276,USER5928,UK,2025-10-03,测评,用了两周，感觉吸力不够强,Momcozy,neutral,471,49
+Facebook,MomCozy Fans,POST00277,CMT00277,USER9578,UK,2025-10-18,晒单,包装有点简陋，希望能改进,Momcozy,positive,20,18
+Reddit,r/Mommit,POST00278,CMT00278,USER6013,DE,2025-10-21,吐槽,客服态度很好，物流也快,Medela,negative,280,24
+Reddit,r/Mommit,POST00279,CMT00279,USER5370,UK,2025-11-09,求助,清洁很方便，适合上班族,Momcozy,positive,195,29
+Mumsnet,Mumsnet,POST00280,CMT00280,USER6969,UK,2025-10-05,测评,推荐这款吸奶器，真的很好用！,Momcozy,positive,127,25
+WhatToExpect,WhatToExpect,POST00281,CMT00281,USER4872,DE,2025-12-12,测评,性价比高，值得购买,Momcozy,negative,341,33
+WhatToExpect,WhatToExpect,POST00282,CMT00282,USER1544,UK,2025-11-04,晒单,包装有点简陋，希望能改进,Momcozy,neutral,96,47
+WhatToExpect,WhatToExpect,POST00283,CMT00283,USER3708,UK,2025-10-09,求助,推荐这款吸奶器，真的很好用！,Momcozy,positive,207,17
+Facebook,MomCozy Fans,POST00284,CMT00284,USER2146,US,2025-10-12,求助,尺寸有点大，携带不便,Momcozy,negative,176,17
+Reddit,r/Mommit,POST00285,CMT00285,USER2461,US,2025-12-26,对比,包装有点简陋，希望能改进,Momcozy,positive,177,30
+Reddit,r/Mommit,POST00286,CMT00286,USER7766,UK,2025-10-25,吐槽,尺寸有点大，携带不便,Spectra,positive,134,13
+WhatToExpect,WhatToExpect,POST00287,CMT00287,USER3484,DE,2025-10-06,晒单,性价比高，值得购买,Momcozy,positive,144,36
+WhatToExpect,WhatToExpect,POST00288,CMT00288,USER7839,US,2025-10-03,吐槽,推荐这款吸奶器，真的很好用！,Spectra,positive,392,40
+BabyCenter,BabyCenter,POST00289,CMT00289,USER6041,US,2025-12-27,晒单,推荐这款吸奶器，真的很好用！,Momcozy,negative,196,13
+WhatToExpect,WhatToExpect,POST00290,CMT00290,USER4094,DE,2025-11-18,晒单,尺寸有点大，携带不便,Momcozy,negative,332,15
+Reddit,r/Mommit,POST00291,CMT00291,USER6729,DE,2025-10-22,吐槽,尺寸有点大，携带不便,Momcozy,positive,435,1
+BabyCenter,BabyCenter,POST00292,CMT00292,USER5218,UK,2025-12-13,吐槽,推荐这款吸奶器，真的很好用！,Spectra,neutral,460,30
+Facebook,MomCozy Fans,POST00293,CMT00293,USER7184,DE,2025-11-07,吐槽,尺寸有点大，携带不便,Spectra,neutral,72,5
+Reddit,r/Mommit,POST00294,CMT00294,USER7034,FR,2025-10-02,吐槽,包装有点简陋，希望能改进,Momcozy,neutral,492,46
+WhatToExpect,WhatToExpect,POST00295,CMT00295,USER1209,FR,2025-11-10,吐槽,包装有点简陋，希望能改进,Momcozy,positive,487,2
+WhatToExpect,WhatToExpect,POST00296,CMT00296,USER3787,DE,2025-12-08,吐槽,清洁很方便，适合上班族,Spectra,neutral,496,37
+Reddit,r/Mommit,POST00297,CMT00297,USER1329,FR,2025-10-19,对比,比之前用的品牌噪音小很多,其他,neutral,114,44
+BabyCenter,BabyCenter,POST00298,CMT00298,USER9911,FR,2025-10-20,吐槽,包装有点简陋，希望能改进,Spectra,neutral,269,39
+Mumsnet,Mumsnet,POST00299,CMT00299,USER7131,DE,2025-12-22,吐槽,比之前用的品牌噪音小很多,Momcozy,positive,76,13
+Mumsnet,Mumsnet,POST00300,CMT00300,USER4885,UK,2025-11-16,求助,尺寸有点大，携带不便,Momcozy,negative,364,12
+WhatToExpect,WhatToExpect,POST00301,CMT00301,USER2329,FR,2025-12-01,求助,清洁很方便，适合上班族,Momcozy,negative,37,47
+WhatToExpect,WhatToExpect,POST00302,CMT00302,USER3768,DE,2025-12-11,吐槽,清洁很方便，适合上班族,Momcozy,positive,345,1
+Facebook,MomCozy Fans,POST00303,CMT00303,USER4540,UK,2025-12-19,吐槽,清洁很方便，适合上班族,Momcozy,neutral,55,25
+WhatToExpect,WhatToExpect,POST00304,CMT00304,USER3847,UK,2025-10-02,求助,客服态度很好，物流也快,Momcozy,negative,419,11
+Reddit,r/Mommit,POST00305,CMT00305,USER6283,US,2025-12-28,晒单,用了两周，感觉吸力不够强,Spectra,positive,444,17
+BabyCenter,BabyCenter,POST00306,CMT00306,USER1591,DE,2025-10-23,对比,包装有点简陋，希望能改进,Spectra,neutral,287,21
+WhatToExpect,WhatToExpect,POST00307,CMT00307,USER9494,DE,2025-11-22,吐槽,推荐这款吸奶器，真的很好用！,Momcozy,negative,162,9
+WhatToExpect,WhatToExpect,POST00308,CMT00308,USER6220,DE,2025-11-03,测评,用了两周，感觉吸力不够强,Momcozy,positive,280,43
+Mumsnet,Mumsnet,POST00309,CMT00309,USER1430,FR,2025-12-14,测评,清洁很方便，适合上班族,其他,positive,256,18
+Facebook,MomCozy Fans,POST00310,CMT00310,USER9635,US,2025-11-03,对比,推荐这款吸奶器，真的很好用！,Momcozy,negative,438,43
+Reddit,r/Mommit,POST00311,CMT00311,USER6263,DE,2025-10-09,吐槽,尺寸有点大，携带不便,Momcozy,positive,347,27
+BabyCenter,BabyCenter,POST00312,CMT00312,USER9235,DE,2025-12-26,测评,推荐这款吸奶器，真的很好用！,Spectra,positive,216,30
+Facebook,MomCozy Fans,POST00313,CMT00313,USER4424,DE,2025-10-11,晒单,性价比高，值得购买,其他,neutral,70,41
+Facebook,MomCozy Fans,POST00314,CMT00314,USER3018,UK,2025-12-11,测评,推荐这款吸奶器，真的很好用！,Momcozy,positive,83,49
+Mumsnet,Mumsnet,POST00315,CMT00315,USER2189,US,2025-12-15,晒单,包装有点简陋，希望能改进,其他,negative,381,13
+Reddit,r/Mommit,POST00316,CMT00316,USER8485,DE,2025-11-13,求助,用了两周，感觉吸力不够强,Spectra,negative,255,15
+BabyCenter,BabyCenter,POST00317,CMT00317,USER1390,US,2025-10-10,吐槽,尺寸有点大，携带不便,Medela,neutral,164,1
+BabyCenter,BabyCenter,POST00318,CMT00318,USER2391,DE,2025-10-08,求助,比之前用的品牌噪音小很多,Momcozy,positive,233,43
+Reddit,r/Mommit,POST00319,CMT00319,USER1731,FR,2025-11-18,测评,尺寸有点大，携带不便,Momcozy,neutral,63,42
+Reddit,r/Mommit,POST00320,CMT00320,USER4367,DE,2025-10-02,对比,包装有点简陋，希望能改进,Spectra,positive,3,5
+BabyCenter,BabyCenter,POST00321,CMT00321,USER4466,UK,2025-10-24,对比,尺寸有点大，携带不便,Momcozy,neutral,206,42
+BabyCenter,BabyCenter,POST00322,CMT00322,USER8022,US,2025-11-16,吐槽,比之前用的品牌噪音小很多,Medela,positive,34,27
+Facebook,MomCozy Fans,POST00323,CMT00323,USER2995,DE,2025-10-20,测评,推荐这款吸奶器，真的很好用！,Momcozy,positive,332,43
+Reddit,r/Mommit,POST00324,CMT00324,USER1242,US,2025-10-23,测评,尺寸有点大，携带不便,Medela,neutral,138,2
+Reddit,r/Mommit,POST00325,CMT00325,USER1646,US,2025-10-09,吐槽,尺寸有点大，携带不便,Momcozy,neutral,357,32
+Mumsnet,Mumsnet,POST00326,CMT00326,USER2374,FR,2025-11-20,测评,推荐这款吸奶器，真的很好用！,Momcozy,negative,154,46
+Reddit,r/Mommit,POST00327,CMT00327,USER9659,UK,2025-10-23,晒单,性价比高，值得购买,Momcozy,positive,18,12
+Facebook,MomCozy Fans,POST00328,CMT00328,USER1444,UK,2025-12-16,求助,性价比高，值得购买,Spectra,negative,432,16
+Reddit,r/Mommit,POST00329,CMT00329,USER2463,FR,2025-10-12,吐槽,尺寸有点大，携带不便,Spectra,positive,146,6
+BabyCenter,BabyCenter,POST00330,CMT00330,USER8630,DE,2025-11-03,吐槽,性价比高，值得购买,Spectra,negative,477,42
+BabyCenter,BabyCenter,POST00331,CMT00331,USER9381,DE,2025-10-24,求助,客服态度很好，物流也快,Medela,positive,54,28
+Facebook,MomCozy Fans,POST00332,CMT00332,USER7553,DE,2025-11-05,对比,比之前用的品牌噪音小很多,Momcozy,positive,121,42
+Facebook,MomCozy Fans,POST00333,CMT00333,USER1560,US,2025-10-21,求助,包装有点简陋，希望能改进,Spectra,positive,220,34
+WhatToExpect,WhatToExpect,POST00334,CMT00334,USER7554,FR,2025-11-13,吐槽,比之前用的品牌噪音小很多,Momcozy,neutral,94,40
+Facebook,MomCozy Fans,POST00335,CMT00335,USER9907,DE,2025-11-18,求助,用了两周，感觉吸力不够强,Spectra,positive,342,49
+Mumsnet,Mumsnet,POST00336,CMT00336,USER5760,UK,2025-11-10,测评,推荐这款吸奶器，真的很好用！,其他,neutral,439,47
+Mumsnet,Mumsnet,POST00337,CMT00337,USER8255,DE,2025-12-02,吐槽,客服态度很好，物流也快,Medela,positive,235,7
+BabyCenter,BabyCenter,POST00338,CMT00338,USER7686,UK,2025-11-12,对比,用了两周，感觉吸力不够强,Momcozy,positive,457,28
+Reddit,r/Mommit,POST00339,CMT00339,USER5403,DE,2025-11-02,吐槽,包装有点简陋，希望能改进,Spectra,negative,394,43
+BabyCenter,BabyCenter,POST00340,CMT00340,USER9664,DE,2025-10-14,吐槽,性价比高，值得购买,Medela,positive,11,6
+Reddit,r/Mommit,POST00341,CMT00341,USER1761,UK,2025-11-15,求助,推荐这款吸奶器，真的很好用！,Momcozy,neutral,34,0
+Mumsnet,Mumsnet,POST00342,CMT00342,USER2525,US,2025-12-25,吐槽,尺寸有点大，携带不便,Spectra,negative,0,5
+Mumsnet,Mumsnet,POST00343,CMT00343,USER5228,US,2025-11-28,对比,客服态度很好，物流也快,Momcozy,negative,250,20
+Facebook,MomCozy Fans,POST00344,CMT00344,USER7071,US,2025-11-27,测评,性价比高，值得购买,Momcozy,neutral,353,10
+BabyCenter,BabyCenter,POST00345,CMT00345,USER6024,UK,2025-11-23,测评,用了两周，感觉吸力不够强,Spectra,neutral,270,41
+Facebook,MomCozy Fans,POST00346,CMT00346,USER2750,DE,2025-10-28,测评,客服态度很好，物流也快,Medela,positive,306,32
+BabyCenter,BabyCenter,POST00347,CMT00347,USER2359,FR,2025-11-22,测评,客服态度很好，物流也快,Momcozy,negative,330,23
+Facebook,MomCozy Fans,POST00348,CMT00348,USER1770,FR,2025-11-28,测评,推荐这款吸奶器，真的很好用！,Momcozy,negative,331,13
+Reddit,r/Mommit,POST00349,CMT00349,USER7890,FR,2025-12-10,求助,用了两周，感觉吸力不够强,Momcozy,neutral,305,13
+BabyCenter,BabyCenter,POST00350,CMT00350,USER3575,UK,2025-12-10,吐槽,清洁很方便，适合上班族,Momcozy,neutral,72,18
+Reddit,r/Mommit,POST00351,CMT00351,USER7255,UK,2025-12-21,吐槽,尺寸有点大，携带不便,Spectra,positive,479,29
+Facebook,MomCozy Fans,POST00352,CMT00352,USER8032,US,2025-12-02,吐槽,用了两周，感觉吸力不够强,Momcozy,positive,179,21
+Facebook,MomCozy Fans,POST00353,CMT00353,USER1264,US,2025-11-27,测评,用了两周，感觉吸力不够强,Momcozy,positive,265,5
+Reddit,r/Mommit,POST00354,CMT00354,USER8044,UK,2025-11-27,对比,尺寸有点大，携带不便,Momcozy,positive,433,3
+WhatToExpect,WhatToExpect,POST00355,CMT00355,USER4631,FR,2025-12-20,晒单,用了两周，感觉吸力不够强,Momcozy,positive,271,18
+BabyCenter,BabyCenter,POST00356,CMT00356,USER8640,DE,2025-10-09,对比,清洁很方便，适合上班族,Momcozy,positive,402,34
+Facebook,MomCozy Fans,POST00357,CMT00357,USER1442,US,2025-11-26,晒单,尺寸有点大，携带不便,Spectra,negative,128,7
+Reddit,r/Mommit,POST00358,CMT00358,USER1562,DE,2025-10-24,求助,尺寸有点大，携带不便,Momcozy,positive,92,9
+Mumsnet,Mumsnet,POST00359,CMT00359,USER5727,DE,2025-10-26,测评,尺寸有点大，携带不便,Medela,positive,292,17
+BabyCenter,BabyCenter,POST00360,CMT00360,USER3800,UK,2025-10-24,晒单,性价比高，值得购买,Momcozy,positive,17,36
+Facebook,MomCozy Fans,POST00361,CMT00361,USER1740,UK,2025-11-17,求助,尺寸有点大，携带不便,Momcozy,negative,127,19
+Facebook,MomCozy Fans,POST00362,CMT00362,USER9592,FR,2025-11-16,吐槽,尺寸有点大，携带不便,Momcozy,neutral,57,33
+Facebook,MomCozy Fans,POST00363,CMT00363,USER1270,US,2025-11-03,晒单,比之前用的品牌噪音小很多,Momcozy,neutral,389,14
+Facebook,MomCozy Fans,POST00364,CMT00364,USER1120,US,2025-10-21,吐槽,包装有点简陋，希望能改进,Momcozy,positive,226,16
+BabyCenter,BabyCenter,POST00365,CMT00365,USER2649,FR,2025-11-13,晒单,尺寸有点大，携带不便,Spectra,positive,484,2
+WhatToExpect,WhatToExpect,POST00366,CMT00366,USER2715,DE,2025-11-18,测评,客服态度很好，物流也快,Momcozy,negative,423,16
+Reddit,r/Mommit,POST00367,CMT00367,USER2151,US,2025-11-27,吐槽,性价比高，值得购买,Momcozy,positive,73,38
+Mumsnet,Mumsnet,POST00368,CMT00368,USER3963,US,2025-10-07,求助,用了两周，感觉吸力不够强,Momcozy,positive,201,28
+Reddit,r/Mommit,POST00369,CMT00369,USER8011,FR,2025-11-19,求助,推荐这款吸奶器，真的很好用！,Momcozy,positive,428,23
+Reddit,r/Mommit,POST00370,CMT00370,USER4718,FR,2025-12-07,吐槽,比之前用的品牌噪音小很多,Medela,positive,249,41
+Facebook,MomCozy Fans,POST00371,CMT00371,USER7398,US,2025-11-20,吐槽,客服态度很好，物流也快,Momcozy,neutral,251,11
+BabyCenter,BabyCenter,POST00372,CMT00372,USER9060,FR,2025-11-02,测评,包装有点简陋，希望能改进,Spectra,positive,127,21
+Facebook,MomCozy Fans,POST00373,CMT00373,USER6067,US,2025-11-06,对比,性价比高，值得购买,Momcozy,neutral,169,17
+BabyCenter,BabyCenter,POST00374,CMT00374,USER4897,UK,2025-12-26,对比,比之前用的品牌噪音小很多,Medela,neutral,491,26
+Mumsnet,Mumsnet,POST00375,CMT00375,USER4544,UK,2025-10-14,吐槽,包装有点简陋，希望能改进,Medela,positive,491,20
+Mumsnet,Mumsnet,POST00376,CMT00376,USER1039,DE,2025-12-06,测评,包装有点简陋，希望能改进,Momcozy,neutral,259,7
+WhatToExpect,WhatToExpect,POST00377,CMT00377,USER1815,FR,2025-10-27,求助,用了两周，感觉吸力不够强,其他,neutral,46,5
+Mumsnet,Mumsnet,POST00378,CMT00378,USER5513,FR,2025-10-14,对比,客服态度很好，物流也快,Medela,neutral,267,5
+WhatToExpect,WhatToExpect,POST00379,CMT00379,USER3282,US,2025-10-06,晒单,推荐这款吸奶器，真的很好用！,Medela,positive,435,15
+Facebook,MomCozy Fans,POST00380,CMT00380,USER3260,FR,2025-11-28,测评,客服态度很好，物流也快,Medela,positive,434,0
+Facebook,MomCozy Fans,POST00381,CMT00381,USER4038,UK,2025-10-15,晒单,用了两周，感觉吸力不够强,Momcozy,positive,282,23
+WhatToExpect,WhatToExpect,POST00382,CMT00382,USER3470,FR,2025-12-18,测评,性价比高，值得购买,Spectra,negative,221,30
+Mumsnet,Mumsnet,POST00383,CMT00383,USER4093,FR,2025-10-25,晒单,清洁很方便，适合上班族,Spectra,positive,18,18
+Mumsnet,Mumsnet,POST00384,CMT00384,USER9562,US,2025-12-04,晒单,比之前用的品牌噪音小很多,Momcozy,negative,324,41
+Facebook,MomCozy Fans,POST00385,CMT00385,USER3428,UK,2025-11-07,吐槽,清洁很方便，适合上班族,Momcozy,positive,470,43
+WhatToExpect,WhatToExpect,POST00386,CMT00386,USER6315,DE,2025-12-03,晒单,客服态度很好，物流也快,其他,negative,7,42
+Reddit,r/Mommit,POST00387,CMT00387,USER4807,US,2025-11-28,测评,尺寸有点大，携带不便,Momcozy,neutral,167,4
+Facebook,MomCozy Fans,POST00388,CMT00388,USER4231,FR,2025-10-13,求助,比之前用的品牌噪音小很多,Momcozy,positive,31,23
+Mumsnet,Mumsnet,POST00389,CMT00389,USER6837,US,2025-12-04,求助,比之前用的品牌噪音小很多,Spectra,positive,282,44
+Reddit,r/Mommit,POST00390,CMT00390,USER8211,UK,2025-10-14,对比,性价比高，值得购买,Momcozy,neutral,134,14
+Reddit,r/Mommit,POST00391,CMT00391,USER2406,DE,2025-12-13,对比,性价比高，值得购买,Spectra,positive,87,32
+Facebook,MomCozy Fans,POST00392,CMT00392,USER5310,US,2025-12-08,测评,尺寸有点大，携带不便,Spectra,negative,308,38
+WhatToExpect,WhatToExpect,POST00393,CMT00393,USER7991,DE,2025-11-23,测评,用了两周，感觉吸力不够强,Momcozy,positive,191,39
+WhatToExpect,WhatToExpect,POST00394,CMT00394,USER4676,UK,2025-11-22,吐槽,包装有点简陋，希望能改进,Momcozy,positive,300,12
+Mumsnet,Mumsnet,POST00395,CMT00395,USER1023,DE,2025-10-27,吐槽,尺寸有点大，携带不便,Spectra,positive,377,11
+Mumsnet,Mumsnet,POST00396,CMT00396,USER3419,US,2025-10-08,对比,清洁很方便，适合上班族,Momcozy,negative,67,23
+Facebook,MomCozy Fans,POST00397,CMT00397,USER1258,FR,2025-12-15,晒单,性价比高，值得购买,其他,positive,186,5
+Facebook,MomCozy Fans,POST00398,CMT00398,USER1784,US,2025-11-24,测评,包装有点简陋，希望能改进,Medela,positive,326,41
+Facebook,MomCozy Fans,POST00399,CMT00399,USER6679,US,2025-10-21,对比,客服态度很好，物流也快,Momcozy,positive,331,20
+Facebook,MomCozy Fans,POST00400,CMT00400,USER2478,UK,2025-11-16,吐槽,比之前用的品牌噪音小很多,Spectra,neutral,487,24
+Facebook,MomCozy Fans,POST00401,CMT00401,USER7050,US,2025-12-09,晒单,用了两周，感觉吸力不够强,Momcozy,positive,323,19
+BabyCenter,BabyCenter,POST00402,CMT00402,USER7852,UK,2025-11-24,吐槽,尺寸有点大，携带不便,Momcozy,negative,142,45
+Mumsnet,Mumsnet,POST00403,CMT00403,USER6340,FR,2025-12-13,测评,推荐这款吸奶器，真的很好用！,Momcozy,positive,491,15
+BabyCenter,BabyCenter,POST00404,CMT00404,USER7718,FR,2025-12-23,吐槽,包装有点简陋，希望能改进,Momcozy,negative,56,42
+WhatToExpect,WhatToExpect,POST00405,CMT00405,USER4956,UK,2025-10-05,测评,推荐这款吸奶器，真的很好用！,其他,positive,477,3
+BabyCenter,BabyCenter,POST00406,CMT00406,USER7125,DE,2025-11-21,测评,包装有点简陋，希望能改进,Momcozy,positive,211,27
+BabyCenter,BabyCenter,POST00407,CMT00407,USER8496,FR,2025-12-17,吐槽,尺寸有点大，携带不便,Medela,neutral,324,14
+WhatToExpect,WhatToExpect,POST00408,CMT00408,USER1722,FR,2025-12-06,测评,尺寸有点大，携带不便,Spectra,positive,330,36
+Reddit,r/Mommit,POST00409,CMT00409,USER6493,US,2025-12-15,测评,尺寸有点大，携带不便,Spectra,negative,327,43
+Reddit,r/Mommit,POST00410,CMT00410,USER1319,UK,2025-12-27,测评,推荐这款吸奶器，真的很好用！,Momcozy,positive,86,0
+BabyCenter,BabyCenter,POST00411,CMT00411,USER7457,DE,2025-11-14,对比,客服态度很好，物流也快,Spectra,neutral,173,0
+Mumsnet,Mumsnet,POST00412,CMT00412,USER9411,US,2025-12-19,晒单,客服态度很好，物流也快,Spectra,positive,315,25
+WhatToExpect,WhatToExpect,POST00413,CMT00413,USER9437,DE,2025-11-22,对比,清洁很方便，适合上班族,Momcozy,positive,106,2
+WhatToExpect,WhatToExpect,POST00414,CMT00414,USER2417,DE,2025-12-11,晒单,比之前用的品牌噪音小很多,Momcozy,positive,131,12
+Reddit,r/Mommit,POST00415,CMT00415,USER9289,FR,2025-10-16,求助,客服态度很好，物流也快,Momcozy,neutral,43,43
+Mumsnet,Mumsnet,POST00416,CMT00416,USER2816,US,2025-12-26,求助,包装有点简陋，希望能改进,Momcozy,negative,274,7
+BabyCenter,BabyCenter,POST00417,CMT00417,USER6660,DE,2025-12-23,求助,比之前用的品牌噪音小很多,其他,positive,3,1
+WhatToExpect,WhatToExpect,POST00418,CMT00418,USER6604,DE,2025-10-13,对比,性价比高，值得购买,Spectra,positive,27,18
+Mumsnet,Mumsnet,POST00419,CMT00419,USER8701,UK,2025-12-05,晒单,推荐这款吸奶器，真的很好用！,Momcozy,neutral,395,1
+WhatToExpect,WhatToExpect,POST00420,CMT00420,USER2179,UK,2025-11-17,测评,尺寸有点大，携带不便,Momcozy,positive,226,16
+Mumsnet,Mumsnet,POST00421,CMT00421,USER3280,UK,2025-11-06,测评,清洁很方便，适合上班族,Spectra,negative,191,14
+WhatToExpect,WhatToExpect,POST00422,CMT00422,USER6543,US,2025-11-12,测评,用了两周，感觉吸力不够强,Medela,neutral,402,7
+Reddit,r/Mommit,POST00423,CMT00423,USER1043,US,2025-10-16,晒单,推荐这款吸奶器，真的很好用！,Spectra,neutral,363,32
+Mumsnet,Mumsnet,POST00424,CMT00424,USER1818,US,2025-10-20,测评,用了两周，感觉吸力不够强,Momcozy,positive,199,9
+Mumsnet,Mumsnet,POST00425,CMT00425,USER8963,UK,2025-10-11,求助,包装有点简陋，希望能改进,Momcozy,positive,301,14
+BabyCenter,BabyCenter,POST00426,CMT00426,USER9651,FR,2025-10-20,吐槽,包装有点简陋，希望能改进,Momcozy,positive,1,43
+Facebook,MomCozy Fans,POST00427,CMT00427,USER7096,UK,2025-12-22,对比,客服态度很好，物流也快,Momcozy,neutral,469,47
+Facebook,MomCozy Fans,POST00428,CMT00428,USER3205,FR,2025-12-25,测评,比之前用的品牌噪音小很多,Medela,neutral,76,20
+Reddit,r/Mommit,POST00429,CMT00429,USER9080,DE,2025-10-07,晒单,清洁很方便，适合上班族,Momcozy,negative,308,15
+BabyCenter,BabyCenter,POST00430,CMT00430,USER9776,UK,2025-11-12,测评,清洁很方便，适合上班族,Medela,positive,364,28
+WhatToExpect,WhatToExpect,POST00431,CMT00431,USER1814,FR,2025-12-21,求助,尺寸有点大，携带不便,Momcozy,neutral,260,15
+Reddit,r/Mommit,POST00432,CMT00432,USER8013,UK,2025-11-20,晒单,推荐这款吸奶器，真的很好用！,Momcozy,neutral,427,39
+Mumsnet,Mumsnet,POST00433,CMT00433,USER5710,UK,2025-11-14,吐槽,客服态度很好，物流也快,Momcozy,neutral,295,33
+Mumsnet,Mumsnet,POST00434,CMT00434,USER4270,FR,2025-12-27,求助,客服态度很好，物流也快,Spectra,neutral,366,35
+WhatToExpect,WhatToExpect,POST00435,CMT00435,USER2446,US,2025-11-06,求助,性价比高，值得购买,Spectra,positive,335,10
+Facebook,MomCozy Fans,POST00436,CMT00436,USER7341,FR,2025-10-21,测评,客服态度很好，物流也快,Spectra,positive,273,44
+Facebook,MomCozy Fans,POST00437,CMT00437,USER1372,FR,2025-11-21,求助,客服态度很好，物流也快,Momcozy,neutral,124,24
+BabyCenter,BabyCenter,POST00438,CMT00438,USER2919,FR,2025-11-05,对比,用了两周，感觉吸力不够强,其他,neutral,265,36
+Reddit,r/Mommit,POST00439,CMT00439,USER6461,US,2025-12-17,吐槽,客服态度很好，物流也快,Momcozy,negative,420,18
+Mumsnet,Mumsnet,POST00440,CMT00440,USER5840,UK,2025-12-27,吐槽,性价比高，值得购买,Spectra,negative,458,13
+Facebook,MomCozy Fans,POST00441,CMT00441,USER1839,DE,2025-10-23,晒单,尺寸有点大，携带不便,Momcozy,neutral,388,38
+WhatToExpect,WhatToExpect,POST00442,CMT00442,USER5666,DE,2025-12-15,测评,尺寸有点大，携带不便,Momcozy,negative,108,41
+Reddit,r/Mommit,POST00443,CMT00443,USER3063,FR,2025-11-24,吐槽,客服态度很好，物流也快,Momcozy,positive,319,3
+BabyCenter,BabyCenter,POST00444,CMT00444,USER8642,DE,2025-12-20,求助,推荐这款吸奶器，真的很好用！,Momcozy,negative,20,11
+Reddit,r/Mommit,POST00445,CMT00445,USER8820,UK,2025-12-04,吐槽,比之前用的品牌噪音小很多,Momcozy,negative,284,7
+Mumsnet,Mumsnet,POST00446,CMT00446,USER9744,UK,2025-11-18,吐槽,性价比高，值得购买,Momcozy,negative,127,39
+Reddit,r/Mommit,POST00447,CMT00447,USER3776,US,2025-10-13,晒单,性价比高，值得购买,Medela,negative,24,15
+Reddit,r/Mommit,POST00448,CMT00448,USER1938,US,2025-11-23,晒单,推荐这款吸奶器，真的很好用！,Momcozy,negative,395,12
+Mumsnet,Mumsnet,POST00449,CMT00449,USER2126,UK,2025-11-06,晒单,清洁很方便，适合上班族,Spectra,positive,7,39
+Reddit,r/Mommit,POST00450,CMT00450,USER3283,DE,2025-10-03,测评,尺寸有点大，携带不便,Momcozy,negative,85,4
+Facebook,MomCozy Fans,POST00451,CMT00451,USER7227,US,2025-11-23,求助,尺寸有点大，携带不便,Spectra,negative,225,41
+Facebook,MomCozy Fans,POST00452,CMT00452,USER8145,DE,2025-11-28,求助,比之前用的品牌噪音小很多,Momcozy,positive,408,24
+Facebook,MomCozy Fans,POST00453,CMT00453,USER3160,US,2025-10-23,求助,清洁很方便，适合上班族,Momcozy,positive,220,14
+Reddit,r/Mommit,POST00454,CMT00454,USER9093,US,2025-10-09,吐槽,客服态度很好，物流也快,Spectra,neutral,411,44
+WhatToExpect,WhatToExpect,POST00455,CMT00455,USER7344,US,2025-11-11,晒单,客服态度很好，物流也快,Spectra,positive,171,31
+BabyCenter,BabyCenter,POST00456,CMT00456,USER8540,US,2025-12-01,晒单,性价比高，值得购买,Momcozy,positive,271,11
+Facebook,MomCozy Fans,POST00457,CMT00457,USER7764,US,2025-10-20,对比,包装有点简陋，希望能改进,Momcozy,positive,368,14
+BabyCenter,BabyCenter,POST00458,CMT00458,USER4653,US,2025-10-25,晒单,比之前用的品牌噪音小很多,Momcozy,neutral,375,13
+Reddit,r/Mommit,POST00459,CMT00459,USER6688,DE,2025-10-01,测评,比之前用的品牌噪音小很多,Spectra,neutral,349,45
+WhatToExpect,WhatToExpect,POST00460,CMT00460,USER9841,DE,2025-12-19,求助,客服态度很好，物流也快,Momcozy,neutral,56,33
+Mumsnet,Mumsnet,POST00461,CMT00461,USER6879,UK,2025-11-07,求助,尺寸有点大，携带不便,Momcozy,neutral,245,18
+Reddit,r/Mommit,POST00462,CMT00462,USER6651,UK,2025-10-18,求助,推荐这款吸奶器，真的很好用！,Spectra,neutral,320,31
+Facebook,MomCozy Fans,POST00463,CMT00463,USER1789,UK,2025-11-16,晒单,比之前用的品牌噪音小很多,Momcozy,neutral,475,35
+BabyCenter,BabyCenter,POST00464,CMT00464,USER5129,FR,2025-11-16,晒单,用了两周，感觉吸力不够强,Medela,negative,142,16
+Facebook,MomCozy Fans,POST00465,CMT00465,USER9031,UK,2025-12-14,测评,尺寸有点大，携带不便,其他,negative,446,27
+BabyCenter,BabyCenter,POST00466,CMT00466,USER2164,FR,2025-12-27,求助,用了两周，感觉吸力不够强,Momcozy,neutral,426,21
+WhatToExpect,WhatToExpect,POST00467,CMT00467,USER3711,DE,2025-11-16,晒单,尺寸有点大，携带不便,Spectra,positive,342,37
+Facebook,MomCozy Fans,POST00468,CMT00468,USER7513,DE,2025-10-15,测评,包装有点简陋，希望能改进,Spectra,negative,443,31
+WhatToExpect,WhatToExpect,POST00469,CMT00469,USER5735,FR,2025-11-21,晒单,性价比高，值得购买,Medela,positive,115,22
+Mumsnet,Mumsnet,POST00470,CMT00470,USER5215,UK,2025-12-03,求助,尺寸有点大，携带不便,Momcozy,positive,400,44
+Reddit,r/Mommit,POST00471,CMT00471,USER6445,US,2025-10-13,测评,用了两周，感觉吸力不够强,Momcozy,neutral,450,47
+Reddit,r/Mommit,POST00472,CMT00472,USER2839,FR,2025-11-12,对比,性价比高，值得购买,Momcozy,positive,252,29
+Reddit,r/Mommit,POST00473,CMT00473,USER7060,FR,2025-10-06,对比,用了两周，感觉吸力不够强,Momcozy,neutral,54,19
+Reddit,r/Mommit,POST00474,CMT00474,USER9621,FR,2025-11-14,晒单,比之前用的品牌噪音小很多,Spectra,positive,284,26
+BabyCenter,BabyCenter,POST00475,CMT00475,USER6479,FR,2025-11-26,晒单,用了两周，感觉吸力不够强,Momcozy,neutral,386,39
+Reddit,r/Mommit,POST00476,CMT00476,USER8292,UK,2025-11-07,晒单,客服态度很好，物流也快,Spectra,negative,67,44
+Mumsnet,Mumsnet,POST00477,CMT00477,USER8849,DE,2025-10-25,吐槽,包装有点简陋，希望能改进,Momcozy,positive,461,18
+Reddit,r/Mommit,POST00478,CMT00478,USER6819,DE,2025-10-10,对比,比之前用的品牌噪音小很多,Momcozy,positive,483,6
+Facebook,MomCozy Fans,POST00479,CMT00479,USER4095,FR,2025-11-11,晒单,客服态度很好，物流也快,Momcozy,positive,306,47
+Facebook,MomCozy Fans,POST00480,CMT00480,USER7658,US,2025-10-09,求助,推荐这款吸奶器，真的很好用！,Spectra,positive,119,12
+Facebook,MomCozy Fans,POST00481,CMT00481,USER5008,US,2025-10-25,吐槽,客服态度很好，物流也快,Momcozy,negative,283,5
+WhatToExpect,WhatToExpect,POST00482,CMT00482,USER4723,UK,2025-12-14,晒单,尺寸有点大，携带不便,Medela,positive,111,13
+WhatToExpect,WhatToExpect,POST00483,CMT00483,USER3548,UK,2025-11-03,吐槽,比之前用的品牌噪音小很多,Momcozy,positive,9,40
+Reddit,r/Mommit,POST00484,CMT00484,USER1354,DE,2025-12-16,测评,比之前用的品牌噪音小很多,其他,negative,108,43
+BabyCenter,BabyCenter,POST00485,CMT00485,USER7339,US,2025-10-24,吐槽,比之前用的品牌噪音小很多,其他,positive,69,11
+WhatToExpect,WhatToExpect,POST00486,CMT00486,USER2832,US,2025-11-03,求助,客服态度很好，物流也快,Momcozy,positive,471,42
+Mumsnet,Mumsnet,POST00487,CMT00487,USER8050,FR,2025-12-21,测评,用了两周，感觉吸力不够强,Spectra,neutral,213,27
+Facebook,MomCozy Fans,POST00488,CMT00488,USER1158,FR,2025-10-14,测评,清洁很方便，适合上班族,Momcozy,positive,123,22
+Mumsnet,Mumsnet,POST00489,CMT00489,USER7574,UK,2025-12-26,测评,比之前用的品牌噪音小很多,其他,positive,371,22
+Facebook,MomCozy Fans,POST00490,CMT00490,USER3306,UK,2025-12-24,吐槽,性价比高，值得购买,Spectra,neutral,324,13
+BabyCenter,BabyCenter,POST00491,CMT00491,USER2945,FR,2025-10-07,吐槽,尺寸有点大，携带不便,Momcozy,negative,131,35
+Reddit,r/Mommit,POST00492,CMT00492,USER2646,FR,2025-11-16,测评,清洁很方便，适合上班族,Medela,negative,47,9
+Reddit,r/Mommit,POST00493,CMT00493,USER5131,US,2025-11-04,吐槽,用了两周，感觉吸力不够强,Spectra,neutral,396,45
+BabyCenter,BabyCenter,POST00494,CMT00494,USER2487,DE,2025-11-25,晒单,清洁很方便，适合上班族,Medela,negative,483,32
+Mumsnet,Mumsnet,POST00495,CMT00495,USER9340,DE,2025-12-08,求助,清洁很方便，适合上班族,Momcozy,positive,395,21
+Reddit,r/Mommit,POST00496,CMT00496,USER5675,FR,2025-10-06,吐槽,推荐这款吸奶器，真的很好用！,Momcozy,neutral,180,42
+Reddit,r/Mommit,POST00497,CMT00497,USER6127,DE,2025-10-27,测评,比之前用的品牌噪音小很多,Medela,neutral,81,2
+WhatToExpect,WhatToExpect,POST00498,CMT00498,USER9784,FR,2025-11-19,测评,清洁很方便，适合上班族,其他,positive,302,47
+Reddit,r/Mommit,POST00499,CMT00499,USER4626,DE,2025-10-25,测评,包装有点简陋，希望能改进,Spectra,negative,385,5

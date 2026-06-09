@@ -1,0 +1,5 @@
+order_type,order_type_name,is_promo
+B2C_STD,标准订单,0
+B2C_PROMO,促销订单,1
+B2C_BUNDLE,组合订单,1
+B2C_MEMBER,会员订单,1

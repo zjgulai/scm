@@ -1,0 +1,8 @@
+return_reason_code,return_reason_name,reason_category
+SIZE,尺寸问题,产品
+COLOR,颜色不符,产品
+QUALITY,质量问题,产品
+SHIPPING,物流问题,物流
+NOT_AS_DESCRIBED,描述不符,产品
+NO_REASON,无理由,主观
+DEFECTIVE,产品缺陷,产品

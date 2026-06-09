@@ -1,0 +1,6 @@
+warehouse_id,warehouse_name,warehouse_type,country_code
+WH_US_EAST,美国东仓,FBA,US
+WH_US_WEST,美国西仓,FBA,US
+WH_EU_DE,德国仓,FBA,DE
+WH_UK,英国仓,FBA,UK
+WH_AU,澳洲仓,FBA,AU

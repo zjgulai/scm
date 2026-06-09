@@ -1,0 +1,77 @@
+[
+  {
+    "query": "[Boundary] 指标公式拆解 or 原始数据重算",
+    "should_trigger": false,
+    "why": "description 中显式 Not for 边界，不应触发。"
+  },
+  {
+    "query": "把这份markdown方案生成Gamma总Prompt和逐页Prompt",
+    "should_trigger": true,
+    "why": "Gamma生成核心请求"
+  },
+  {
+    "query": "请给我关键页补丁Prompt和演讲稿",
+    "should_trigger": true,
+    "why": "补丁+演讲稿"
+  },
+  {
+    "query": "AI生成PPT，要求管理层风格",
+    "should_trigger": true,
+    "why": "明确AI PPT"
+  },
+  {
+    "query": "把北极星指标拆成L0-L3并补owner",
+    "should_trigger": false,
+    "why": "应触发 supply-chain-indicator-decoding"
+  },
+  {
+    "query": "把36%问题讲成总监可拍板故事线",
+    "should_trigger": false,
+    "why": "应触发 supply-chain-solution-storyline"
+  },
+  {
+    "query": "重算专题02双平台费率归因",
+    "should_trigger": false,
+    "why": "应触发 momcozy-margin-analysis"
+  },
+  {
+    "query": "把这份方案转Gamma总Prompt+逐页Prompt+补丁Prompt",
+    "should_trigger": true,
+    "why": "核心Gamma任务"
+  },
+  {
+    "query": "我有12页大纲，帮我做备注区和演讲稿",
+    "should_trigger": true,
+    "why": "Gamma汇报配套"
+  },
+  {
+    "query": "请把北极星拆L0-L3并补owner",
+    "should_trigger": false,
+    "why": "应触发 indicator-decoding"
+  },
+  {
+    "query": "重算专题01和专题02归因",
+    "should_trigger": false,
+    "why": "应触发 margin-analysis"
+  },
+  {
+    "query": "给我首轮生成后关键页补丁模板",
+    "should_trigger": true,
+    "why": "Gamma修页场景"
+  },
+  {
+    "query": "只写一封项目邮件",
+    "should_trigger": false,
+    "why": "非PPT生成"
+  },
+  {
+    "query": "AI生成PPT要管理层风格并控制12页内",
+    "should_trigger": true,
+    "why": "明确Gamma生成约束"
+  },
+  {
+    "query": "把供应链36%讲成共创式故事线",
+    "should_trigger": false,
+    "why": "应触发 solution-storyline"
+  }
+]

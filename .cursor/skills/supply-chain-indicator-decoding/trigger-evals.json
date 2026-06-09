@@ -1,0 +1,77 @@
+[
+  {
+    "query": "[Boundary] Gamma页面生成 or 管理层故事线叙事重组",
+    "should_trigger": false,
+    "why": "description 中显式 Not for 边界，不应触发。"
+  },
+  {
+    "query": "请把供应链成本占比拆成L0-L3指标树",
+    "should_trigger": true,
+    "why": "直接命中指标解码"
+  },
+  {
+    "query": "给每个执行指标补公式、数据源、频率和Owner",
+    "should_trigger": true,
+    "why": "执行级指标字典"
+  },
+  {
+    "query": "设计约束对和熔断规则",
+    "should_trigger": true,
+    "why": "约束对任务"
+  },
+  {
+    "query": "帮我把方案讲给总监听并收口拍板事项",
+    "should_trigger": false,
+    "why": "应触发 supply-chain-solution-storyline"
+  },
+  {
+    "query": "把这份方案转成Gamma逐页Prompt",
+    "should_trigger": false,
+    "why": "应触发 gamma-executive-ppt-generation"
+  },
+  {
+    "query": "更新专题05购物篮关联分析",
+    "should_trigger": false,
+    "why": "应触发 momcozy-product-line-basket-reporting"
+  },
+  {
+    "query": "把供应链成本占比拆成L0-L3并补公式阈值Owner",
+    "should_trigger": true,
+    "why": "标准指标解码"
+  },
+  {
+    "query": "设计库存vs断货约束对和熔断规则",
+    "should_trigger": true,
+    "why": "约束对设计"
+  },
+  {
+    "query": "把现有分析转成总监拍板故事线",
+    "should_trigger": false,
+    "why": "应触发 solution-storyline"
+  },
+  {
+    "query": "生成Gamma逐页Prompt",
+    "should_trigger": false,
+    "why": "应触发 gamma skill"
+  },
+  {
+    "query": "给我指标字典模板：口径、频率、数据源、owner",
+    "should_trigger": true,
+    "why": "指标字典任务"
+  },
+  {
+    "query": "我只要重算专题02费率",
+    "should_trigger": false,
+    "why": "应触发 margin-analysis"
+  },
+  {
+    "query": "做经营驾驶舱的执行层指标体系",
+    "should_trigger": true,
+    "why": "执行层解码"
+  },
+  {
+    "query": "整理读书笔记行动表",
+    "should_trigger": false,
+    "why": "应触发 book-extraction"
+  }
+]

@@ -1,0 +1,77 @@
+[
+  {
+    "query": "[Boundary] 专题01/专题02费率归因 or L0-L3指标树拆解",
+    "should_trigger": false,
+    "why": "description 中显式 Not for 边界，不应触发。"
+  },
+  {
+    "query": "请做Sheet⑤⑥⑦⑧购物篮关联分析并更新专题05",
+    "should_trigger": true,
+    "why": "明确专题05与四个sheet"
+  },
+  {
+    "query": "给我支持度置信度提升度的组合洞察和典型场景",
+    "should_trigger": true,
+    "why": "典型购物篮指标"
+  },
+  {
+    "query": "把品线组合营销结论写成大领导汇报稿",
+    "should_trigger": true,
+    "why": "专题01+专题05故事线"
+  },
+  {
+    "query": "重算Amazon与独立站费率归因",
+    "should_trigger": false,
+    "why": "应触发 momcozy-margin-analysis"
+  },
+  {
+    "query": "把北极星拆到L3执行指标",
+    "should_trigger": false,
+    "why": "应触发 supply-chain-indicator-decoding"
+  },
+  {
+    "query": "输出Gamma补丁Prompt",
+    "should_trigger": false,
+    "why": "应触发 gamma-executive-ppt-generation"
+  },
+  {
+    "query": "基于Sheet⑤⑥⑦⑧做购物篮关联并产出专题05结论",
+    "should_trigger": true,
+    "why": "命中专题05"
+  },
+  {
+    "query": "给我支持度置信度提升度的组合洞察和场景映射",
+    "should_trigger": true,
+    "why": "典型购物篮任务"
+  },
+  {
+    "query": "重算专题02前后台成本",
+    "should_trigger": false,
+    "why": "应触发 margin-analysis"
+  },
+  {
+    "query": "把专题05结论整合进专题01管理层汇报",
+    "should_trigger": true,
+    "why": "专题05+专题01故事线"
+  },
+  {
+    "query": "做北极星指标树和约束对",
+    "should_trigger": false,
+    "why": "应触发 indicator-decoding"
+  },
+  {
+    "query": "输出Gamma补丁Prompt用于修页",
+    "should_trigger": false,
+    "why": "应触发 gamma skill"
+  },
+  {
+    "query": "请给典型组合↔需求场景表并附动作建议",
+    "should_trigger": true,
+    "why": "组合场景输出"
+  },
+  {
+    "query": "我只要把文本润色成演讲稿",
+    "should_trigger": false,
+    "why": "非购物篮分析任务"
+  }
+]

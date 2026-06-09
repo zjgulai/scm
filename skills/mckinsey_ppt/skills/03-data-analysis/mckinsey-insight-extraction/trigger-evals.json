@@ -1,0 +1,42 @@
+[
+  {
+    "query": "我在做管理层PPT，这页要做数据洞察提取，请直接按 mckinsey-insight-extraction 的方法输出。",
+    "should_trigger": true,
+    "why": "请求与该Skill核心场景直接匹配。"
+  },
+  {
+    "query": "请用 mckinsey-insight-extraction 帮我完成数据洞察提取，给我可直接放到幻灯片的结果。",
+    "should_trigger": true,
+    "why": "请求与该Skill核心场景直接匹配。"
+  },
+  {
+    "query": "这个需求核心是数据洞察提取，请按该技能步骤给我选型、结论和检查清单。",
+    "should_trigger": true,
+    "why": "请求与该Skill核心场景直接匹配。"
+  },
+  {
+    "query": "我们要做咨询风格汇报，当前卡点是数据洞察提取，你按对应skill来处理。",
+    "should_trigger": true,
+    "why": "请求与该Skill核心场景直接匹配。"
+  },
+  {
+    "query": "帮我把这封邮件润色成更礼貌的语气。",
+    "should_trigger": false,
+    "why": "请求不属于PPT技能应用场景。"
+  },
+  {
+    "query": "修复这个Python接口超时问题，和PPT无关。",
+    "should_trigger": false,
+    "why": "请求不属于PPT技能应用场景。"
+  },
+  {
+    "query": "把文档翻译成英文，不要做图表或结构设计。",
+    "should_trigger": false,
+    "why": "请求不属于PPT技能应用场景。"
+  },
+  {
+    "query": "我要查数据库索引优化建议，不涉及汇报页面。",
+    "should_trigger": false,
+    "why": "请求不属于PPT技能应用场景。"
+  }
+]

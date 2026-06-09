@@ -7,582 +7,167 @@
 <style>
 :root {
   color-scheme: light;
-  --blue-900: #051C2C;
-  --blue-800: #0A2E47;
-  --blue-700: #1E3A5F;
-  --blue-500: #3A5F8A;
-  --blue-300: #8AAFC4;
-  --blue-100: #D6E4ED;
-  --orange: #FF6B35;
-  --orange-light: #FFF0E8;
-  --grey-900: #1A1A1A;
-  --grey-700: #555;
-  --grey-400: #999;
-  --grey-200: #E5E5E5;
-  --grey-100: #F5F5F5;
-  --white: #FFFFFF;
-  --green: #2E7D32;
-  --green-light: #E8F5E9;
-  --red: #C62828;
-  --red-light: #FFEBEE;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
-  --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
-  --shadow-lg: 0 8px 30px rgba(0,0,0,0.12);
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 16px;
+  --blue-900: #051C2C; --blue-800: #0A2E47; --blue-700: #1E3A5F;
+  --blue-500: #3A5F8A; --blue-300: #8AAFC4; --blue-100: #D6E4ED; --blue-50: #EDF3F7;
+  --orange: #FF6B35; --orange-light: #FFF0E8;
+  --grey-900: #1A1A1A; --grey-700: #555; --grey-400: #999;
+  --grey-200: #E5E5E5; --grey-100: #F5F5F5; --white: #FFFFFF;
+  --green: #2E7D32; --green-light: #E8F5E9;
+  --red: #C62828; --red-light: #FFEBEE;
+  --amber: #E65100; --amber-light: #FFF3E0;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.08); --shadow-md: 0 4px 12px rgba(0,0,0,0.1);
+  --radius-sm: 6px; --radius-md: 10px; --radius-lg: 16px;
 }
-
 * { margin: 0; padding: 0; box-sizing: border-box; }
-
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
-  background: var(--grey-100);
-  color: var(--grey-900);
-  line-height: 1.6;
-  display: flex;
-  min-height: 100vh;
+  background: var(--grey-100); color: var(--grey-900); line-height: 1.65;
+  display: flex; min-height: 100vh;
 }
-
 /* ── SIDEBAR ── */
 .sidebar {
-  width: 280px;
-  min-width: 280px;
-  background: var(--blue-900);
-  color: var(--white);
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow-y: auto;
-  padding: 24px 0;
-  z-index: 10;
-  display: flex;
-  flex-direction: column;
+  width: 280px; min-width: 280px; background: var(--blue-900); color: var(--white);
+  position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 24px 0; z-index: 10;
 }
-
-.sidebar-header {
-  padding: 0 24px 24px;
-  border-bottom: 1px solid rgba(255,255,255,0.12);
-}
-
-.sidebar-header h2 {
-  font-size: 18px;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-  line-height: 1.3;
-}
-
-.sidebar-header .subtitle {
-  font-size: 12px;
-  color: var(--blue-300);
-  margin-top: 4px;
-}
-
-.sidebar-search {
-  padding: 16px 24px;
-}
-
+.sidebar-header { padding: 0 24px 24px; border-bottom: 1px solid rgba(255,255,255,0.12); }
+.sidebar-header h2 { font-size: 18px; font-weight: 700; letter-spacing: -0.02em; }
+.sidebar-header .sub { font-size: 12px; color: var(--blue-300); margin-top: 4px; }
+.sidebar-search { padding: 16px 24px; }
 .sidebar-search input {
-  width: 100%;
-  padding: 10px 14px;
-  border-radius: var(--radius-sm);
-  border: 1px solid rgba(255,255,255,0.15);
-  background: rgba(255,255,255,0.08);
-  color: var(--white);
-  font-size: 13px;
-  outline: none;
-  transition: 0.2s;
+  width: 100%; padding: 10px 14px; border-radius: var(--radius-sm);
+  border: 1px solid rgba(255,255,255,0.15); background: rgba(255,255,255,0.08);
+  color: var(--white); font-size: 13px; outline: none;
 }
-
 .sidebar-search input::placeholder { color: var(--blue-300); }
-.sidebar-search input:focus {
-  border-color: var(--orange);
-  background: rgba(255,255,255,0.12);
-}
-
-.sidebar-nav {
-  flex: 1;
-  overflow-y: auto;
-  padding: 8px 0;
-}
-
-.nav-section {
-  margin-bottom: 4px;
-}
-
+.sidebar-search input:focus { border-color: var(--orange); background: rgba(255,255,255,0.12); }
+.nav-section { margin-bottom: 2px; }
 .nav-section-title {
-  padding: 10px 24px;
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--blue-300);
-  cursor: pointer;
-  user-select: none;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  transition: 0.15s;
+  padding: 10px 24px; font-size: 11px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--blue-300); cursor: pointer; user-select: none;
+  display: flex; align-items: center; gap: 6px;
 }
-
 .nav-section-title:hover { color: var(--white); }
-.nav-section-title .arrow {
-  font-size: 9px;
-  transition: 0.2s;
-  display: inline-block;
-}
-
+.nav-section-title .arrow { font-size: 9px; transition: 0.2s; }
 .nav-section.collapsed .arrow { transform: rotate(-90deg); }
 .nav-section.collapsed .nav-items { display: none; }
-
 .nav-items { list-style: none; }
-
 .nav-item {
-  display: block;
-  padding: 8px 24px 8px 36px;
-  font-size: 13px;
-  color: rgba(255,255,255,0.7);
-  text-decoration: none;
-  transition: 0.15s;
-  border-left: 2px solid transparent;
-  cursor: pointer;
+  display: block; padding: 7px 24px 7px 36px; font-size: 13px;
+  color: rgba(255,255,255,0.7); text-decoration: none; border-left: 2px solid transparent; cursor: pointer;
 }
+.nav-item:hover, .nav-item.active { color: var(--white); background: rgba(255,255,255,0.06); border-left-color: var(--orange); }
+.sidebar-footer { padding: 16px 24px; border-top: 1px solid rgba(255,255,255,0.12); font-size: 11px; color: var(--blue-500); }
 
-.nav-item:hover, .nav-item.active {
-  color: var(--white);
-  background: rgba(255,255,255,0.06);
-  border-left-color: var(--orange);
-}
-
-.sidebar-footer {
-  padding: 16px 24px;
-  border-top: 1px solid rgba(255,255,255,0.12);
-  font-size: 11px;
-  color: var(--blue-500);
-}
-
-/* ── MAIN CONTENT ── */
-.main {
-  flex: 1;
-  padding: 40px 48px;
-  max-width: 960px;
-  overflow-y: auto;
-  height: 100vh;
-}
+/* ── MAIN ── */
+.main { flex: 1; padding: 36px 48px; max-width: 1000px; overflow-y: auto; height: 100vh; }
 
 /* ── HERO ── */
-.hero {
-  margin-bottom: 48px;
-}
+.hero { margin-bottom: 40px; }
+.hero .badge { display: inline-block; background: var(--orange-light); color: var(--orange); font-size: 12px; font-weight: 700; padding: 4px 14px; border-radius: 100px; margin-bottom: 16px; }
+.hero h1 { font-size: 34px; font-weight: 800; color: var(--blue-900); line-height: 1.2; letter-spacing: -0.03em; margin-bottom: 12px; }
+.hero .lead { font-size: 16px; color: var(--grey-700); max-width: 660px; }
 
-.hero .badge {
-  display: inline-block;
-  background: var(--orange-light);
-  color: var(--orange);
-  font-size: 12px;
-  font-weight: 700;
-  padding: 4px 12px;
-  border-radius: 100px;
-  margin-bottom: 16px;
-  letter-spacing: 0.04em;
-}
-
-.hero h1 {
-  font-size: 36px;
-  font-weight: 800;
-  color: var(--blue-900);
-  line-height: 1.2;
-  letter-spacing: -0.03em;
-  margin-bottom: 12px;
-}
-
-.hero .lead {
-  font-size: 17px;
-  color: var(--grey-700);
-  max-width: 640px;
-}
-
-/* ── STATS ROW ── */
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 48px;
-}
-
-.stat-card {
-  background: var(--white);
-  border-radius: var(--radius-md);
-  padding: 20px;
-  box-shadow: var(--shadow-sm);
-  border-top: 3px solid var(--blue-900);
-}
-
-.stat-card .stat-num {
-  font-size: 32px;
-  font-weight: 800;
-  color: var(--blue-900);
-  line-height: 1;
-}
-
-.stat-card .stat-label {
-  font-size: 13px;
-  color: var(--grey-400);
-  margin-top: 6px;
-}
+/* ── STATS ── */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 40px; }
+.stat { background: var(--white); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-sm); border-top: 3px solid var(--blue-900); }
+.stat .n { font-size: 30px; font-weight: 800; color: var(--blue-900); line-height: 1; }
+.stat .l { font-size: 12px; color: var(--grey-400); margin-top: 4px; }
 
 /* ── SECTION ── */
-.section {
-  margin-bottom: 48px;
-  scroll-margin-top: 24px;
-}
+.section { margin-bottom: 44px; scroll-margin-top: 24px; }
+.sec-h { font-size: 22px; font-weight: 800; color: var(--blue-900); margin-bottom: 6px; letter-spacing: -0.02em; display: flex; align-items: center; gap: 10px; }
+.sec-h .ico { font-size: 20px; }
+.sec-d { font-size: 14px; color: var(--grey-700); margin-bottom: 22px; }
 
-.section-title {
-  font-size: 24px;
-  font-weight: 800;
-  color: var(--blue-900);
-  margin-bottom: 8px;
-  letter-spacing: -0.02em;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
+/* ── Q CARDS ── */
+.qgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.qcard { background: var(--white); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-sm); border-left: 4px solid var(--blue-500); transition: 0.15s; }
+.qcard:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+.qcard .q { font-size: 14px; font-weight: 600; color: var(--blue-900); margin-bottom: 8px; }
+.qcard .a { display: flex; flex-wrap: wrap; gap: 4px; }
+.tag { display: inline-block; font-size: 11px; background: var(--blue-100); color: var(--blue-700); padding: 2px 8px; border-radius: 100px; white-space: nowrap; }
+.tag-o { background: var(--orange-light); color: var(--orange); }
+.tag-g { background: var(--green-light); color: var(--green); }
 
-.section-title .icon {
-  font-size: 22px;
-}
+/* ── TABLE ── */
+.tbl-wrap { overflow-x: auto; background: var(--white); border-radius: var(--radius-md); box-shadow: var(--shadow-sm); margin-bottom: 18px; }
+.tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.tbl thead th { background: var(--blue-900); color: var(--white); padding: 10px 14px; text-align: left; font-weight: 600; font-size: 12px; letter-spacing: 0.03em; }
+.tbl tbody td { padding: 9px 14px; border-bottom: 1px solid var(--grey-200); vertical-align: top; }
+.tbl tbody tr:hover { background: var(--blue-50); }
+.tbl tbody tr:last-child td { border-bottom: none; }
+.tbl .dom { font-weight: 700; color: var(--blue-900); }
+.tbl .sk { font-weight: 600; color: var(--grey-900); }
+.tbl .dt { font-size: 12px; color: var(--grey-400); }
 
-.section-desc {
-  font-size: 15px;
-  color: var(--grey-700);
-  margin-bottom: 24px;
-}
-
-/* ── QUESTION CARDS ── */
-.q-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.q-card {
-  background: var(--white);
-  border-radius: var(--radius-md);
-  padding: 20px;
-  box-shadow: var(--shadow-sm);
-  border-left: 4px solid var(--blue-500);
-  transition: 0.2s;
-  cursor: default;
-}
-
-.q-card:hover {
-  box-shadow: var(--shadow-md);
-  transform: translateY(-1px);
-}
-
-.q-card .q-text {
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--blue-900);
-  margin-bottom: 8px;
-}
-
-.q-card .q-answer {
-  font-size: 13px;
-  color: var(--grey-700);
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.q-card .q-tag {
-  display: inline-block;
-  font-size: 11px;
-  background: var(--blue-100);
-  color: var(--blue-700);
-  padding: 2px 8px;
-  border-radius: 100px;
-  white-space: nowrap;
-}
-
-/* ── CAPABILITY TABLE ── */
-.cap-table-wrap {
-  overflow-x: auto;
-  background: var(--white);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
-}
-
-.cap-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.cap-table thead th {
-  background: var(--blue-900);
-  color: var(--white);
-  padding: 12px 16px;
-  text-align: left;
-  font-weight: 600;
-  font-size: 12px;
-  letter-spacing: 0.03em;
-  position: sticky;
-  top: 0;
-}
-
-.cap-table tbody td {
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--grey-200);
-  vertical-align: top;
-}
-
-.cap-table tbody tr:hover { background: var(--grey-100); }
-.cap-table tbody tr:last-child td { border-bottom: none; }
-
-.cap-table .domain-name {
-  font-weight: 700;
-  color: var(--blue-900);
-  white-space: nowrap;
-}
-
-.cap-table .cap-name {
-  font-weight: 600;
-  color: var(--grey-900);
-}
-
-.cap-table .cap-detail {
-  font-size: 12px;
-  color: var(--grey-400);
-  margin-top: 2px;
-}
-
-/* ── WORKFLOW CARDS ── */
-.wf-card {
-  background: var(--white);
-  border-radius: var(--radius-md);
-  padding: 24px;
-  box-shadow: var(--shadow-sm);
-  margin-bottom: 16px;
-}
-
-.wf-card .wf-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--blue-900);
-  margin-bottom: 12px;
-}
-
-.wf-steps {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.wf-step {
-  padding: 8px 16px;
-  background: var(--blue-100);
-  color: var(--blue-700);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  font-weight: 600;
-  text-align: center;
-  transition: 0.15s;
-}
-
+/* ── WF ── */
+.wf { background: var(--white); border-radius: var(--radius-md); padding: 22px; box-shadow: var(--shadow-sm); margin-bottom: 14px; }
+.wf .wf-title { font-size: 15px; font-weight: 700; color: var(--blue-900); margin-bottom: 12px; }
+.wf-steps { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+.wf-step { padding: 8px 14px; background: var(--blue-50); color: var(--blue-700); border-radius: var(--radius-sm); font-size: 12px; font-weight: 600; text-align: center; transition: 0.15s; }
 .wf-step:hover { background: var(--blue-300); color: var(--white); }
+.wf-step small { display: block; font-weight: 400; margin-top: 2px; font-size: 10px; opacity: 0.7; }
+.wf-arr { color: var(--blue-500); font-size: 16px; font-weight: 700; }
+.wf-out { margin-top: 12px; padding: 10px 14px; background: var(--green-light); border-radius: var(--radius-sm); font-size: 13px; color: var(--green); font-weight: 600; }
 
-.wf-arrow {
-  color: var(--blue-500);
-  font-size: 16px;
-  font-weight: 700;
-}
+/* ── AGENT ── */
+.agent-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.agent { background: var(--white); border-radius: var(--radius-md); padding: 20px; box-shadow: var(--shadow-sm); border-top: 3px solid var(--orange); }
+.agent .a-name { font-size: 15px; font-weight: 700; color: var(--blue-900); margin-bottom: 6px; }
+.agent .a-scope { font-size: 12px; color: var(--grey-700); margin-bottom: 8px; }
+.agent .a-tables { font-size: 11px; color: var(--grey-400); margin-bottom: 8px; line-height: 1.5; }
+.agent .a-tags { display: flex; flex-wrap: wrap; gap: 3px; }
 
-.wf-output {
-  margin-top: 14px;
-  padding: 10px 14px;
-  background: var(--green-light);
-  border-radius: var(--radius-sm);
-  font-size: 13px;
-  color: var(--green);
-  font-weight: 600;
-}
+/* ── CROSSLINE ── */
+.cl { background: var(--white); border-radius: var(--radius-md); padding: 18px; box-shadow: var(--shadow-sm); margin-bottom: 12px; display: flex; gap: 14px; align-items: flex-start; }
+.cl .cl-num { font-size: 26px; font-weight: 800; color: var(--orange); min-width: 36px; line-height: 1; }
+.cl .cl-title { font-size: 14px; font-weight: 700; color: var(--blue-900); margin-bottom: 4px; }
+.cl .cl-flow { font-size: 12px; color: var(--grey-700); margin-bottom: 4px; }
+.cl .cl-trig { font-size: 11px; color: var(--amber); font-weight: 600; }
+.cl .cl-val { font-size: 11px; color: var(--green); font-weight: 600; margin-top: 4px; }
 
-/* ── AGENT GRID ── */
-.agent-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
+/* ── KPI BOX ── */
+.kpi-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.kpi { background: var(--white); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-sm); }
+.kpi .k-name { font-size: 13px; font-weight: 700; color: var(--blue-900); margin-bottom: 4px; }
+.kpi .k-code { font-size: 11px; color: var(--grey-400); margin-bottom: 6px; font-family: monospace; }
+.kpi .k-formula { font-size: 11px; color: var(--grey-700); line-height: 1.5; }
+.kpi .k-threshold { margin-top: 6px; font-size: 11px; font-weight: 600; }
 
-.agent-card {
-  background: var(--white);
-  border-radius: var(--radius-md);
-  padding: 24px;
-  box-shadow: var(--shadow-sm);
-  border-top: 3px solid var(--orange);
-}
+/* ── METHOD ── */
+.mgrid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+.mcard { background: var(--white); border-radius: var(--radius-md); padding: 16px; box-shadow: var(--shadow-sm); }
+.mcard .m-name { font-size: 13px; font-weight: 700; color: var(--blue-900); margin-bottom: 3px; }
+.mcard .m-skill { font-size: 11px; color: var(--orange); font-weight: 600; margin-bottom: 5px; }
+.mcard .m-use { font-size: 12px; color: var(--grey-700); }
 
-.agent-card .agent-name {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--blue-900);
-  margin-bottom: 8px;
-}
+/* ── HIGHLIGHT ── */
+.hl { background: var(--blue-900); color: var(--white); border-radius: var(--radius-lg); padding: 26px 30px; margin: 28px 0; }
+.hl h3 { font-size: 17px; font-weight: 700; margin-bottom: 6px; }
+.hl p { font-size: 13px; color: var(--blue-300); line-height: 1.7; }
+.hl code { background: rgba(255,255,255,0.12); padding: 2px 8px; border-radius: 4px; font-size: 12px; }
 
-.agent-card .agent-scope {
-  font-size: 13px;
-  color: var(--grey-700);
-  margin-bottom: 10px;
-}
+/* ── SKILL GRID ── */
+.sgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.scat { background: var(--white); border-radius: var(--radius-md); padding: 14px; box-shadow: var(--shadow-sm); }
+.scat .cname { font-size: 12px; font-weight: 700; color: var(--blue-900); margin-bottom: 6px; }
+.scat .citems { font-size: 11px; color: var(--grey-700); line-height: 1.7; }
 
-.agent-card .agent-skills {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
+.footer { text-align: center; padding: 40px 0; color: var(--grey-400); font-size: 12px; }
 
-/* ── CROSSLINE CARDS ── */
-.cl-card {
-  background: var(--white);
-  border-radius: var(--radius-md);
-  padding: 20px;
-  box-shadow: var(--shadow-sm);
-  margin-bottom: 14px;
-  display: flex;
-  gap: 16px;
-  align-items: flex-start;
-}
-
-.cl-card .cl-num {
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--orange);
-  min-width: 40px;
-  line-height: 1;
-}
-
-.cl-card .cl-body { flex: 1; }
-
-.cl-card .cl-title {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--blue-900);
-  margin-bottom: 4px;
-}
-
-.cl-card .cl-flow {
-  font-size: 13px;
-  color: var(--grey-700);
-  margin-bottom: 6px;
-}
-
-.cl-card .cl-value {
-  font-size: 12px;
-  color: var(--green);
-  font-weight: 600;
-}
-
-/* ── SKILL INDEX TABLE ── */
-.skill-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-.skill-cat {
-  background: var(--white);
-  border-radius: var(--radius-md);
-  padding: 16px;
-  box-shadow: var(--shadow-sm);
-}
-
-.skill-cat .cat-name {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--blue-900);
-  margin-bottom: 8px;
-}
-
-.skill-cat .cat-items {
-  font-size: 12px;
-  color: var(--grey-700);
-  line-height: 1.7;
-}
-
-/* ── METHOD CARDS ── */
-.method-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 14px;
-}
-
-.method-card {
-  background: var(--white);
-  border-radius: var(--radius-md);
-  padding: 18px;
-  box-shadow: var(--shadow-sm);
-}
-
-.method-card .method-name {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--blue-900);
-  margin-bottom: 4px;
-}
-
-.method-card .method-skill {
-  font-size: 12px;
-  color: var(--orange);
-  font-weight: 600;
-  margin-bottom: 6px;
-}
-
-.method-card .method-use {
-  font-size: 12px;
-  color: var(--grey-700);
-}
-
-/* ── HIGHLIGHT BOX ── */
-.hl-box {
-  background: var(--blue-900);
-  color: var(--white);
-  border-radius: var(--radius-lg);
-  padding: 28px 32px;
-  margin: 32px 0;
-}
-
-.hl-box h3 {
-  font-size: 18px;
-  font-weight: 700;
-  margin-bottom: 8px;
-}
-
-.hl-box p {
-  font-size: 14px;
-  color: var(--blue-300);
-  line-height: 1.7;
-}
-
-/* ── RESPONSIVE ── */
 @media (max-width: 1024px) {
   .sidebar { width: 240px; min-width: 240px; }
-  .main { padding: 32px; }
-  .q-grid, .agent-grid, .skill-grid { grid-template-columns: 1fr; }
-  .method-grid { grid-template-columns: 1fr 1fr; }
-  .stats-row { grid-template-columns: 1fr 1fr; }
+  .main { padding: 24px; }
+  .qgrid, .agent-grid, .sgrid, .kpi-grid { grid-template-columns: 1fr; }
+  .mgrid { grid-template-columns: 1fr 1fr; }
+  .stats { grid-template-columns: 1fr 1fr; }
 }
-
 @media (max-width: 768px) {
   body { flex-direction: column; }
-  .sidebar {
-    width: 100%; min-width: 100%; height: auto; position: relative;
-    padding: 16px;
-  }
+  .sidebar { width: 100%; min-width: 100%; height: auto; position: relative; padding: 14px; }
   .sidebar-nav { display: none; }
-  .main { height: auto; padding: 20px; }
-  .stats-row, .method-grid { grid-template-columns: 1fr; }
+  .main { height: auto; padding: 18px; }
+  .stats, .mgrid, .kpi-grid { grid-template-columns: 1fr; }
 }
 </style>
 </head>
@@ -592,663 +177,644 @@ body {
 <aside class="sidebar">
   <div class="sidebar-header">
     <h2>数智决策<br>AI 效能作战室</h2>
-    <div class="subtitle">Momcozy · 母婴出海 · 60-80亿规模</div>
+    <div class="sub">Momcozy · 母婴出海 · 60-80亿</div>
   </div>
-  <div class="sidebar-search">
-    <input type="text" id="search" placeholder="搜索能力、问题、Skill…" oninput="filterContent()">
-  </div>
-  <nav class="sidebar-nav" id="sidebarNav">
-    <div class="nav-section">
-      <div class="nav-section-title" onclick="toggleSection(this)"><span class="arrow">▾</span> 概述</div>
+  <div class="sidebar-search"><input type="text" id="search" placeholder="搜索…" oninput="filter()"></div>
+  <nav class="sidebar-nav" id="nav">
+    <div class="nav-section"><div class="nav-section-title" onclick="toggleSection(this)"><span class="arrow">▾</span> I. 总览</div>
+      <div class="nav-items"><a class="nav-item active" href="#overview">定位与规模</a><a class="nav-item" href="#facts">Momcozy 事实基线</a><a class="nav-item" href="#arch">系统架构</a></div></div>
+    <div class="nav-section"><div class="nav-section-title" onclick="toggleSection(this)"><span class="arrow">▾</span> II. 四大专题</div>
       <div class="nav-items">
-        <a class="nav-item active" href="#overview">项目定位</a>
-        <a class="nav-item" href="#stats">能力数字</a>
-      </div>
-    </div>
-    <div class="nav-section">
-      <div class="nav-section-title" onclick="toggleSection(this)"><span class="arrow">▾</span> 按角色回答</div>
-      <div class="nav-items">
-        <a class="nav-item" href="#role-exec">管理层</a>
-        <a class="nav-item" href="#role-analyst">分析岗</a>
-        <a class="nav-item" href="#role-ops">运营岗</a>
-        <a class="nav-item" href="#role-marketing">营销岗</a>
-      </div>
-    </div>
-    <div class="nav-section">
-      <div class="nav-section-title" onclick="toggleSection(this)"><span class="arrow">▾</span> 分析能力</div>
-      <div class="nav-items">
-        <a class="nav-item" href="#cap-finance">财务与盈利</a>
-        <a class="nav-item" href="#cap-user">用户与行为</a>
-        <a class="nav-item" href="#cap-voc">VOC 与竞品</a>
-        <a class="nav-item" href="#cap-channel">渠道与流量</a>
-        <a class="nav-item" href="#cap-marketing">营销与 ROI</a>
-        <a class="nav-item" href="#cap-scm">供应链</a>
-        <a class="nav-item" href="#cap-monitor">监控与预警</a>
-        <a class="nav-item" href="#cap-methodology">方法论与实验</a>
-      </div>
-    </div>
-    <div class="nav-section">
-      <div class="nav-section-title" onclick="toggleSection(this)"><span class="arrow">▾</span> 智能体</div>
-      <div class="nav-items">
-        <a class="nav-item" href="#agent-arch">Agent 架构</a>
-        <a class="nav-item" href="#agent-list">5+1 业务 Agent</a>
-        <a class="nav-item" href="#crosslines">交叉故事线</a>
-      </div>
-    </div>
-    <div class="nav-section">
-      <div class="nav-section-title" onclick="toggleSection(this)"><span class="arrow">▾</span> 工作流</div>
-      <div class="nav-items">
-        <a class="nav-item" href="#wf-margin">毛利率归因</a>
-        <a class="nav-item" href="#wf-voc">用户声音分析</a>
-        <a class="nav-item" href="#wf-channel">渠道健康度</a>
-        <a class="nav-item" href="#wf-mkt">营销 ROI</a>
-        <a class="nav-item" href="#wf-monthly">月度经营分析</a>
-      </div>
-    </div>
-    <div class="nav-section">
-      <div class="nav-section-title" onclick="toggleSection(this)"><span class="arrow">▾</span> 方法论</div>
-      <div class="nav-items">
-        <a class="nav-item" href="#method-attribution">归因方法论</a>
-        <a class="nav-item" href="#method-metrics">指标体系设计</a>
-        <a class="nav-item" href="#method-comm">管理层沟通</a>
-        <a class="nav-item" href="#method-knowledge">知识萃取</a>
-      </div>
-    </div>
-    <div class="nav-section">
-      <div class="nav-section-title" onclick="toggleSection(this)"><span class="arrow">▾</span> 完整索引</div>
-      <div class="nav-items">
-        <a class="nav-item" href="#skill-index">Skills 总览</a>
-        <a class="nav-item" href="#data-assets">数据资产</a>
-      </div>
-    </div>
+        <a class="nav-item" href="#t1">专题① VOC</a><a class="nav-item" href="#t1-sub">├ 子课题×4</a><a class="nav-item" href="#t1-flow">├ 数据流</a>
+        <a class="nav-item" href="#t2">专题② 订单</a><a class="nav-item" href="#t2-sub">├ 子课题×4</a><a class="nav-item" href="#t2-flow">├ 数据流</a>
+        <a class="nav-item" href="#t3">专题③ 渠道</a><a class="nav-item" href="#t3-sub">├ 子课题×3</a>
+        <a class="nav-item" href="#t4">专题④ 营销</a><a class="nav-item" href="#t4-sub">├ 子课题×3</a>
+      </div></div>
+    <div class="nav-section"><div class="nav-section-title" onclick="toggleSection(this)"><span class="arrow">▾</span> III. 交叉故事线</div>
+      <div class="nav-items"><a class="nav-item" href="#cl-all">编排总图</a><a class="nav-item" href="#cl1">CL1: VOC→订单</a><a class="nav-item" href="#cl2">CL2: VOC→投放</a><a class="nav-item" href="#cl3">CL3: 退款→VOC</a><a class="nav-item" href="#cl4">CL4: 渠道→VOC</a></div></div>
+    <div class="nav-section"><div class="nav-section-title" onclick="toggleSection(this)"><span class="arrow">▾</span> IV. SCM 供应链</div>
+      <div class="nav-items"><a class="nav-item" href="#scm-kpi">北极星指标树</a><a class="nav-item" href="#scm-kp01">kp01 需求预测</a><a class="nav-item" href="#scm-kp02">kp02 仓网规划</a><a class="nav-item" href="#scm-kp03">kp03 计划排产</a><a class="nav-item" href="#scm-kp04">kp04 调拨协同</a><a class="nav-item" href="#scm-gov">8节点治理</a></div></div>
+    <div class="nav-section"><div class="nav-section-title" onclick="toggleSection(this)"><span class="arrow">▾</span> V. 归因方法论</div>
+      <div class="nav-items"><a class="nav-item" href="#attr-margin">毛利率归因公式</a><a class="nav-item" href="#attr-4factor">四因素分解</a><a class="nav-item" href="#attr-contrib">贡献度体系</a></div></div>
+    <div class="nav-section"><div class="nav-section-title" onclick="toggleSection(this)"><span class="arrow">▾</span> VI. Agent</div>
+      <div class="nav-items"><a class="nav-item" href="#agent-all">5+1 画像</a><a class="nav-item" href="#agent-data">数据契约</a></div></div>
+    <div class="nav-section"><div class="nav-section-title" onclick="toggleSection(this)"><span class="arrow">▾</span> VII. 工作流</div>
+      <div class="nav-items"><a class="nav-item" href="#wf-margin">毛利率归因</a><a class="nav-item" href="#wf-voc">VOC分析</a><a class="nav-item" href="#wf-channel">渠道诊断</a><a class="nav-item" href="#wf-mkt">营销ROI</a><a class="nav-item" href="#wf-monthly">月度经营</a></div></div>
+    <div class="nav-section"><div class="nav-section-title" onclick="toggleSection(this)"><span class="arrow">▾</span> VIII. 附录</div>
+      <div class="nav-items"><a class="nav-item" href="#skills">Skills 索引</a><a class="nav-item" href="#data-assets">数据资产</a><a class="nav-item" href="#run">快速运行</a></div></div>
   </nav>
-  <div class="sidebar-footer">v2.0 · 2026-06-10 · 15 commits</div>
+  <div class="sidebar-footer">v3.0 · 2026-06-10 · 16 commits</div>
 </aside>
 
-<!-- ═══════════ MAIN CONTENT ═══════════ -->
+<!-- ═══════════ MAIN ═══════════ -->
 <main class="main">
 
-<!-- HERO -->
+<!-- ── I. OVERVIEW ── -->
 <section class="hero" id="overview">
-  <div class="badge">Playbook</div>
-  <h1>能解决什么问题<br>提供什么功能<br>给出什么指引</h1>
-  <p class="lead">
-    面向 60-80 亿规模母婴出海企业（Momcozy）的「数智决策-AI 效能作战室」。
-    整合 4 大专题×14 子课题、5+1 智能体、40 个跨境电商 Skills、20 个 PPT Skills、
-    4 条交叉故事线、供应链全链路优化，覆盖从管理层决策到分析岗执行的全链路。
-  </p>
+  <div class="badge">Playbook v3.0</div>
+  <h1>能解决什么业务问题<br>提供什么分析功能<br>给出什么决策指引</h1>
+  <p class="lead">面向 60-80 亿规模母婴出海企业 Momcozy 的「数智决策-AI 效能作战室」。整合 4 大专题×14 子课题、5+1 业务智能体、40 个跨境电商 Skills、20 个麦肯锡 PPT Skills、4 条交叉故事线、供应链 L0-L4 全链路 KPI 体系、BI 数据字典与数仓设计。从管理层决策到分析岗执行的全链路覆盖。</p>
 </section>
 
-<!-- STATS -->
-<section class="stats-row" id="stats">
-  <div class="stat-card"><div class="stat-num">40</div><div class="stat-label">跨境电商分析 Skills</div></div>
-  <div class="stat-card" style="border-top-color:var(--orange)"><div class="stat-num">20</div><div class="stat-label">麦肯锡 PPT Skills</div></div>
-  <div class="stat-card" style="border-top-color:var(--green)"><div class="stat-num">6</div><div class="stat-label">业务智能体 Agent</div></div>
-  <div class="stat-card" style="border-top-color:var(--blue-500)"><div class="stat-num">12</div><div class="stat-label">分析管道 Pipeline</div></div>
-</section>
+<div class="stats">
+  <div class="stat"><div class="n">40</div><div class="l">跨境电商分析 Skills</div></div>
+  <div class="stat" style="border-top-color:var(--orange)"><div class="n">20</div><div class="l">麦肯锡 PPT Skills</div></div>
+  <div class="stat" style="border-top-color:var(--green)"><div class="n">6</div><div class="l">业务智能体 Agent</div></div>
+  <div class="stat" style="border-top-color:var(--blue-500)"><div class="n">14</div><div class="l">子课题 × 4 交叉线</div></div>
+</div>
 
-<!-- ═══════════ 一、按角色回答的业务问题 ═══════════ -->
-<section class="section" id="role-exec">
-  <div class="section-title"><span class="icon">👔</span> 管理层（CEO / GM / VP）</div>
-  <div class="section-desc">战略决策级别的核心问题，每一项都有对应的分析管道与 PPT 产出。</div>
-  <div class="q-grid">
-    <div class="q-card">
-      <div class="q-text">各国家×渠道的规模、增速、利润结构如何？哪些该加码、哪些该收缩？</div>
-      <div class="q-answer"><span class="q-tag">专题③ 渠道生命周期</span><span class="q-tag">国家画像</span><span class="q-tag">决策矩阵</span><span class="q-tag">管理层 PPT</span></div>
-    </div>
-    <div class="q-card">
-      <div class="q-text">全域 VOC 声量趋势如何？用户对我们的评价 vs 竞品差在哪？</div>
-      <div class="q-answer"><span class="q-tag">专题① 全域VOC</span><span class="q-tag">VOC看板</span><span class="q-tag">竞品对比</span></div>
-    </div>
-    <div class="q-card">
-      <div class="q-text">营销花了多少钱、带来了多少增量？各类活动的 ROI 基准是什么？</div>
-      <div class="q-answer"><span class="q-tag">专题④ ROI量化</span><span class="q-tag">ROI基准表</span><span class="q-tag">LTV增量</span></div>
-    </div>
-    <div class="q-card">
-      <div class="q-text">订单履约链路中哪里是瓶颈？退款是策略问题还是产品问题？</div>
-      <div class="q-answer"><span class="q-tag">专题② 订单质量</span><span class="q-tag">节点诊断</span><span class="q-tag">退款归因</span></div>
-    </div>
-    <div class="q-card">
-      <div class="q-text">供应链全链路成本效率如何？库存健康度怎样？</div>
-      <div class="q-answer"><span class="q-tag">SCM子项目</span><span class="q-tag">成本诊断</span><span class="q-tag">库存健康</span><span class="q-tag">管理层摘要</span></div>
-    </div>
-    <div class="q-card">
-      <div class="q-text">月度目标如何 SMART 化？KPI 如何与专题产出对齐？</div>
-      <div class="q-answer"><span class="q-tag">kpi-smart-monthly-goal</span><span class="q-tag">KPI制定表格</span></div>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="role-analyst">
-  <div class="section-title"><span class="icon">📊</span> 分析岗（数据分析师 / BI）</div>
-  <div class="section-desc">日常分析工作中最常见的问题，每个都有对应 Skill 和管道脚本。</div>
-  <div class="q-grid">
-    <div class="q-card">
-      <div class="q-text">毛利率下降是哪个因素贡献最大？以价换量还是成本上升？</div>
-      <div class="q-answer"><span class="q-tag">margin-attribution</span><span class="q-tag">专题01毛利归因</span><span class="q-tag">瀑布图</span></div>
-    </div>
-    <div class="q-card">
-      <div class="q-text">销售额增长是量的驱动还是价的驱动？哪个品线/渠道贡献最大？</div>
-      <div class="q-answer"><span class="q-tag">contribution-calculation</span><span class="q-tag">complex-contribution</span><span class="q-tag">贡献度分解</span></div>
-    </div>
-    <div class="q-card">
-      <div class="q-text">用户分群怎么做？RFM 分层后各群特征是什么？</div>
-      <div class="q-answer"><span class="q-tag">customer-segmentation</span><span class="q-tag">RFM分群</span><span class="q-tag">群画像</span></div>
-    </div>
-    <div class="q-card">
-      <div class="q-text">留存率如何？不同群组的生命周期价值差异？</div>
-      <div class="q-answer"><span class="q-tag">cohort-analysis</span><span class="q-tag">留存矩阵</span><span class="q-tag">LTV估算</span></div>
-    </div>
-    <div class="q-card">
-      <div class="q-text">转化漏斗中哪一步流失最大？</div>
-      <div class="q-answer"><span class="q-tag">conversion-funnel</span><span class="q-tag">漏斗图</span><span class="q-tag">流失分析</span></div>
-    </div>
-    <div class="q-card">
-      <div class="q-text">如何设计指标体系？北极星指标到 L0-L3 怎么拆？</div>
-      <div class="q-answer"><span class="q-tag">metrics-system-design</span><span class="q-tag">supply-chain-indicator-decoding</span><span class="q-tag">指标树</span></div>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="role-ops">
-  <div class="section-title"><span class="icon">🎯</span> 运营岗（渠道/国家/产品/客服）</div>
-  <div class="q-grid">
-    <div class="q-card"><div class="q-text">各渠道效果如何？自然流 vs 付费广告 vs 红人转化差异？</div><div class="q-answer"><span class="q-tag">channel-effect-analysis</span><span class="q-tag">traffic-source-analysis</span></div></div>
-    <div class="q-card"><div class="q-text">哪些商品经常一起买？怎么设计搭售组合？</div><div class="q-answer"><span class="q-tag">basket-analysis</span><span class="q-tag">专题05购物篮</span><span class="q-tag">关联规则</span></div></div>
-    <div class="q-card"><div class="q-text">某单品/品类 SPU 如何优化？下钻归因到哪个 SKU？</div><div class="q-answer"><span class="q-tag">专题04下钻归因</span><span class="q-tag">TOP10瀑布图</span></div></div>
-    <div class="q-card"><div class="q-text">用户评论中的主要痛点和亮点是什么？</div><div class="q-answer"><span class="q-tag">voc-insights</span><span class="q-tag">social-media-analysis</span></div></div>
-    <div class="q-card"><div class="q-text">本土竞品如何被评价？哪些卖点更打动当地用户？</div><div class="q-answer"><span class="q-tag">competitive-analysis</span><span class="q-tag">本土化话术</span></div></div>
-    <div class="q-card"><div class="q-text">促销活动的效果如何？ROI 是否达标？</div><div class="q-answer"><span class="q-tag">promotion-analysis</span><span class="q-tag">sales-conversion-analysis</span></div></div>
-  </div>
-</section>
-
-<section class="section" id="role-marketing">
-  <div class="section-title"><span class="icon">📈</span> 营销岗（投放/品牌/增长）</div>
-  <div class="q-grid">
-    <div class="q-card"><div class="q-text">广告投放的 ROAS 如何？哪个渠道效率最高？</div><div class="q-answer"><span class="q-tag">ad-attribution</span><span class="q-tag">ad-performance-analysis</span></div></div>
-    <div class="q-card"><div class="q-text">如何量化营销活动带来的销售额增量？</div><div class="q-answer"><span class="q-tag">专题④ 曝光归因</span><span class="q-tag">归因模型</span></div></div>
-    <div class="q-card"><div class="q-text">用户 LTV 如何？各活动类型对 LTV 的增量贡献？</div><div class="q-answer"><span class="q-tag">专题④ 子课题①</span><span class="q-tag">LTV分段</span></div></div>
-    <div class="q-card"><div class="q-text">社媒中哪些社区/话题目标客群浓度高？</div><div class="q-answer"><span class="q-tag">交叉线2</span><span class="q-tag">VOC→投放</span></div></div>
-    <div class="q-card"><div class="q-text">内容/社媒的声量与互动趋势？</div><div class="q-answer"><span class="q-tag">social-media-analysis</span></div></div>
-  </div>
-</section>
-
-<!-- ═══════════ 二、核心分析能力 ═══════════ -->
-<section class="section" id="cap-finance">
-  <div class="section-title"><span class="icon">💰</span> 财务与盈利分析</div>
-  <div class="cap-table-wrap">
-    <table class="cap-table">
-      <thead><tr><th>能力</th><th>Skill / 脚本</th><th>输入</th><th>输出</th></tr></thead>
+<!-- Momcozy Facts -->
+<section class="section" id="facts">
+  <div class="sec-h"><span class="ico">🏢</span> Momcozy 事实基线</div>
+  <div class="sec-d">基于母婴品牌竞品洞察的研究数据。以下数据用于校准分析模型的量级和场景假设。</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>维度</th><th>数据</th><th>维度</th><th>数据</th></tr></thead>
       <tbody>
-        <tr><td class="cap-name">毛利率归因（平台×区域×品线）</td><td>margin-attribution + momcozy-margin-analysis</td><td>订单毛利宽表</td><td>因素瀑布图、归因表</td></tr>
-        <tr><td class="cap-name">杜邦分析（ROE 拆解）</td><td>dupont-analysis</td><td>财务三表</td><td>杜邦分解树</td></tr>
-        <tr><td class="cap-name">成本结构分析</td><td>cost-structure-analysis</td><td>成本明细表</td><td>成本占比图、优化建议</td></tr>
-        <tr><td class="cap-name">双平台费率归因（Amazon vs DTC）</td><td>专题02 费率归因</td><td>平台费用明细</td><td>费率影响贡献图</td></tr>
-        <tr><td class="cap-name">四因素归因</td><td>专题04 四因素归因</td><td>订单+毛利数据</td><td>客品数×品单价×订单数×毛利率瀑布图</td></tr>
+        <tr><td class="dom">成立时间</td><td>2017，深圳</td><td class="dom">2024 营收</td><td>~30 亿 RMB</td></tr>
+        <tr><td class="dom">全球用户</td><td>~300 万</td><td class="dom">Amazon NA</td><td>月销 14 万件，~$16M/月</td></tr>
+        <tr><td class="dom">独立站流量</td><td>momcozy.com ~67 万/月</td><td class="dom">TikTok Shop</td><td>~$4.1M GMV/月</td></tr>
+        <tr><td class="dom">TikTok 粉丝</td><td>60 万，2,500+ KOL，#momcozy 10 亿+播放</td><td class="dom">价格带</td><td>$150-200（穿戴式吸奶器）</td></tr>
+        <tr><td class="dom">渠道布局</td><td>Amazon + 独立站 + TikTok Shop + Walmart + Sam's + SHEIN</td><td class="dom">竞品</td><td>Babycare, KUB, Philips Avent, Chicco, Carter's, Graco</td></tr>
       </tbody>
     </table>
   </div>
 </section>
 
-<section class="section" id="cap-user">
-  <div class="section-title"><span class="icon">👤</span> 用户与行为分析</div>
-  <div class="cap-table-wrap">
-    <table class="cap-table">
-      <thead><tr><th>能力</th><th>Skill / 脚本</th><th>输入</th><th>输出</th></tr></thead>
-      <tbody>
-        <tr><td class="cap-name">用户分群（RFM / 行为分群）</td><td>customer-segmentation</td><td>用户交易+行为表</td><td>分群画像表</td></tr>
-        <tr><td class="cap-name">群组留存分析</td><td>cohort-analysis</td><td>用户首购+复购表</td><td>留存矩阵</td></tr>
-        <tr><td class="cap-name">转化漏斗分析</td><td>conversion-funnel</td><td>用户路径事件表</td><td>漏斗图 + 流失节点</td></tr>
-        <tr><td class="cap-name">用户多维洞察</td><td>user-multidim-insight-ppt + Sheet10</td><td>用户宽表</td><td>多维交叉表 + PPT</td></tr>
-        <tr><td class="cap-name">购物篮关联分析</td><td>basket-analysis + 专题05</td><td>交易明细</td><td>关联规则表 + 搭售策略</td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section class="section" id="cap-voc">
-  <div class="section-title"><span class="icon">🗣️</span> VOC 与竞品分析</div>
-  <div class="cap-table-wrap">
-    <table class="cap-table">
-      <thead><tr><th>能力</th><th>Skill / 脚本</th><th>输入</th><th>输出</th></tr></thead>
-      <tbody>
-        <tr><td class="cap-name">货架内 VOC（评论/评分/NPS）</td><td>专题① 子课题① + voc-insights</td><td>fact_voc_summary</td><td>痛点亮点清单、标签分布</td></tr>
-        <tr><td class="cap-name">货架外 VOC（Reddit/垂类社区）</td><td>专题① 子课题② + reddit_voc_fetch</td><td>社媒scraped数据</td><td>高潜需求清单、第二大单品候选</td></tr>
-        <tr><td class="cap-name">本土竞品 VOC 对比</td><td>专题① 子课题③ + competitive-analysis</td><td>竞品声量表</td><td>品牌对比表、本土化话术</td></tr>
-        <tr><td class="cap-name">全域声量趋势</td><td>专题① 子课题④</td><td>VOC趋势宽表</td><td>声量趋势图、渠道布局建议</td></tr>
-        <tr><td class="cap-name">退款反哺 VOC（双重视图）</td><td>交叉线3 VOC Agent</td><td>退款归因表 + VOC标签</td><td>双重视图结论</td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section class="section" id="cap-channel">
-  <div class="section-title"><span class="icon">🌐</span> 渠道与流量分析</div>
-  <div class="cap-table-wrap">
-    <table class="cap-table">
-      <thead><tr><th>能力</th><th>Skill / 脚本</th><th>输入</th><th>输出</th></tr></thead>
-      <tbody>
-        <tr><td class="cap-name">渠道效果分析（多平台对比）</td><td>channel-effect-analysis</td><td>渠道经营宽表</td><td>渠道对比表</td></tr>
-        <tr><td class="cap-name">流量来源分析</td><td>traffic-source-analysis</td><td>流量明细</td><td>流量结构表</td></tr>
-        <tr><td class="cap-name">渠道生命周期管理</td><td>专题③ 子课题①</td><td>国家×渠道×时间宽表</td><td>生命周期表、国家画像</td></tr>
-        <tr><td class="cap-name">渠道差异化运营</td><td>专题③ 子课题②</td><td>流量结构 + 竞品对标</td><td>差异化策略表</td></tr>
-        <tr><td class="cap-name">渠道风险预警</td><td>专题③ 子课题③ + risk-warning-system</td><td>经营指标 + 阈值</td><td>风险机会雷达、决策矩阵</td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section class="section" id="cap-marketing">
-  <div class="section-title"><span class="icon">🎯</span> 营销与 ROI 分析</div>
-  <div class="cap-table-wrap">
-    <table class="cap-table">
-      <thead><tr><th>能力</th><th>Skill / 脚本</th><th>输入</th><th>输出</th></tr></thead>
-      <tbody>
-        <tr><td class="cap-name">广告归因（多触点）</td><td>ad-attribution</td><td>投放 + 转化数据</td><td>渠道 ROAS 表</td></tr>
-        <tr><td class="cap-name">广告效果分析</td><td>ad-performance-analysis</td><td>广告平台数据</td><td>效果对比表</td></tr>
-        <tr><td class="cap-name">促销活动分析</td><td>promotion-analysis</td><td>活动 + 销售数据</td><td>活动 ROI 表</td></tr>
-        <tr><td class="cap-name">LTV 分段与增量</td><td>专题④ 子课题①</td><td>用户 LTV + 活动参与</td><td>LTV 增量表</td></tr>
-        <tr><td class="cap-name">精细化 ROI（国家×渠道×活动类型）</td><td>专题④ 子课题③</td><td>投放宽表 + 订单表</td><td>精细化 ROI 格子表</td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section class="section" id="cap-scm">
-  <div class="section-title"><span class="icon">🏭</span> 供应链分析</div>
-  <div class="cap-table-wrap">
-    <table class="cap-table">
-      <thead><tr><th>能力</th><th>Skill / 脚本</th><th>输入</th><th>输出</th></tr></thead>
-      <tbody>
-        <tr><td class="cap-name">供应链成本异常诊断</td><td>scm-cost-anomaly-diagnosis</td><td>成本宽表</td><td>驱动项 + Owner + 动作</td></tr>
-        <tr><td class="cap-name">库存健康诊断</td><td>scm-inventory-health-diagnosis</td><td>库存宽表</td><td>超龄/缺货/调拨候选</td></tr>
-        <tr><td class="cap-name">供应链管理层摘要</td><td>scm-executive-summary</td><td>看板数据</td><td>5事实+3动作+决策要点</td></tr>
-        <tr><td class="cap-name">指标解码（北极星→L0-L3）</td><td>supply-chain-indicator-decoding</td><td>业务需求</td><td>指标树 + 责任人映射</td></tr>
-        <tr><td class="cap-name">库存优化 / 供应商绩效</td><td>inventory-optimization / supplier-performance</td><td>库存+交付数据</td><td>安全库存建议 / 绩效评分表</td></tr>
-      </tbody>
-    </table>
-  </div>
-</section>
-
-<section class="section" id="cap-monitor">
-  <div class="section-title"><span class="icon">🔔</span> 监控与预警</div>
-  <div class="method-grid">
-    <div class="method-card"><div class="method-name">异常检测</div><div class="method-skill">anomaly-detection</div><div class="method-use">时间序列指标的异常自动识别与告警</div></div>
-    <div class="method-card"><div class="method-name">多指标关联</div><div class="method-skill">multi-metric-correlation</div><div class="method-use">多指标时间序列的关联热力图分析</div></div>
-    <div class="method-card"><div class="method-name">告警管理</div><div class="method-skill">alert-management</div><div class="method-use">告警规则、收敛、升级机制</div></div>
-    <div class="method-card"><div class="method-name">告警优化</div><div class="method-skill">alert-optimization</div><div class="method-use">历史告警分析、误报率优化</div></div>
-    <div class="method-card"><div class="method-name">风险预警体系</div><div class="method-skill">risk-warning-system</div><div class="method-use">多维风险指标 → 风险评分卡</div></div>
-  </div>
-</section>
-
-<section class="section" id="cap-methodology">
-  <div class="section-title"><span class="icon">🔬</span> 方法论与实验</div>
-  <div class="method-grid">
-    <div class="method-card"><div class="method-name">A/B 测试</div><div class="method-skill">ab-testing</div><div class="method-use">实验设计、显著性检验</div></div>
-    <div class="method-card"><div class="method-name">因果推断</div><div class="method-skill">causal-inference</div><div class="method-use">观测数据的因果效应估计</div></div>
-    <div class="method-card"><div class="method-name">周期性分析</div><div class="method-skill">cyclical-analysis</div><div class="method-use">时间序列周期分解</div></div>
-    <div class="method-card"><div class="method-name">结构性分析</div><div class="method-skill">structural-analysis</div><div class="method-use">多维面板数据分解</div></div>
-    <div class="method-card"><div class="method-name">需求预测</div><div class="method-skill">demand-forecasting</div><div class="method-use">历史销售 + 外部变量预测</div></div>
-    <div class="method-card"><div class="method-name">定价优化</div><div class="method-skill">pricing-optimization</div><div class="method-use">价格-销量弹性 → 最优定价</div></div>
-  </div>
-</section>
-
-<!-- ═══════════ 三、智能体架构 ═══════════ -->
-<section class="section" id="agent-arch">
-  <div class="section-title"><span class="icon">🤖</span> Data Agent 架构</div>
-  <div class="section-desc">自然语言输入 → 意图解析 → Skill 路由 → 数据处理 → PPT/图表/报告输出的完整链路。</div>
-  <div class="wf-card">
+<!-- Architecture -->
+<section class="section" id="arch">
+  <div class="sec-h"><span class="ico">🏗️</span> 系统架构：五层闭环</div>
+  <div class="sec-d">从用户输入到管理层 PPT 的完整数据产品链路。</div>
+  <div class="wf">
     <div class="wf-steps">
-      <div class="wf-step">意图解析<br><small>15 种模式匹配</small></div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">Skill 路由<br><small>40 Skills 索引</small></div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">数据处理<br><small>12 条分析管道</small></div>
-      <div class="wf-arrow">→</div>
+      <div class="wf-step">意图解析<br><small>15 种意图模式</small></div><div class="wf-arr">→</div>
+      <div class="wf-step">Skill 路由<br><small>40 Skills 索引</small></div><div class="wf-arr">→</div>
+      <div class="wf-step">数据处理<br><small>12 条分析管道</small></div><div class="wf-arr">→</div>
+      <div class="wf-step">图表引擎<br><small>PNG 瀑布图等</small></div><div class="wf-arr">→</div>
       <div class="wf-step">PPT 生成<br><small>真正 .pptx</small></div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">图表引擎<br><small>PNG 瀑布图等</small></div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">报告组装<br><small>MD + JSON</small></div>
+    </div>
+  </div>
+  <div class="sec-d" style="margin-top:16px"><strong>部署方式</strong>：每个专题独立管道脚本（生成 Mock → 分析 → 图表 → PPT），交叉线串联专题间信息流。Data Agent CLI 提供统一自然语言入口。</div>
+</section>
+
+<!-- ═══════════ II. 四大专题 ═══════════ -->
+<div style="margin:48px 0 24px;padding:16px 0;border-bottom:3px solid var(--blue-900);">
+  <div class="sec-h" style="font-size:26px"><span class="ico">📊</span> 四大专题：完整业务覆盖</div>
+</div>
+
+<!-- TOPIC 1 -->
+<section class="section" id="t1">
+  <div class="sec-h"><span class="ico">🗣️</span> 专题① 全域 VOC 数据洞察</div>
+  <div class="sec-d"><strong>一句话故事线</strong>：货架内 NPS/差评 → 货架外高潜需求与第二大单品 → 本土竞品声音与营销本土化 → 全域声量趋势与渠道布局 → 服务闭环 + IPMS 大单品闭环。<br><strong>负责 Agent</strong>：VOC & 消费者洞察</div>
+</section>
+
+<section class="section" id="t1-sub">
+  <div class="sec-h" style="font-size:18px">子课题 × 4</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th style="width:8%">#</th><th style="width:25%">子课题</th><th style="width:28%">业务问题</th><th style="width:22%">核心输入表</th><th>核心输出</th></tr></thead>
+      <tbody>
+        <tr>
+          <td class="dom">①</td><td class="sk">货架内用户声音 → 服务质量与体验</td>
+          <td>各渠道/品类/单品的 NPS、复购率、LTV 如何？痛点与亮点在哪？</td>
+          <td class="dt">fact_voc_summary<br>ods_review_detail</td>
+          <td>货架内 VOC 看板/汇总表、痛点亮点清单、标签分布、结论摘要</td>
+        </tr>
+        <tr>
+          <td class="dom">②</td><td class="sk">货架外原生用户声音 → 人-AI 挖掘高潜需求</td>
+          <td>Reddit/垂类社区中用户对吸奶器/母婴品类的未被满足需求？第二大单品机会在哪？</td>
+          <td class="dt">ods_voc_external<br>dim_voc_external_community</td>
+          <td>货架外声量宽表、高潜需求清单、第二大单品候选池</td>
+        </tr>
+        <tr>
+          <td class="dom">③</td><td class="sk">货架内外本土竞品用户声音 → 营销本土化</td>
+          <td>本土竞品在货架内外被用户如何评价？哪些卖点/话术更打动当地妈妈？</td>
+          <td class="dt">fact_voc_brand_summary<br>dim_brand</td>
+          <td>品牌×国家×渠道 VOC 对比表、本土化话术清单、建议卖点</td>
+        </tr>
+        <tr>
+          <td class="dom">④</td><td class="sk">全域 VOC 声量趋势 → 渠道拓展与流量布局</td>
+          <td>全域声量趋势如何？哪些渠道需加强、哪些需调整采样策略？</td>
+          <td class="dt">fact_voc_trend<br>fact_voc_summary</td>
+          <td>声量趋势雷达、机会与风险清单、VOC 分层分析规则</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section" id="t1-flow">
+  <div class="sec-h" style="font-size:18px">关键指标与决策输出</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>指标</th><th>来源表</th><th>口径</th><th>决策用途</th></tr></thead>
+      <tbody>
+        <tr><td class="dom">VOC 率</td><td>fact_voc_summary</td><td>voc_cnt / sales_qty × 100</td><td>客诉集中度监控</td></tr>
+        <tr><td class="dom">差评率（Bad Rate）</td><td>fact_voc_summary</td><td>bad_rate 字段</td><td>产品/服务问题优先排序</td></tr>
+        <tr><td class="dom">品牌声量份额</td><td>fact_voc_brand_summary</td><td>品牌 voc_cnt / 品类总 voc_cnt</td><td>竞品对标</td></tr>
+        <tr><td class="dom">高潜需求指数</td><td>ods_voc_external 聚合</td><td>痛点频次 × 情绪强度 × 品类关联度</td><td>第二大单品立项</td></tr>
+        <tr><td class="dom">社区浓度指数</td><td>dim_voc_external_community</td><td>目标客群提及密度 / 全平台均值</td><td>垂类投放选址</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- TOPIC 2 -->
+<section class="section" id="t2">
+  <div class="sec-h"><span class="ico">📦</span> 专题② 线上订单数量与质量提升</div>
+  <div class="sec-d"><strong>一句话故事线</strong>：订单量增长与区域结构 → 每笔订单卖出一块钱前后台成本 + 用户价值认同与客件数对配送成本的影响 → 订单耗时与节点诊断 → 订单类型/订单价结构对毛利额归因 → 退款反向穿透订单与 VOC，区分故意比较 vs 组合设计问题。<br><strong>负责 Agent</strong>：订单 & 成本 & 退款 & 仓网</div>
+</section>
+
+<section class="section" id="t2-sub">
+  <div class="sec-h" style="font-size:18px">子课题 × 4</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th style="width:5%">#</th><th style="width:22%">子课题</th><th style="width:28%">业务问题</th><th style="width:20%">核心输入表</th><th>核心输出</th></tr></thead>
+      <tbody>
+        <tr><td class="dom">①</td><td class="sk">订单量区域结构 → 后台成本（仓网）</td><td>订单量×区域如何影响仓网？卖 1 元前后台成本各多少？客件数对配送成本影响？</td><td class="dt">fact_order<br>fact_order_cost</td><td>前后台成本归因表、价值认同与客件数结论</td></tr>
+        <tr><td class="dom">②</td><td class="sk">订单平均耗时与核心节点诊断</td><td>履约链路时效瓶颈在哪？对库存周转与用户体验的影响？</td><td class="dt">fact_order<br>fact_order_fulfillment</td><td>节点诊断表、周转与体验结论</td></tr>
+        <tr><td class="dom">③</td><td class="sk">订单类型与订单价结构 → 毛利额归因</td><td>促销/非促销、组合/非组合、品单价×客品数如何影响毛利额？</td><td class="dt">fact_order<br>fact_order_item</td><td>毛利额归因表、品类优化与组合策略建议</td></tr>
+        <tr><td class="dom">④</td><td class="sk">退款订单多维归因</td><td>退款是用户比较策略还是产品/组合设计问题？如何反哺 VOC 与产品组合？</td><td class="dt">fact_return<br>fact_order_item</td><td>退款归因表、部分退组合分析、反哺 VOC 主题输入</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section" id="t2-flow">
+  <div class="sec-h" style="font-size:18px">核心 KPI 公式</div>
+  <div class="kpi-grid">
+    <div class="kpi">
+      <div class="k-name">前台成本率</div><div class="k-code">front_cost_rate</div>
+      <div class="k-formula">= (促销费 + 营销费 + 退款额) / GMV</div>
+      <div class="k-threshold" style="color:var(--orange)">关注：环比变化 > 1pp</div>
+    </div>
+    <div class="kpi">
+      <div class="k-name">后台成本率</div><div class="k-code">back_cost_rate</div>
+      <div class="k-formula">= (生产成本 + 头程 + 仓储 + 配送 + 佣金 + 其他) / GMV</div>
+      <div class="k-threshold" style="color:var(--orange)">关注：环比变化 > 0.5pp</div>
+    </div>
+    <div class="kpi">
+      <div class="k-name">客件数</div><div class="k-code">items_per_order</div>
+      <div class="k-formula">= 总销售件数 / 总订单数</div>
+      <div class="k-threshold" style="color:var(--green)">健康：≥ 1.5</div>
+    </div>
+    <div class="kpi">
+      <div class="k-name">毛利额（四因素）</div><div class="k-code">gross_profit_front</div>
+      <div class="k-formula">= 客品数 × 品单价 × 订单数 × 前台毛利率</div>
+      <div class="k-threshold" style="color:var(--blue-500)">四因素逐项拆解</div>
+    </div>
+    <div class="kpi">
+      <div class="k-name">退款率</div><div class="k-code">refund_rate</div>
+      <div class="k-formula">= 退款订单数 / 总订单数</div>
+      <div class="k-threshold" style="color:var(--red)">预警：> 8%</div>
+    </div>
+    <div class="kpi">
+      <div class="k-name">部分退比例</div><div class="k-code">partial_return_rate</div>
+      <div class="k-formula">= 部分退货订单 / 退款订单</div>
+      <div class="k-threshold" style="color:var(--red)">> 30% → 组合设计排查</div>
     </div>
   </div>
 </section>
 
-<section class="section" id="agent-list">
-  <div class="section-title"><span class="icon">👥</span> 5+1 业务 Agent</div>
+<!-- TOPIC 3 -->
+<section class="section" id="t3">
+  <div class="sec-h"><span class="ico">🌐</span> 专题③ 分国家渠道运营健康度提升</div>
+  <div class="sec-d"><strong>一句话故事线</strong>：建立分国家的各渠道生命周期体系与国家画像 → 同国家内不同流量布局差异化 + 对标本土品牌 → 差异化运营 → 风险预警与机会识别。<br><strong>负责 Agent</strong>：渠道 & 国家运营</div>
+</section>
+
+<section class="section" id="t3-sub">
+  <div class="sec-h" style="font-size:18px">子课题 × 3</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th style="width:5%">#</th><th style="width:22%">子课题</th><th style="width:28%">业务问题</th><th style="width:20%">核心输入表</th><th>核心输出</th></tr></thead>
+      <tbody>
+        <tr><td class="dom">①</td><td class="sk">渠道生命周期管理与战略校准</td><td>各国家×渠道处于导入/成长/成熟/衰退哪一阶段？国家画像（规模、增速、利润、用户、竞争）如何？</td><td class="dt">fact_channel_country_month<br>dim_channel</td><td>生命周期表、国家画像表</td></tr>
+        <tr><td class="dom">②</td><td class="sk">渠道差异性分析与差异化运营策略</td><td>同国家内自然流/付费/红人/促销流量占比与转化如何？本土竞品流量结构如何？</td><td class="dt">fact_channel_traffic<br>fact_channel_perf</td><td>流量结构表、对标结论、差异化策略表</td></tr>
+        <tr><td class="dom">③</td><td class="sk">渠道风险预警与机会点识别</td><td>哪些渠道/国家有风险、哪些有机会？加码/守住/收缩/观望如何选？</td><td class="dt">fact_channel_health<br>经营指标</td><td>风险机会雷达、决策矩阵</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="kpi-grid" style="margin-top:16px">
+    <div class="kpi"><div class="k-name">生命周期阶段</div><div class="k-formula">导入/成长/成熟/衰退</div><div class="k-threshold" style="color:var(--blue-500)">判定：增速 + 规模 + 利润组合</div></div>
+    <div class="kpi"><div class="k-name">流量结构</div><div class="k-formula">自然流% + 付费% + 红人% + 促销%</div><div class="k-threshold" style="color:var(--amber)">竞品对标差异 > 10pp → 策略调整</div></div>
+    <div class="kpi"><div class="k-name">决策矩阵</div><div class="k-formula">加码 / 守住 / 收缩 / 观望</div><div class="k-threshold" style="color:var(--green)">成长期+高利润 → 加码</div></div>
+  </div>
+</section>
+
+<!-- TOPIC 4 -->
+<section class="section" id="t4">
+  <div class="sec-h"><span class="ico">📈</span> 专题④ 营销项目类型 ROI 量化提升</div>
+  <div class="sec-d"><strong>一句话故事线</strong>：建立营销活动类型与项目分类及预算提报规则 → 建立各类营销活动 ROI 基准 → 结合外部曝光量构建因营销活动带来的销售额算法模型 → 按国家-渠道-活动类型做精细化 ROI 测算。<br><strong>负责 Agent</strong>：营销 & LTV & 项目 ROI</div>
+</section>
+
+<section class="section" id="t4-sub">
+  <div class="sec-h" style="font-size:18px">子课题 × 3</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th style="width:5%">#</th><th style="width:22%">子课题</th><th style="width:28%">业务问题</th><th style="width:20%">核心输入表</th><th>核心输出</th></tr></thead>
+      <tbody>
+        <tr><td class="dom">①</td><td class="sk">用户精准营销与生命周期二次增长曲线</td><td>LTV 分段如何？各项目类型在分段内的 LTV 增量？二次增长曲线如何刻画？</td><td class="dt">fact_user_ltv<br>fact_order<br>dim_campaign</td><td>LTV 分段表、LTV 增量表、二次增长曲线结论</td></tr>
+        <tr><td class="dom">②</td><td class="sk">广告费/促销/推广/会员费结构与 ROI 基准</td><td>营销活动类型与项目如何分类？预算提报规则如何？各类 ROI/ROAS 基准？</td><td class="dt">fact_marketing<br>dim_campaign_type</td><td>费用结构表、活动分类与预算规则、ROI 基准表</td></tr>
+        <tr><td class="dom">③</td><td class="sk">平台广告与产品促销精细化运营（曝光归因 ROI）</td><td>结合曝光量，因营销活动带来的销售额如何归因？国家-渠道-活动类型 ROI？</td><td class="dt">fact_campaign_daily<br>fact_campaign_roi</td><td>归因模型说明、精细化 ROI 表</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="kpi-grid" style="margin-top:16px">
+    <div class="kpi"><div class="k-name">ROAS</div><div class="k-formula">= attributed_sales / ad_spend</div><div class="k-threshold" style="color:var(--green)">基准：品牌广告 ≥ 3、效果 ≥ 5</div></div>
+    <div class="kpi"><div class="k-name">LTV 增量</div><div class="k-formula">= (活动参与用户 LTV - 非参与用户 LTV) / 活动费用</div><div class="k-threshold" style="color:var(--green)">ROI > 1 可持续</div></div>
+    <div class="kpi"><div class="k-name">曝光归因 ROI</div><div class="k-formula">曝光→触达→转化→销售额模型</div><div class="k-threshold" style="color:var(--blue-500)">分国家×渠道×活动类型格子</div></div>
+  </div>
+</section>
+
+<!-- ═══════════ III. 交叉故事线 ═══════════ -->
+<div style="margin:48px 0 24px;padding:16px 0;border-bottom:3px solid var(--blue-900);">
+  <div class="sec-h" style="font-size:26px"><span class="ico">🔗</span> 交叉故事线：专题间信息流</div>
+</div>
+
+<section class="section" id="cl-all">
+  <div class="sec-d">四大专题独立运行时各有价值，但真正的业务洞察来自专题之间的信息交叉。4 条交叉线定义了标准化的触发条件、数据流和消费关系。</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>#</th><th>数据流</th><th>生产者</th><th>消费者</th><th>业务价值</th><th>实现优先级</th></tr></thead>
+      <tbody>
+        <tr><td class="dom">CL1</td><td>VOC 痛点表 → 订单组合+退款归因 → 建议组合+建议卖点</td><td>VOC Agent</td><td>Order Agent</td><td>用户声音驱动产品与组合设计</td><td class="tag-g">P2</td></tr>
+        <tr><td class="dom">CL2</td><td>VOC 社区/话题标签 → 投放计划 → ROI 结果</td><td>VOC Agent</td><td>Marketing Agent</td><td>高浓度人群精准触达</td><td class="tag-o">P3</td></tr>
+        <tr><td class="dom">CL3</td><td>退款多维归因 → VOC 售后主题 → 双重视图（订单侧+用户原话）</td><td>Order Agent</td><td>VOC Agent</td><td>数据+用户声音对照验证</td><td class="tag-g">P1 ✅</td></tr>
+        <tr><td class="dom">CL4</td><td>国家画像+生命周期+ROI → VOC 分层解读 → 投放优先级</td><td>Channel/Mkt Agent</td><td>VOC/Mkt Agent</td><td>战略角色驱动的 VOC 分层</td><td class="tag-o">P3</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section" id="cl1"><div class="sec-h" style="font-size:17px">CL1: VOC → 订单与商品优化</div>
+  <div class="cl"><div class="cl-num">1</div><div class="cl-body"><div class="cl-title">VOC 痛点/主题 → 订单组合与退款归因 → 建议组合 + 建议卖点</div><div class="cl-flow">fact_voc_summary + ods_voc_external → VOC Agent 产出痛点清单 → Order Agent 消费 + fact_order/fact_order_item/fact_return → 建议组合单 + 建议卖点单</div><div class="cl-trig">触发：VOC 专题按周/月产出后；或业务指定国家/渠道/品类时按需触发</div><div class="cl-val">可选：Channel Agent 提供国家/渠道优先级做 A/B 测试设计</div></div></div>
+</section>
+
+<section class="section" id="cl2"><div class="sec-h" style="font-size:17px">CL2: 社媒 VOC → 垂类投放 → 营销 ROI</div>
+  <div class="cl"><div class="cl-num">2</div><div class="cl-body"><div class="cl-title">VOC 高浓度社区/话题 → 投放计划与费用 → ROI 结论</div><div class="cl-flow">ods_voc_external + dim_voc_external_community → VOC Agent 产出高浓度社区/话题表 → Marketing Agent 消费 + fact_campaign_daily/fact_campaign_roi → 高浓度社区清单 + 建议投放形式 + ROI 结论</div><div class="cl-trig">触发：货架外 VOC 按周/月产出后；或营销提出垂类投放选址与形式建议需求</div></div></div>
+</section>
+
+<section class="section" id="cl3"><div class="sec-h" style="font-size:17px">CL3: 订单退款 → 反哺 VOC 与产品组合 <span class="tag-g" style="font-size:11px">MVP 已实现</span></div>
+  <div class="cl"><div class="cl-num">3</div><div class="cl-body"><div class="cl-title">退款多维归因 → VOC 售后/退款主题 → 双重视图（订单侧 + 用户原话）</div><div class="cl-flow">专题② 退款归因表 → refund_theme_input_for_voc（order_id, return_id, return_reason_code, is_partial_return, theme_suggested, country_code, channel_id）→ VOC Agent → dual_perspective_conclusions</div><div class="cl-trig">触发：专题② 退款归因与部分退组合按周/月产出后；或客服/产品提出售后与退款维度 VOC 穿透需求</div><div class="cl-val">已产出：dual_perspective_table.csv + dual_perspective_conclusions.txt</div></div></div>
+</section>
+
+<section class="section" id="cl4"><div class="sec-h" style="font-size:17px">CL4: 渠道与营销 → 反哺 VOC 与产品</div>
+  <div class="cl"><div class="cl-num">4</div><div class="cl-body"><div class="cl-title">国家×渠道画像 + 活动类型 ROI → VOC 分层解读规则 + 投放优先级</div><div class="cl-flow">专题③ 国家画像+生命周期 + 专题④ ROI → VOC Agent（成熟市场 = NPS/复购；新兴市场 = 首次触达/价格敏感度）+ Marketing Agent（投放优先级）</div><div class="cl-trig">触发：专题③ 国家画像+生命周期、专题④ 活动类型 ROI 按周/月产出后</div></div></div>
+</section>
+
+<!-- ═══════════ IV. SCM ═══════════ -->
+<div style="margin:48px 0 24px;padding:16px 0;border-bottom:3px solid var(--blue-900);">
+  <div class="sec-h" style="font-size:26px"><span class="ico">🏭</span> 供应链全链路 KPI 体系（L0-L4）</div>
+</div>
+
+<section class="section" id="scm-kpi">
+  <div class="sec-d">基于 Momcozy 真实 ERP 数据设计的供应链成本效率 KPI 体系，从北极星指标到执行层共四个层级，覆盖 8 大节点。</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>层级</th><th>编码</th><th>指标名称</th><th>公式</th><th>责任人</th></tr></thead>
+      <tbody>
+        <tr><td class="dom">L1 北极星</td><td>SC-L1-001</td><td class="sk">全链路供应链成本率</td><td>供应链总成本 / GMV</td><td>CFO / 供应链 VP</td></tr>
+        <tr><td class="dom">L1</td><td>SC-L1-002</td><td class="sk">物流成本增速 / 营收增速</td><td>物流成本 YoY% / GMV YoY%</td><td>供应链 VP</td></tr>
+        <tr><td class="dom">L1</td><td>SC-L1-003</td><td class="sk">全链路成本同比降幅</td><td>(去年单位成本 - 今年单位成本) / 去年单位成本</td><td>供应链 VP</td></tr>
+        <tr><td class="dom">L1</td><td>FD-L1-001</td><td class="sk">综合履约满意度指数</td><td>时效×40% + 质量×40% + 成本×20%</td><td>供应链 VP</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="sec-d" style="margin-top:20px;font-weight:700">L2/L3 节点层（15 项核心指标）</div>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="k-name">采购物流成本优化率</div><div class="k-code">SC-IN-L3-003</div><div class="k-formula">= (标准成本 - 实际) / 标准成本</div></div>
+    <div class="kpi"><div class="k-name">头程运费率</div><div class="k-code">SC-IN-L3-001</div><div class="k-formula">= 头程运费 / 采购货值</div></div>
+    <div class="kpi"><div class="k-name">关税合规成本率</div><div class="k-code">SC-IN-L3-002</div><div class="k-formula">= (关税+清关+认证费) / 采购货值</div></div>
+    <div class="kpi"><div class="k-name">仓储费率</div><div class="k-code">SC-IV-L3-001</div><div class="k-formula">= 仓储费 / 月均库存货值</div></div>
+    <div class="kpi"><div class="k-name">资金占用成本率</div><div class="k-code">SC-IV-L3-002</div><div class="k-formula">= 均库存 × 年资金成本 / 年销额</div></div>
+    <div class="kpi"><div class="k-name">长库龄仓储费占比</div><div class="k-code">SC-IV-L3-004</div><div class="k-formula">= 库龄>180d 仓储费 / 总仓储费</div></div>
+    <div class="kpi"><div class="k-name">尾程配送费率</div><div class="k-code">SC-OUT-L3-001</div><div class="k-formula">= 尾程费 / 销售额</div></div>
+    <div class="kpi"><div class="k-name">退货处理成本率</div><div class="k-code">SC-OUT-L3-002</div><div class="k-formula">= 退货物流成本 / 销售额</div></div>
+    <div class="kpi"><div class="k-name">订单履约成本率</div><div class="k-code">SC-OUT-L3-004</div><div class="k-formula">= 拣货+打包+贴标+出库费 / 订单数</div></div>
+  </div>
+</section>
+
+<section class="section" id="scm-kp01">
+  <div class="sec-h" style="font-size:17px">kp01：需求预测执行方案</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>指标</th><th>公式</th><th>阈值</th><th>升级规则</th></tr></thead>
+      <tbody>
+        <tr><td class="dom">MAPE</td><td>abs(预测 - 实际) / 实际</td><td class="tag-g">核心 SKU < 25%</td><td>偏差 > 20% 且连续 2 周 → 升级</td></tr>
+        <tr><td class="dom">Bias</td><td>(预测 - 实际) / 实际</td><td class="tag-o">连续 2 周同方向 → 校准</td><td>同一 GTM 2 周同方向 Bias → 升级</td></tr>
+        <tr><td class="dom">预测覆盖率</td><td>已在预测的 SKU / 核心 SKU</td><td class="tag-g">> 80%</td><td>—</td></tr>
+        <tr><td class="dom">预测驱动补货率</td><td>预测触发的补货 SKU / 总补货</td><td class="tag-g">> 70%</td><td>—</td></tr>
+        <tr><td class="dom">缺货率</td><td>缺货 SKU / 活跃 SKU</td><td class="tag" style="background:var(--red-light);color:var(--red)">> 3% 告警</td><td>> 5% → 升级</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="sec-d" style="margin-top:8px"><strong>SOP 节奏</strong>：日（核心 SKU 缺货监控）→ 周（预测 vs 实际、TOP20 偏差复盘、滚动 4 周更新）→ 月（Bias 校准）→ 大促前（2-3 轮修正、冻结窗口）</div>
+</section>
+
+<section class="section" id="scm-kp02">
+  <div class="sec-h" style="font-size:17px">kp02：仓网规划执行方案</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>指标</th><th>阈值</th><th>区域策略</th></tr></thead>
+      <tbody>
+        <tr><td class="dom">仓网覆盖率</td><td class="tag" style="background:var(--red-light);color:var(--red)">< 85% 告警</td><td class="dom">北美</td><td>主战场复合治理（采购+尾程+仓储）</td></tr>
+        <tr><td class="dom">区域库存周转天数</td><td class="tag-o">> 100d 告警</td><td class="dom">欧洲</td><td>二级仓 + 弹性调拨接货</td></tr>
+        <tr><td class="dom">超龄库存 > 90d 占比</td><td class="tag" style="background:var(--red-light);color:var(--red)">> 10% 告警</td><td class="dom">拉美</td><td>暂停补货、优先清库存</td></tr>
+        <tr><td class="dom">单仓周转</td><td class="tag-o">> 120d 告警</td><td class="dom">中东</td><td>控风险仓策</td></tr>
+        <tr><td class="dom">调拨成功率</td><td class="tag" style="background:var(--red-light);color:var(--red)">< 80% 提示</td><td class="dom">亚太</td><td>轻仓试点、小步扩张</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section" id="scm-kp03">
+  <div class="sec-h" style="font-size:17px">kp03：计划排产执行方案</div>
+  <div class="kpi-grid">
+    <div class="kpi"><div class="k-name">计划达成率</div><div class="k-formula">< 90% 告警</div></div>
+    <div class="kpi"><div class="k-name">PO 准时交付率</div><div class="k-formula">< 90% 告警</div></div>
+    <div class="kpi"><div class="k-name">未交付 PO 周转天数</div><div class="k-formula">> 30d 告警</div></div>
+    <div class="kpi"><div class="k-name">产能利用率</div><div class="k-formula">< 70% 或 > 95% 告警</div></div>
+    <div class="kpi"><div class="k-name">需求偏差 > 20% 占比</div><div class="k-formula">> 15% 告警</div></div>
+    <div class="kpi"><div class="k-name">冻结窗口合规率</div><div class="k-formula">< 95% 告警</div></div>
+  </div>
+</section>
+
+<section class="section" id="scm-kp04">
+  <div class="sec-h" style="font-size:17px">kp04：仓储与调拨协同执行方案</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>指标</th><th>阈值</th><th>调拨决策规则</th></tr></thead>
+      <tbody>
+        <tr><td class="dom">仓储费率</td><td>持续监控</td><td class="sk">目标仓库存覆盖 < 25 天 AND 来源仓 > 60 天</td><td>→ 自动触发调拨</td></tr>
+        <tr><td class="dom">库龄 > 90d 占比</td><td class="tag" style="background:var(--red-light);color:var(--red)">> 10%</td><td class="sk">调拨 ROI < 1 持续 2 周</td><td>→ 暂停调拨</td></tr>
+        <tr><td class="dom">库龄 > 180d 占比</td><td class="tag" style="background:var(--red-light);color:var(--red)">> 5% 强告警</td><td class="sk">180d+ 库存 > 5%</td><td>→ 强制处理</td></tr>
+        <tr><td class="dom">库存准确率</td><td class="tag" style="background:var(--red-light);color:var(--red)">< 98% 告警</td><td class="sk">z-score > 1.6 + 高覆盖</td><td>→ 优先调拨</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section class="section" id="scm-gov">
+  <div class="sec-h" style="font-size:17px">8 节点治理计划 + 预期收益</div>
+  <div class="mgrid">
+    <div class="mcard"><div class="m-name">P0: 仓网规划</div><div class="m-use">北美主战场复合治理，欧洲二级仓弹性调拨，拉美清库存优先</div></div>
+    <div class="mcard"><div class="m-name">P0: 需求预测</div><div class="m-use">MAPE < 25%，Bias 校准，预测驱动补货率 > 70%</div></div>
+    <div class="mcard"><div class="m-name">P1: 计划排产</div><div class="m-use">周 PSI 会、日异常工单、月计划运营复盘</div></div>
+    <div class="mcard"><div class="m-name">P1: 头程</div><div class="m-use">海运整柜率提升，空运占比优化</div></div>
+    <div class="mcard"><div class="m-name">P1: 仓储</div><div class="m-use">库龄管理，仓容利用率 70-95% 区间</div></div>
+    <div class="mcard"><div class="m-name">P1: 调拨</div><div class="m-use">自动调拨规则，ROI > 1 约束</div></div>
+    <div class="mcard"><div class="m-name">P2: 尾程</div><div class="m-use">区域化配送方案，单位成本对标</div></div>
+    <div class="mcard"><div class="m-name">P2: 逆向</div><div class="m-use">退货处理单位成本，返架率 > 70%</div></div>
+  </div>
+  <div class="hl" style="margin-top:18px">
+    <h3>预期收益路径</h3>
+    <p>12 个月：总成本率 32-33%，全链周转 < 100d | 18 个月：28-30%，周转 85-90d<br>物流优化已省 1.23 亿 → 采购成本上升 7919 万对冲了 64.3% → 下一步需要采购侧协同治理</p>
+  </div>
+</section>
+
+<!-- ═══════════ V. 归因方法论 ═══════════ -->
+<div style="margin:48px 0 24px;padding:16px 0;border-bottom:3px solid var(--blue-900);">
+  <div class="sec-h" style="font-size:26px"><span class="ico">📐</span> 归因方法论：从公式到决策</div>
+</div>
+
+<section class="section" id="attr-margin">
+  <div class="sec-h" style="font-size:17px">毛利率归因：运营口径</div>
+  <div class="hl">
+    <h3>核心公式</h3>
+    <p>GPM_op = 1 - 生产成本率 - 广告费率 - 履约费率<br>ΔGPM_op ≈ -ΔPCR - ΔMCR - ΔFCR</p>
+  </div>
+  <div class="sec-d">实际案例：独立站毛利率从 35.8% 降至 32.4%（-3.4pp），三大驱动：产品结构变化（贡献 -1.5pp）、广告费率上升（-1.0pp）、促销力度加大（-0.8pp）。"以价换量、增收不增利"。</div>
+  <div class="cl"><div class="cl-num">!</div><div class="cl-body"><div class="cl-title">费率归因：Amazon vs DTC 双平台对比</div><div class="cl-flow">7 项费率逐项对比：退款率、促销折扣率、线上推广费率、生产成本率、头程费率、仓储配送费率、平台佣金率</div><div class="cl-val">独立站毛利率降 3.4pp，Amazon 仅 +0.16pp → 独立站策略需要重新审视</div></div></div>
+</section>
+
+<section class="section" id="attr-4factor">
+  <div class="sec-h" style="font-size:17px">四因素分解：毛利额驱动</div>
+  <div class="hl">
+    <h3>前台毛利额 = 客品数 × 品单价 × 订单数 × 前台毛利率</h3>
+    <p>时间窗口：YTD2026P1（2026-01~02） vs 同期 YTD2025P1（2025-01~02）<br>SPU 下钻：每 SPU 的客品数 = sales_qty / order_count；毛利率 = front_gross_profit / sales</p>
+  </div>
+  <div class="sec-d">80/20 验证：专题③ SPU 分析验证"20% SPU 贡献 80% 销售额、80% 毛利额"的帕累托分布。</div>
+</section>
+
+<section class="section" id="attr-contrib">
+  <div class="sec-h" style="font-size:17px">贡献度方法体系</div>
+  <div class="mgrid">
+    <div class="mcard"><div class="m-name">简单贡献度</div><div class="m-skill">contribution-calculation</div><div class="m-use">单维度占比分解：各平台/区域/品线贡献%</div></div>
+    <div class="mcard"><div class="m-name">分箱贡献度</div><div class="m-skill">binning-contribution</div><div class="m-use">等频 5 分箱：高/中高/中/低/极低，结构变化 vs 自身变化分解</div></div>
+    <div class="mcard"><div class="m-name">复杂贡献度</div><div class="m-skill">complex-contribution</div><div class="m-use">偏微分：∂GPM/∂xi；全微分：dGPM = Σ(∂GPM/∂xi)Δxi；弹性系数：ηi = (∂GPM/GPM)/(Δxi/xi)</div></div>
+    <div class="mcard"><div class="m-name">毛利率瀑布图</div><div class="m-skill">margin-attribution</div><div class="m-use">逐因素瀑布图，从基准毛利率→各因素贡献→最终毛利率</div></div>
+    <div class="mcard"><div class="m-name">四因素归因</div><div class="m-skill">专题04 四因素</div><div class="m-use">客品数×品单价×订单数×毛利率的连环替代法</div></div>
+    <div class="mcard"><div class="m-name">广告多触点归因</div><div class="m-skill">ad-attribution</div><div class="m-use">首次点击/末次点击/线性/时间衰减/U型归因模型</div></div>
+  </div>
+</section>
+
+<!-- ═══════════ VI. Agent ═══════════ -->
+<div style="margin:48px 0 24px;padding:16px 0;border-bottom:3px solid var(--blue-900);">
+  <div class="sec-h" style="font-size:26px"><span class="ico">🤖</span> 5+1 业务智能体</div>
+</div>
+
+<section class="section" id="agent-all">
+  <div class="sec-d">每个 Agent 有明确的 Scope（专题归属）、Input Tables（数据契约）、Skills（调用脚本）、Output Format（产出规范）。</div>
   <div class="agent-grid">
-    <div class="agent-card">
-      <div class="agent-name">VOC & 消费者洞察</div>
-      <div class="agent-scope">专题① · 交叉线1/2：货架内外 VOC、竞品声量、用户分群、需求挖掘</div>
-      <div class="agent-skills"><span class="q-tag">voc-insights</span><span class="q-tag">social-media-analysis</span><span class="q-tag">competitive-analysis</span><span class="q-tag">customer-segmentation</span></div>
+    <div class="agent">
+      <div class="a-name">VOC & 消费者洞察</div>
+      <div class="a-scope">专题① | 交叉线1/2</div>
+      <div class="a-tables">fact_voc_summary, fact_voc_trend, fact_voc_brand_summary, ods_voc_external, dim_voc_tag, dim_voc_external_community, dim_brand, ods_review_detail</div>
+      <div class="a-tags"><span class="tag">voc-insights</span><span class="tag">social-media-analysis</span><span class="tag">competitive-analysis</span><span class="tag">customer-segmentation</span><span class="tag">user-multidim-insight-ppt</span></div>
     </div>
-    <div class="agent-card">
-      <div class="agent-name">订单 & 成本 & 退款 & 仓网</div>
-      <div class="agent-scope">专题② · 交叉线3：订单量结构、前后台成本、履约时效、退款归因</div>
-      <div class="agent-skills"><span class="q-tag">margin-attribution</span><span class="q-tag">cost-structure-analysis</span><span class="q-tag">contribution-calculation</span></div>
+    <div class="agent">
+      <div class="a-name">订单 & 成本 & 退款 & 仓网</div>
+      <div class="a-scope">专题② | 交叉线3</div>
+      <div class="a-tables">fact_order, fact_order_item, fact_return, fact_order_cost, fact_order_fulfillment, dim_warehouse, dim_order_type, dim_return_reason, dim_campaign</div>
+      <div class="a-tags"><span class="tag">margin-attribution</span><span class="tag">cost-structure-analysis</span><span class="tag">contribution-calculation</span><span class="tag">category-management</span></div>
     </div>
-    <div class="agent-card">
-      <div class="agent-name">渠道 & 国家运营</div>
-      <div class="agent-scope">专题③ · 交叉线4：渠道生命周期、流量结构、差异化策略、风险预警</div>
-      <div class="agent-skills"><span class="q-tag">channel-effect-analysis</span><span class="q-tag">traffic-source-analysis</span><span class="q-tag">risk-warning-system</span></div>
+    <div class="agent">
+      <div class="a-name">渠道 & 国家运营</div>
+      <div class="a-scope">专题③ | 交叉线4</div>
+      <div class="a-tables">fact_channel_country_month, fact_channel_traffic, fact_channel_health, dim_channel, dim_channel_lifecycle, dim_traffic_source</div>
+      <div class="a-tags"><span class="tag">channel-effect-analysis</span><span class="tag">traffic-source-analysis</span><span class="tag">risk-warning-system</span></div>
     </div>
-    <div class="agent-card">
-      <div class="agent-name">营销 & LTV & 项目 ROI</div>
-      <div class="agent-scope">专题④ · 交叉线2/4：活动分类、ROI 基准、LTV 增量、曝光归因</div>
-      <div class="agent-skills"><span class="q-tag">ad-attribution</span><span class="q-tag">promotion-analysis</span><span class="q-tag">cohort-analysis</span></div>
+    <div class="agent">
+      <div class="a-name">营销 & LTV & 项目 ROI</div>
+      <div class="a-scope">专题④ | 交叉线2/4</div>
+      <div class="a-tables">fact_campaign_daily, fact_campaign_roi, fact_user_ltv, fact_user_lifecycle, dim_campaign, dim_campaign_type, dim_ltv_segment</div>
+      <div class="a-tags"><span class="tag">ad-attribution</span><span class="tag">promotion-analysis</span><span class="tag">cohort-analysis</span><span class="tag">ad-performance-analysis</span></div>
     </div>
-    <div class="agent-card">
-      <div class="agent-name">战略解码 & 业财一体化</div>
-      <div class="agent-scope">全专题交叉：财务指标拆解、经营分析框架、管理层摘要</div>
-      <div class="agent-skills"><span class="q-tag">dupont-analysis</span><span class="q-tag">metrics-system-design</span><span class="q-tag">dashboard-design</span></div>
+    <div class="agent">
+      <div class="a-name">战略解码 & 业财一体化</div>
+      <div class="a-scope">全专题交叉</div>
+      <div class="a-tables">所有专题输出表、交叉线输出、crossline_评估模板</div>
+      <div class="a-tags"><span class="tag">dupont-analysis</span><span class="tag">metrics-system-design</span><span class="tag">dashboard-design</span><span class="tag">data-reporting</span></div>
     </div>
-    <div class="agent-card" style="border-top-color: var(--green)">
-      <div class="agent-name">+1 SCM Agent</div>
-      <div class="agent-scope">SCM 子项目：成本异常诊断、库存健康、管理层摘要</div>
-      <div class="agent-skills"><span class="q-tag">scm-cost-anomaly-diagnosis</span><span class="q-tag">scm-inventory-health-diagnosis</span><span class="q-tag">scm-executive-summary</span></div>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="crosslines">
-  <div class="section-title"><span class="icon">🔗</span> 交叉故事线（专题间信息流）</div>
-  <div class="cl-card">
-    <div class="cl-num">1</div>
-    <div class="cl-body">
-      <div class="cl-title">VOC → 订单与商品优化</div>
-      <div class="cl-flow">VOC 痛点表 → 订单组合+退款归因 → 建议组合+建议卖点</div>
-      <div class="cl-value">用户声音驱动产品与组合设计</div>
-    </div>
-  </div>
-  <div class="cl-card">
-    <div class="cl-num">2</div>
-    <div class="cl-body">
-      <div class="cl-title">社媒 VOC → 垂类投放 ROI</div>
-      <div class="cl-flow">VOC 社区/话题标签 → 投放计划 → ROI 结果</div>
-      <div class="cl-value">高浓度人群精准触达</div>
-    </div>
-  </div>
-  <div class="cl-card">
-    <div class="cl-num">3</div>
-    <div class="cl-body">
-      <div class="cl-title">订单退款 → 反哺 VOC</div>
-      <div class="cl-flow">退款多维归因 → VOC 售后主题 → 双重视图（订单侧+用户原话）</div>
-      <div class="cl-value">数据+用户声音对照验证</div>
-    </div>
-  </div>
-  <div class="cl-card">
-    <div class="cl-num">4</div>
-    <div class="cl-body">
-      <div class="cl-title">渠道营销 → 反哺 VOC</div>
-      <div class="cl-flow">国家画像+生命周期+ROI → VOC 分层解读 → 投放优先级</div>
-      <div class="cl-value">战略角色驱动的 VOC 分层</div>
+    <div class="agent" style="border-top-color:var(--green)">
+      <div class="a-name">+1 SCM Agent</div>
+      <div class="a-scope">SCM 子项目</div>
+      <div class="a-tables">dim_scm_metric, dwt_supply_chain_cost, dwt_inventory_health, dwt_supplier_performance, dwt_fulfillment_stability, scm_action_tracking</div>
+      <div class="a-tags"><span class="tag-o">scm-cost-anomaly-diagnosis</span><span class="tag-o">scm-inventory-health-diagnosis</span><span class="tag-o">scm-executive-summary</span></div>
     </div>
   </div>
 </section>
 
-<!-- ═══════════ 四、场景化工作流 ═══════════ -->
-<section class="section" id="wf-margin">
-  <div class="section-title"><span class="icon">🔄</span> 场景：毛利率下降分析</div>
-  <div class="wf-card">
-    <div class="wf-steps">
-      <div class="wf-step">1. intent_parser<br>识别 "margin-attribution"</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">2. margin-attribution<br>Skill 指导归因框架</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">3. 专题01<br>毛利归因管道</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">4. 专题02<br>费率归因（按需）</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">5. 专题04<br>四因素归因（按需）</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">6. ChartEngine<br>生成瀑布图 PNG</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">7. PPTGenerator<br>生成 .pptx</div>
-    </div>
-    <div class="wf-output">📦 最终产出：因素分解瀑布图 + 归因表 + 管理层汇报 PPT</div>
+<section class="section" id="agent-data">
+  <div class="sec-h" style="font-size:17px">数据契约：表×专题依赖矩阵</div>
+  <div class="sec-d">23 张表按优先级分 4 批启动，每批解锁一组专题和交叉线。</div>
+  <div class="tbl-wrap">
+    <table class="tbl">
+      <thead><tr><th>批次</th><th>表</th><th>解锁专题</th><th>解锁交叉线</th></tr></thead>
+      <tbody>
+        <tr><td class="tag-g">Batch 1</td><td>fact_order, fact_order_item, fact_return + dims</td><td>专题②</td><td>交叉线3</td></tr>
+        <tr><td class="tag-o">Batch 2</td><td>fact_voc_summary, fact_voc_trend, fact_voc_brand_summary, ods_voc_external + dims</td><td>专题①</td><td>交叉线1/2</td></tr>
+        <tr><td class="tag-o">Batch 3</td><td>fact_channel_* + dims</td><td>专题③</td><td>—</td></tr>
+        <tr><td class="tag-o">Batch 4</td><td>fact_campaign_*, fact_user_* + dims</td><td>专题④</td><td>交叉线2/4</td></tr>
+      </tbody>
+    </table>
   </div>
 </section>
 
-<section class="section" id="wf-voc">
-  <div class="section-title"><span class="icon">🔄</span> 场景：用户声音分析</div>
-  <div class="wf-card">
-    <div class="wf-steps">
-      <div class="wf-step">1. 专题① 货架内<br>NPS/差评/标签</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">2. 专题① 货架外<br>Reddit/社区采集</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">3. competitive-analysis<br>竞品 VOC 对比</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">4. 全域声量趋势<br>渠道布局建议</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">5. 交叉线3<br>退款反哺 VOC</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">6. 交叉线1<br>VOC → 产品组合</div>
-    </div>
-    <div class="wf-output">📦 最终产出：VOC 看板 + 竞品对比表 + 高潜需求清单 + 建议组合卖点</div>
-  </div>
+<!-- ═══════════ VII. 工作流 ═══════════ -->
+<div style="margin:48px 0 24px;padding:16px 0;border-bottom:3px solid var(--blue-900);">
+  <div class="sec-h" style="font-size:26px"><span class="ico">🔄</span> 五个端到端工作流</div>
+</div>
+
+<section id="wf-margin"><div class="sec-h" style="font-size:17px">毛利率下降分析</div>
+  <div class="wf"><div class="wf-steps">
+    <div class="wf-step">意图解析<br><small>margin-attribution</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">专题01 毛利归因<br><small>平台×区域分解</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">专题02 费率归因<br><small>7费率逐项对比</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">专题04 四因素<br><small>客品数×品单价…</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">ChartEngine<br><small>瀑布图 PNG</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">PPTGenerator<br><small>.pptx</small></div>
+  </div><div class="wf-out">📦 因素分解瀑布图 + 归因表 + 管理层 PPT（成本结构/履约时效/退款原因分析三页）</div></div>
 </section>
 
-<section class="section" id="wf-channel">
-  <div class="section-title"><span class="icon">🔄</span> 场景：渠道健康度诊断</div>
-  <div class="wf-card">
-    <div class="wf-steps">
-      <div class="wf-step">1. channel-effect<br>GMV/利润对比</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">2. 专题③ 生命周期<br>阶段判断</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">3. traffic-source<br>流量来源拆解</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">4. 竞品对标<br>本土品牌对比</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">5. 风险机会<br>加码/守住/收缩/观望</div>
-    </div>
-    <div class="wf-output">📦 最终产出：渠道效果对比表 + 生命周期表 + 决策矩阵</div>
-  </div>
+<section id="wf-voc"><div class="sec-h" style="font-size:17px">全域 VOC 分析</div>
+  <div class="wf"><div class="wf-steps">
+    <div class="wf-step">货架内 VOC<br><small>NPS/差评/标签</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">货架外采集<br><small>Reddit/社区</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">竞品 VOC 对比<br><small>品牌声量表</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">声量趋势<br><small>全域 12 月趋势</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">CL3 退款反哺<br><small>双重视图</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">CL1 产品组合<br><small>建议组合+卖点</small></div>
+  </div><div class="wf-out">📦 VOC 看板 + 竞品对比表 + 高潜需求清单 + 建议组合 + 建议卖点</div></div>
 </section>
 
-<section class="section" id="wf-mkt">
-  <div class="section-title"><span class="icon">🔄</span> 场景：营销 ROI 量化</div>
-  <div class="wf-card">
-    <div class="wf-steps">
-      <div class="wf-step">1. ad-attribution<br>多触点归因</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">2. 专题④ 费用结构<br>广告/促销/推广拆分</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">3. LTV分段<br>活动类型增量</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">4. 精细化ROI<br>国家×渠道×类型</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">5. 交叉线2<br>VOC→投放选址</div>
-    </div>
-    <div class="wf-output">📦 最终产出：渠道 ROAS 表 + LTV 增量表 + 精细化 ROI 格子表</div>
-  </div>
+<section id="wf-channel"><div class="sec-h" style="font-size:17px">渠道健康度诊断</div>
+  <div class="wf"><div class="wf-steps">
+    <div class="wf-step">channel-effect<br><small>GMV/利润对比</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">生命周期<br><small>导入/成长/成熟/衰退</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">流量来源<br><small>自然/付费/红人/促销</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">竞品对标<br><small>本土品牌流量结构</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">决策矩阵<br><small>加码/守住/收缩/观望</small></div>
+  </div><div class="wf-out">📦 渠道对比表 + 生命周期表 + 决策矩阵 + 差异化策略表</div></div>
 </section>
 
-<section class="section" id="wf-monthly">
-  <div class="section-title"><span class="icon">🔄</span> 场景：月度经营分析报告</div>
-  <div class="wf-card">
-    <div class="wf-steps">
-      <div class="wf-step">1. yoy-mom<br>同比环比趋势</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">2. 四专题<br>按需运行管道</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">3. 交叉线编排<br>专题间串联</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">4. pyramid-principle<br>构建报告结构</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">5. core-insight<br>提炼核心观点</div>
-      <div class="wf-arrow">→</div>
-      <div class="wf-step">6. PPTGenerator<br>生成完整 PPT</div>
-    </div>
-    <div class="wf-output">📦 最终产出：完整月度经营分析 .pptx（趋势+四专题+交叉洞察+建议措施）</div>
-  </div>
+<section id="wf-mkt"><div class="sec-h" style="font-size:17px">营销 ROI 量化</div>
+  <div class="wf"><div class="wf-steps">
+    <div class="wf-step">ad-attribution<br><small>多触点归因</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">费用结构<br><small>广告/促销/推广/会员</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">LTV 分段<br><small>活动类型增量</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">精细化 ROI<br><small>国家×渠道×类型</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">CL2 投放选址<br><small>高浓度社区</small></div>
+  </div><div class="wf-out">📦 渠道 ROAS 表 + LTV 增量表 + 精细化 ROI 格子表 + 高浓度社区清单</div></div>
 </section>
 
-<!-- ═══════════ 五、方法论 ═══════════ -->
-<section class="section" id="method-attribution">
-  <div class="section-title"><span class="icon">📐</span> 归因方法论体系</div>
-  <div class="method-grid">
-    <div class="method-card"><div class="method-name">简单贡献度</div><div class="method-skill">contribution-calculation</div><div class="method-use">单维度占比分解</div></div>
-    <div class="method-card"><div class="method-name">分箱贡献度</div><div class="method-skill">binning-contribution</div><div class="method-use">连续变量分组归因</div></div>
-    <div class="method-card"><div class="method-name">复杂贡献度</div><div class="method-skill">complex-contribution</div><div class="method-use">偏微分/全微分/弹性系数</div></div>
-    <div class="method-card"><div class="method-name">毛利率归因</div><div class="method-skill">margin-attribution</div><div class="method-use">瀑布图因素分解</div></div>
-    <div class="method-card"><div class="method-name">四因素归因</div><div class="method-skill">专题04 四因素</div><div class="method-use">客品数×品单价×订单数×毛利率</div></div>
-    <div class="method-card"><div class="method-name">广告多触点归因</div><div class="method-skill">ad-attribution</div><div class="method-use">营销渠道贡献分配</div></div>
-  </div>
+<section id="wf-monthly"><div class="sec-h" style="font-size:17px">月度经营分析报告</div>
+  <div class="wf"><div class="wf-steps">
+    <div class="wf-step">yoy-mom<br><small>同比环比趋势</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">四专题管道<br><small>VOC+订单+渠道+营销</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">交叉线编排<br><small>CL1→CL4 串联</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">pyramid-principle<br><small>金字塔结构</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">core-insight<br><small>核心观点提炼</small></div><div class="wf-arr">→</div>
+    <div class="wf-step">PPTGenerator<br><small>完整 PPT</small></div>
+  </div><div class="wf-out">📦 完整月度经营分析 .pptx：趋势+四专题+交叉洞察+建议措施+演讲稿</div></div>
 </section>
 
-<section class="section" id="method-metrics">
-  <div class="section-title"><span class="icon">📐</span> 指标体系设计方法论</div>
-  <div class="method-grid">
-    <div class="method-card"><div class="method-name">北极星→L0-L3 解码</div><div class="method-skill">supply-chain-indicator-decoding</div><div class="method-use">供应链绩效体系</div></div>
-    <div class="method-card"><div class="method-name">MECE 指标树</div><div class="method-skill">metrics-system-design</div><div class="method-use">通用指标体系设计</div></div>
-    <div class="method-card"><div class="method-name">KPI SMART 化</div><div class="method-skill">kpi-smart-monthly-goal</div><div class="method-use">月度目标制定</div></div>
-    <div class="method-card"><div class="method-name">存量BI指标字典</div><div class="method-skill">ref/data_index/</div><div class="method-use">现有指标口径查阅</div></div>
-    <div class="method-card"><div class="method-name">看板设计</div><div class="method-skill">dashboard-design</div><div class="method-use">BI 看板布局</div></div>
-  </div>
-</section>
+<!-- ═══════════ VIII. 附录 ═══════════ -->
+<div style="margin:48px 0 24px;padding:16px 0;border-bottom:3px solid var(--blue-900);">
+  <div class="sec-h" style="font-size:26px"><span class="ico">📚</span> 附录：Skills 索引 & 数据资产</div>
+</div>
 
-<section class="section" id="method-comm">
-  <div class="section-title"><span class="icon">📐</span> 管理层沟通方法论</div>
-  <div class="method-grid">
-    <div class="method-card"><div class="method-name">金字塔原理</div><div class="method-skill">mckinsey-pyramid-principle</div><div class="method-use">逻辑结构树</div></div>
-    <div class="method-card"><div class="method-name">结论先行</div><div class="method-skill">mckinsey-conclusion-first</div><div class="method-use">观点提炼公式</div></div>
-    <div class="method-card"><div class="method-name">核心观点提炼</div><div class="method-skill">mckinsey-core-insight</div><div class="method-use">一句话结论</div></div>
-    <div class="method-card"><div class="method-name">故事线模板</div><div class="method-skill">00_故事线文档模板.md</div><div class="method-use">专题故事线文档</div></div>
-    <div class="method-card"><div class="method-name">供应链管理层叙事</div><div class="method-skill">supply-chain-solution-storyline</div><div class="method-use">评估报告+启动会叙事</div></div>
-    <div class="method-card"><div class="method-name">交叉线编排</div><div class="method-skill">交叉故事线_编排总图.md</div><div class="method-use">专题间信息流关系</div></div>
-  </div>
-</section>
-
-<section class="section" id="method-knowledge">
-  <div class="section-title"><span class="icon">📐</span> 知识萃取方法论</div>
-  <div class="method-grid">
-    <div class="method-card"><div class="method-name">双引擎知识萃取</div><div class="method-skill">book-knowledge-extraction</div><div class="method-use">书籍/长文→思维模型→行为内化</div></div>
-    <div class="method-card"><div class="method-name">母婴品牌洞察框架</div><div class="method-skill">insights/maternal_brand/</div><div class="method-use">母婴品牌竞品研究</div></div>
-    <div class="method-card"><div class="method-name">数据分析专业知识</div><div class="method-skill">data_ability/</div><div class="method-use">运营分析+数据分析</div></div>
-    <div class="method-card"><div class="method-name">独立站毛利归因案例</div><div class="method-skill">reason_analysis/</div><div class="method-use">归因分析完整案例</div></div>
-    <div class="method-card"><div class="method-name">Reddit VOC 采集</div><div class="method-skill">3种方式：API/JSON/Playwright</div><div class="method-use">社媒数据采集</div></div>
-    <div class="method-card"><div class="method-name">电商供应链 QA</div><div class="method-skill">scm/ 参考文档</div><div class="method-use">供应链业务知识</div></div>
-  </div>
-</section>
-
-<!-- ═══════════ 六、Skills 总览 ═══════════ -->
-<section class="section" id="skill-index">
-  <div class="section-title"><span class="icon">📚</span> 完整 Skills 索引</div>
-
-  <div class="section-desc" style="margin-top:16px; font-weight:700; color:var(--blue-900);">跨境电商数据分析 Skills（40个）</div>
-  <div class="skill-grid">
-    <div class="skill-cat"><div class="cat-name">📊 数据基础（3）</div><div class="cat-items">data-analyst, data-cleaning, knowledge-query</div></div>
-    <div class="skill-cat"><div class="cat-name">💰 财务分析（1）</div><div class="cat-items">dupont-analysis</div></div>
-    <div class="skill-cat"><div class="cat-name">🔍 归因分析（4）</div><div class="cat-items">binning-contribution, complex-contribution, contribution-calculation, margin-attribution</div></div>
-    <div class="skill-cat"><div class="cat-name">📉 成本分析（1）</div><div class="cat-items">cost-structure-analysis</div></div>
-    <div class="skill-cat"><div class="cat-name">📦 产品分析（1）</div><div class="cat-items">category-management</div></div>
-    <div class="skill-cat"><div class="cat-name">📈 趋势分析（1）</div><div class="cat-items">yoy-mom-analysis</div></div>
-    <div class="skill-cat"><div class="cat-name">🔮 预测分析（1）</div><div class="cat-items">demand-forecasting</div></div>
-    <div class="skill-cat"><div class="cat-name">🔔 监控分析（4）</div><div class="cat-items">alert-management, alert-optimization, anomaly-detection, multi-metric-correlation</div></div>
-    <div class="skill-cat"><div class="cat-name">👤 用户分析（1）</div><div class="cat-items">customer-segmentation</div></div>
-    <div class="skill-cat"><div class="cat-name">💲 定价分析（1）</div><div class="cat-items">pricing-optimization</div></div>
-    <div class="skill-cat"><div class="cat-name">🏭 供应链（2）</div><div class="cat-items">inventory-optimization, supplier-performance</div></div>
-    <div class="skill-cat"><div class="cat-name">👥 用户行为（3）</div><div class="cat-items">basket-analysis, cohort-analysis, conversion-funnel</div></div>
-    <div class="skill-cat"><div class="cat-name">📣 营销分析（1）</div><div class="cat-items">ad-attribution</div></div>
-    <div class="skill-cat"><div class="cat-name">🔬 方法论（5）</div><div class="cat-items">ab-testing, causal-inference, cyclical-analysis, metrics-system-design, structural-analysis</div></div>
-    <div class="skill-cat"><div class="cat-name">📋 报告（3）</div><div class="cat-items">dashboard-design, data-reporting, user-multidim-insight-ppt</div></div>
-    <div class="skill-cat"><div class="cat-name">🎪 活动分析（3）</div><div class="cat-items">competitive-analysis, promotion-analysis, sales-conversion-analysis</div></div>
-    <div class="skill-cat"><div class="cat-name">🌐 渠道分析（3）</div><div class="cat-items">ad-performance-analysis, channel-effect-analysis, traffic-source-analysis</div></div>
-    <div class="skill-cat"><div class="cat-name">📱 内容分析（1）</div><div class="cat-items">social-media-analysis</div></div>
-    <div class="skill-cat"><div class="cat-name">⚠️ 风险分析（1）</div><div class="cat-items">risk-warning-system</div></div>
+<section class="section" id="skills">
+  <div class="sec-h" style="font-size:17px">跨境电商数据分析 Skills（40 个）</div>
+  <div class="sgrid">
+    <div class="scat"><div class="cname">📊 数据基础（3）</div><div class="citems">data-analyst, data-cleaning, knowledge-query</div></div>
+    <div class="scat"><div class="cname">💰 财务分析（1）</div><div class="citems">dupont-analysis</div></div>
+    <div class="scat"><div class="cname">🔍 归因分析（4）</div><div class="citems">binning-contribution, complex-contribution, contribution-calculation, margin-attribution</div></div>
+    <div class="scat"><div class="cname">📉 成本分析（1）</div><div class="citems">cost-structure-analysis</div></div>
+    <div class="scat"><div class="cname">📦 产品分析（1）</div><div class="citems">category-management</div></div>
+    <div class="scat"><div class="cname">📈 趋势分析（1）</div><div class="citems">yoy-mom-analysis</div></div>
+    <div class="scat"><div class="cname">🔮 预测分析（1）</div><div class="citems">demand-forecasting</div></div>
+    <div class="scat"><div class="cname">🔔 监控分析（4）</div><div class="citems">alert-management, alert-optimization, anomaly-detection, multi-metric-correlation</div></div>
+    <div class="scat"><div class="cname">👤 用户分析（1）</div><div class="citems">customer-segmentation</div></div>
+    <div class="scat"><div class="cname">💲 定价分析（1）</div><div class="citems">pricing-optimization</div></div>
+    <div class="scat"><div class="cname">🏭 供应链（2）</div><div class="citems">inventory-optimization, supplier-performance</div></div>
+    <div class="scat"><div class="cname">👥 用户行为（3）</div><div class="citems">basket-analysis, cohort-analysis, conversion-funnel</div></div>
+    <div class="scat"><div class="cname">📣 营销分析（1）</div><div class="citems">ad-attribution</div></div>
+    <div class="scat"><div class="cname">🔬 方法论（5）</div><div class="citems">ab-testing, causal-inference, cyclical-analysis, metrics-system-design, structural-analysis</div></div>
+    <div class="scat"><div class="cname">📋 报告（3）</div><div class="citems">dashboard-design, data-reporting, user-multidim-insight-ppt</div></div>
+    <div class="scat"><div class="cname">🎪 活动分析（3）</div><div class="citems">competitive-analysis, promotion-analysis, sales-conversion-analysis</div></div>
+    <div class="scat"><div class="cname">🌐 渠道分析（3）</div><div class="citems">ad-performance-analysis, channel-effect-analysis, traffic-source-analysis</div></div>
+    <div class="scat"><div class="cname">📱 内容分析（1）</div><div class="citems">social-media-analysis</div></div>
+    <div class="scat"><div class="cname">⚠️ 风险分析（1）</div><div class="citems">risk-warning-system</div></div>
   </div>
 
-  <div class="section-desc" style="margin-top:32px; font-weight:700; color:var(--blue-900);">麦肯锡 PPT Skills（20个）</div>
-  <div class="skill-grid">
-    <div class="skill-cat"><div class="cat-name">🎯 专家入口</div><div class="cat-items">mckinsey-ppt-multidim-chart-expert</div></div>
-    <div class="skill-cat"><div class="cat-name">📝 内容规划（2）</div><div class="cat-items">mckinsey-core-insight, mckinsey-pyramid-principle</div></div>
-    <div class="skill-cat"><div class="cat-name">🏗️ 结构设计</div><div class="cat-items">mckinsey-slide-template</div></div>
-    <div class="skill-cat"><div class="cat-name">📊 数据分析</div><div class="cat-items">mckinsey-insight-extraction</div></div>
-    <div class="skill-cat"><div class="cat-name">🎨 图表选择（2）</div><div class="cat-items">mckinsey-chart-classification, mckinsey-chart-type-guide</div></div>
-    <div class="skill-cat"><div class="cat-name">📐 图表制作（7）</div><div class="cat-items">chartify-chart-generation, bar-chart, combination-chart, donut-chart, grouped-chart, multi-dimensional-charts, stacked-chart</div></div>
-    <div class="skill-cat"><div class="cat-name">💼 业务应用（4）</div><div class="cat-items">brand-health-charts, channel-strategy-charts, consumer-analysis-charts, maternal-ecommerce-charts</div></div>
-    <div class="skill-cat"><div class="cat-name">🎨 设计规范</div><div class="cat-items">mckinsey-color-standards</div></div>
-    <div class="skill-cat"><div class="cat-name">💬 表达方法</div><div class="cat-items">mckinsey-conclusion-first</div></div>
+  <div class="sec-d" style="margin-top:28px;font-weight:700">麦肯锡 PPT Skills（20 个）</div>
+  <div class="sgrid">
+    <div class="scat"><div class="cname">🎯 专家入口</div><div class="citems">mckinsey-ppt-multidim-chart-expert</div></div>
+    <div class="scat"><div class="cname">📝 内容规划（2）</div><div class="citems">core-insight, pyramid-principle</div></div>
+    <div class="scat"><div class="cname">🏗️ 结构设计</div><div class="citems">slide-template</div></div>
+    <div class="scat"><div class="cname">📊 数据分析</div><div class="citems">insight-extraction</div></div>
+    <div class="scat"><div class="cname">🎨 图表选择（2）</div><div class="citems">chart-classification, chart-type-guide</div></div>
+    <div class="scat"><div class="cname">📐 图表制作（7）</div><div class="citems">chartify-chart-generation, bar-chart, combination-chart, donut-chart, grouped-chart, multi-dimensional-charts, stacked-chart</div></div>
+    <div class="scat"><div class="cname">💼 业务应用（4）</div><div class="citems">brand-health-charts, channel-strategy-charts, consumer-analysis-charts, maternal-ecommerce-charts</div></div>
+    <div class="scat"><div class="cname">🎨 设计规范</div><div class="citems">color-standards</div></div>
+    <div class="scat"><div class="cname">💬 表达方法</div><div class="citems">conclusion-first</div></div>
   </div>
 </section>
 
 <section class="section" id="data-assets">
-  <div class="section-title"><span class="icon">🗄️</span> 数据资产与参考资源</div>
-  <div class="method-grid">
-    <div class="method-card"><div class="method-name">存量 BI 指标字典</div><div class="method-skill">ref/data_index/</div><div class="method-use">现有所有 BI 指标的定义和口径</div></div>
-    <div class="method-card"><div class="method-name">数仓表结构与主键设计</div><div class="method-skill">05_数仓表结构.md</div><div class="method-use">表名、字段、主键、粒度</div></div>
-    <div class="method-card"><div class="method-name">专题×数据需求矩阵</div><div class="method-skill">01_专题课题_数据需求矩阵.md</div><div class="method-use">每个子课题需要的输入表</div></div>
-    <div class="method-card"><div class="method-name">AI Skills 模型速查表</div><div class="method-skill">AI Skills 模型 Cheatsheet · v4</div><div class="method-use">AI 模型选用指南</div></div>
-    <div class="method-card"><div class="method-name">Momcozy 行业报告</div><div class="method-skill">ref/company_info/</div><div class="method-use">母婴品牌出海行业调研</div></div>
-    <div class="method-card"><div class="method-name">电商供应链 QA</div><div class="method-skill">scm/（reference）/</div><div class="method-use">供应链领域知识</div></div>
+  <div class="sec-h" style="font-size:17px">数据资产清单</div>
+  <div class="mgrid">
+    <div class="mcard"><div class="m-name">存量 BI 指标字典</div><div class="m-use">现有所有 BI 指标的定义和口径，40+ 字段到看板的映射</div></div>
+    <div class="mcard"><div class="m-name">数仓表结构设计 V1.0</div><div class="m-use">16 张事实表 + 13 张维度表 + 3 张 ODS 的完整 schema，含主键/分区键/外键</div></div>
+    <div class="mcard"><div class="m-name">专题×数据需求矩阵</div><div class="m-use">14 子课题 × 4 专题的输入表、字段、口径、切片维度、数据源、就绪状态</div></div>
+    <div class="mcard"><div class="m-name">字段对照·存量BI映射</div><div class="m-use">抽象字段名 ↔ 现有 BI 看板指标的双向映射（VOC分析/售后成本/销售预测等）</div></div>
+    <div class="mcard"><div class="m-name">外部数据需求清单</div><div class="m-use">按专题列出外部数据源：Reddit API/社区、Ad Platform API、竞品数据、行业报告</div></div>
+    <div class="mcard"><div class="m-name">交叉线评估模板</div><div class="m-use">标准化评估框架：健康度评分 + Phase 优先级排序</div></div>
   </div>
 </section>
 
-<div class="hl-box">
-  <h3>🚀 快速开始</h3>
-  <p>
-    运行测试：<code style="background:rgba(255,255,255,0.12);padding:2px 8px;border-radius:4px">python -m pytest tests/ -v</code>（25 项测试）<br>
-    Data Agent：<code style="background:rgba(255,255,255,0.12);padding:2px 8px;border-radius:4px">python main_project_lute/test_agent.py</code>（15 项场景测试）<br>
-    完整 Phase2：<code style="background:rgba(255,255,255,0.12);padding:2px 8px;border-radius:4px">python main_project_lute/pipelines/scripts/phase2/generate_phase2_mock_data.py && python main_project_lute/pipelines/scripts/phase2/run_phase2_topic2_pipeline.py && python main_project_lute/pipelines/scripts/phase2/build_phase2_ppt.py</code>
-  </p>
-</div>
+<section class="section" id="run">
+  <div class="hl">
+    <h3>🚀 快速开始</h3>
+    <p>
+      <strong>测试</strong>：<code>python -m pytest tests/ -v</code>（25 项）<br>
+      <strong>Agent</strong>：<code>python main_project_lute/test_agent.py</code>（15 场景，100% pass）<br>
+      <strong>Phase2</strong>：<code>python main_project_lute/pipelines/scripts/phase2/run_phase2_topic2_pipeline.py</code><br>
+      <strong>Phase3 VOC</strong>：<code>python main_project_lute/pipelines/scripts/phase3/run_phase3_topic1_voc_pipeline.py</code><br>
+      <strong>Mock 生成</strong>：<code>python main_project_lute/pipelines/scripts/_shared/mock_generator.py</code>
+    </p>
+  </div>
+</section>
 
-<div style="text-align:center;padding:40px 0;color:var(--grey-400);font-size:13px;">
-  卓越商业分析专家AI SaaS · 数智决策-AI效能作战室 · Playbook v2.0 · 2026-06-10
-</div>
+<div class="footer">卓越商业分析专家AI SaaS · 数智决策-AI效能作战室 · Playbook v3.0 · 2026-06-10 · 基于仓库 2.8GB 全量扫描</div>
 
 </main>
 
-<!-- ═══════════ SCRIPTS ═══════════ -->
 <script>
-// Toggle nav sections
-function toggleSection(el) {
-  el.parentElement.classList.toggle('collapsed');
+function toggleSection(el){el.parentElement.classList.toggle('collapsed');}
+function updateActiveNav(){
+  let cur='';document.querySelectorAll('.section,.hero').forEach(s=>{if(s.getBoundingClientRect().top<200)cur=s.id;});
+  document.querySelectorAll('.nav-item').forEach(a=>a.classList.toggle('active',a.getAttribute('href')==='#'+cur));
 }
-
-// Highlight active nav item on scroll
-const sections = document.querySelectorAll('.section, .hero');
-const navItems = document.querySelectorAll('.nav-item');
-
-function updateActiveNav() {
-  let current = '';
-  sections.forEach(s => {
-    const top = s.getBoundingClientRect().top;
-    if (top < 200) current = s.id;
-  });
-  navItems.forEach(a => {
-    a.classList.toggle('active', a.getAttribute('href') === '#' + current);
-  });
+window.addEventListener('scroll',updateActiveNav);
+function filter(){
+  const q=document.getElementById('search').value.toLowerCase().trim();
+  document.querySelectorAll('.section,.hero').forEach(s=>{s.style.display=q&&!s.textContent.toLowerCase().includes(q)?'none':'';});
+  document.querySelector('.stats').style.display=q?'none':'';
 }
-
-window.addEventListener('scroll', updateActiveNav);
-
-// Simple search filter
-function filterContent() {
-  const q = document.getElementById('search').value.toLowerCase().trim();
-  if (!q) {
-    document.querySelectorAll('.section, .hero, .stats-row').forEach(el => el.style.display = '');
-    return;
-  }
-  document.querySelectorAll('.section, .hero').forEach(section => {
-    const text = section.textContent.toLowerCase();
-    section.style.display = text.includes(q) ? '' : 'none';
-  });
-  document.querySelector('.stats-row').style.display = 'statsrow'.includes(q) ? '' : 'none';
-}
-
-// Nav click smooth scroll
-document.querySelectorAll('.nav-item').forEach(a => {
-  a.addEventListener('click', e => {
-    e.preventDefault();
-    const id = a.getAttribute('href').substring(1);
-    const el = document.getElementById(id);
-    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
-});
+document.querySelectorAll('.nav-item').forEach(a=>{a.addEventListener('click',e=>{e.preventDefault();const el=document.getElementById(a.getAttribute('href').substring(1));if(el)el.scrollIntoView({behavior:'smooth',block:'start'});});});
 </script>
-
 </body>
 </html>

@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 760" width="1280" height="760">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+  </style>
+  <defs>
+    <marker id="arrow-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#3b82f6"/>
+    </marker>
+  </defs>
+  <rect width="1280" height="760" fill="#ffffff"/>
+  <text x="40" y="44" fill="#111827" font-size="22" font-weight="650">积加 SCM 业务流程图</text>
+  <text x="40" y="68" fill="#6b7280" font-size="13">需求从计划进入采购履约，最终落到库存状态、履约出库和对账闭环</text>
+
+  <rect x="40" y="100" width="1180" height="560" rx="8" fill="none" stroke="#d1d5db" stroke-width="1.1" stroke-dasharray="6,4"/>
+  <text x="54" y="122" fill="#6b7280" font-size="11" font-weight="600">端到端业务流程</text>
+
+  <g id="sales">
+    <rect x="70" y="190" width="150" height="58" rx="4" fill="#fff7ed" stroke="#fb923c" stroke-width="1.2"/>
+
+    <text x="145" y="218" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">销售目标/订单</text>
+    <text x="145" y="236" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">销量与需求</text>
+  </g>
+
+  <g id="replenish">
+    <rect x="250" y="190" width="150" height="58" rx="4" fill="#eff6ff" stroke="#60a5fa" stroke-width="1.2"/>
+
+    <text x="325" y="218" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">智能补货</text>
+    <text x="325" y="236" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">目标库存/推荐量</text>
+  </g>
+
+  <g id="plan">
+    <rect x="430" y="110" width="150" height="58" rx="4" fill="#eff6ff" stroke="#60a5fa" stroke-width="1.2"/>
+
+    <text x="505" y="138" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">采购/发货/装配计划</text>
+    <text x="505" y="156" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">计划量</text>
+  </g>
+
+  <g id="split">
+    <rect x="430" y="280" width="150" height="58" rx="4" fill="#ecfdf5" stroke="#34d399" stroke-width="1.2"/>
+
+    <text x="505" y="308" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">分单任务</text>
+    <text x="505" y="326" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">供应商/装配仓</text>
+  </g>
+
+  <g id="po">
+    <rect x="610" y="110" width="150" height="58" rx="4" fill="#ecfdf5" stroke="#34d399" stroke-width="1.2"/>
+
+    <text x="685" y="138" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">采购订单</text>
+    <text x="685" y="156" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">采购量/未交量</text>
+  </g>
+
+  <g id="delivery">
+    <rect x="610" y="280" width="150" height="58" rx="4" fill="#ecfdf5" stroke="#34d399" stroke-width="1.2"/>
+
+    <text x="685" y="308" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">交货单</text>
+    <text x="685" y="326" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">交货/质检/发货</text>
+  </g>
+
+  <g id="shipment">
+    <rect x="790" y="190" width="150" height="58" rx="4" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.2"/>
+
+    <text x="865" y="218" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">发货/调拨/头程</text>
+    <text x="865" y="236" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">待出运/在途</text>
+  </g>
+
+  <g id="inbound">
+    <rect x="970" y="110" width="150" height="58" rx="4" fill="#f5f3ff" stroke="#a78bfa" stroke-width="1.2"/>
+
+    <text x="1045" y="138" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">入库/质检</text>
+    <text x="1045" y="156" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">应收/已收/良品</text>
+  </g>
+
+  <g id="inventory">
+    <rect x="970" y="280" width="150" height="58" rx="4" fill="#f5f3ff" stroke="#a78bfa" stroke-width="1.2"/>
+
+    <text x="1045" y="308" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">库存快照/流水</text>
+    <text x="1045" y="326" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">可用/预占/批次</text>
+  </g>
+
+  <g id="outbound">
+    <rect x="610" y="470" width="150" height="58" rx="4" fill="#f5f3ff" stroke="#a78bfa" stroke-width="1.2"/>
+
+    <text x="685" y="498" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">销售出库/拣货</text>
+    <text x="685" y="516" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">出库/装箱</text>
+  </g>
+
+  <g id="package">
+    <rect x="790" y="470" width="150" height="58" rx="4" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.2"/>
+
+    <text x="865" y="498" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">包裹/物流下单</text>
+    <text x="865" y="516" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">运单/费用/状态</text>
+  </g>
+
+  <g id="reconcile">
+    <rect x="970" y="470" width="150" height="58" rx="4" fill="#fee2e2" stroke="#ef4444" stroke-width="1.2"/>
+
+    <text x="1045" y="498" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">稽核对账</text>
+    <text x="1045" y="516" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">三方仓/FBA/费用</text>
+  </g>
+
+
+  <path d="M 220 219 L 250 219" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+
+
+  <path d="M 400 219 L 430 139" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+  <rect x="373" y="158" width="84" height="18" rx="3" fill="#ffffff" opacity="0.92"/><text x="415" y="171" fill="#374151" font-size="10" text-anchor="middle">采购</text>
+
+  <path d="M 400 219 L 430 309" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+  <rect x="373" y="243" width="84" height="18" rx="3" fill="#ffffff" opacity="0.92"/><text x="415" y="256" fill="#374151" font-size="10" text-anchor="middle">分单</text>
+
+  <path d="M 580 139 L 610 139" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+
+
+  <path d="M 580 309 L 610 309" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+
+
+  <path d="M 760 139 L 790 219" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+  <rect x="733" y="158" width="84" height="18" rx="3" fill="#ffffff" opacity="0.92"/><text x="775" y="171" fill="#374151" font-size="10" text-anchor="middle">发货</text>
+
+  <path d="M 760 309 L 790 219" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+  <rect x="733" y="243" width="84" height="18" rx="3" fill="#ffffff" opacity="0.92"/><text x="775" y="256" fill="#374151" font-size="10" text-anchor="middle">调拨</text>
+
+  <path d="M 940 219 L 970 139" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+  <rect x="913" y="158" width="84" height="18" rx="3" fill="#ffffff" opacity="0.92"/><text x="955" y="171" fill="#374151" font-size="10" text-anchor="middle">到仓</text>
+
+  <path d="M 1045 168 L 1045 280" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+  <rect x="1003" y="203" width="84" height="18" rx="3" fill="#ffffff" opacity="0.92"/><text x="1045" y="216" fill="#374151" font-size="10" text-anchor="middle">入库</text>
+
+  <path d="M 970 309 L 760 500" fill="none" stroke="#3b82f6" stroke-width="1.7" stroke-dasharray="5,4" marker-end="url(#arrow-blue)"/>
+  <rect x="823" y="383.5" width="84" height="18" rx="3" fill="#ffffff" opacity="0.92"/><text x="865" y="396.5" fill="#374151" font-size="10" text-anchor="middle">销售占用</text>
+
+  <path d="M 760 500 L 790 500" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+
+
+  <path d="M 940 500 L 970 500" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+
+
+  <path d="M 1045 470 L 1045 338" fill="none" stroke="#3b82f6" stroke-width="1.7" stroke-dasharray="5,4" marker-end="url(#arrow-blue)"/>
+  <rect x="1003" y="383" width="84" height="18" rx="3" fill="#ffffff" opacity="0.92"/><text x="1045" y="396" fill="#374151" font-size="10" text-anchor="middle">差异回写</text>
+
+</svg>

@@ -1,0 +1,420 @@
+{
+  "generatedAt": "2026-06-04T00:00:00+08:00",
+  "sourceKnowledgeBase": "/Users/pray/project/ecom_ana_overview/scm/drafts/analysis/jijia-scm-knowledge-base-draft-20260604",
+  "sourceFiles": [
+    "index-draft-20260604.md",
+    "source-map-draft-20260604.md",
+    "module-plan-draft-20260604.md",
+    "module-purchase-draft-20260604.md",
+    "module-warehouse-draft-20260604.md",
+    "module-logistics-draft-20260604.md",
+    "metric-dictionary-draft-20260604.md",
+    "cross-module-lineage-draft-20260604.md",
+    "database-and-knowledge-base-design-draft-20260604.md",
+    "warehouse-live-page-data-dictionary-draft-20260604.md",
+    "warehouse-live-metric-dictionary-draft-20260604.md",
+    "warehouse-live-lineage-knowledge-base-plan-draft-20260604.md",
+    "warehouse-live-rerun-evidence-draft-20260604.md"
+  ],
+  "pageCount": 40,
+  "statusCounts": {
+    "loaded_with_data": 24,
+    "loaded_no_data_after_filter": 12,
+    "loaded_with_status_counts": 1,
+    "loaded_no_table_data": 3
+  },
+  "highValuePages": [
+    {
+      "group": "库存",
+      "label": "仓库库存",
+      "title": "仓库库存",
+      "status": "loaded_with_data",
+      "paginationTotal": 49,
+      "statusCounts": []
+    },
+    {
+      "group": "库存",
+      "label": "产品库存",
+      "title": "产品库存",
+      "status": "loaded_with_data",
+      "paginationTotal": 29319,
+      "statusCounts": []
+    },
+    {
+      "group": "库存",
+      "label": "自营仓库存",
+      "title": "自营仓库存",
+      "status": "loaded_with_data",
+      "paginationTotal": 9247,
+      "statusCounts": []
+    },
+    {
+      "group": "库存",
+      "label": "平台仓库存",
+      "title": "Amazon.FBA库存",
+      "status": "loaded_with_data",
+      "paginationTotal": 6684,
+      "statusCounts": []
+    },
+    {
+      "group": "库存",
+      "label": "批次库存",
+      "title": "批次库存",
+      "status": "loaded_with_data",
+      "paginationTotal": 279915,
+      "statusCounts": []
+    },
+    {
+      "group": "入库管理",
+      "label": "入库单",
+      "title": "入库单",
+      "status": "loaded_with_status_counts",
+      "paginationTotal": 0,
+      "statusCounts": [
+        {
+          "label": "待入库",
+          "count": 818
+        }
+      ]
+    },
+    {
+      "group": "库内管理",
+      "label": "调拨单",
+      "title": "调拨单",
+      "status": "loaded_with_data",
+      "paginationTotal": 2189,
+      "statusCounts": [
+        {
+          "label": "待提交",
+          "count": 177
+        },
+        {
+          "label": "待拣货",
+          "count": 2012
+        },
+        {
+          "label": "待出库",
+          "count": 189
+        },
+        {
+          "label": "调拨在途",
+          "count": 4586
+        }
+      ]
+    },
+    {
+      "group": "库内管理",
+      "label": "调整单",
+      "title": "调整单",
+      "status": "loaded_with_data",
+      "paginationTotal": 63627,
+      "statusCounts": [
+        {
+          "label": "全部",
+          "count": 63627
+        },
+        {
+          "label": "已完成",
+          "count": 63627
+        }
+      ]
+    },
+    {
+      "group": "库内管理",
+      "label": "盘点单",
+      "title": "盘点单",
+      "status": "loaded_with_data",
+      "paginationTotal": 40,
+      "statusCounts": [
+        {
+          "label": "已完成",
+          "count": 31
+        },
+        {
+          "label": "已作废",
+          "count": 9
+        }
+      ]
+    },
+    {
+      "group": "库内管理",
+      "label": "其它入库单",
+      "title": "其它入库单",
+      "status": "loaded_with_data",
+      "paginationTotal": 1608,
+      "statusCounts": [
+        {
+          "label": "待提交",
+          "count": 1
+        },
+        {
+          "label": "待处理",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "group": "库内管理",
+      "label": "其它出库单",
+      "title": "其它出库单",
+      "status": "loaded_with_data",
+      "paginationTotal": 26313,
+      "statusCounts": []
+    },
+    {
+      "group": "库内管理",
+      "label": "库存状态变更单",
+      "title": "库存状态变更单",
+      "status": "loaded_with_data",
+      "paginationTotal": 4,
+      "statusCounts": []
+    },
+    {
+      "group": "库内管理",
+      "label": "装配单",
+      "title": "装配单",
+      "status": "loaded_with_data",
+      "paginationTotal": 1,
+      "statusCounts": [
+        {
+          "label": "全部",
+          "count": 1
+        },
+        {
+          "label": "已完成",
+          "count": 1
+        }
+      ]
+    },
+    {
+      "group": "库内管理",
+      "label": "装箱任务",
+      "title": "装箱任务",
+      "status": "loaded_with_data",
+      "paginationTotal": 162,
+      "statusCounts": [
+        {
+          "label": "待装箱",
+          "count": 162
+        }
+      ]
+    },
+    {
+      "group": "出库管理",
+      "label": "物流下单",
+      "title": "物流下单",
+      "status": "loaded_with_data",
+      "paginationTotal": 153,
+      "statusCounts": []
+    },
+    {
+      "group": "出库管理",
+      "label": "销售出库单",
+      "title": "销售出库单",
+      "status": "loaded_with_data",
+      "paginationTotal": 1022,
+      "statusCounts": []
+    },
+    {
+      "group": "出库管理",
+      "label": "运输单",
+      "title": "运输单",
+      "status": "loaded_with_data",
+      "paginationTotal": 267,
+      "statusCounts": []
+    },
+    {
+      "group": "出库管理",
+      "label": "包裹单",
+      "title": "包裹单",
+      "status": "loaded_with_data",
+      "paginationTotal": 55937,
+      "statusCounts": [
+        {
+          "label": "全部",
+          "count": 1626152
+        },
+        {
+          "label": "创建成功",
+          "count": 153
+        },
+        {
+          "label": "物流下单成功",
+          "count": 1770
+        },
+        {
+          "label": "待出运",
+          "count": 423256
+        },
+        {
+          "label": "已出运",
+          "count": 1180200
+        },
+        {
+          "label": "待揽收",
+          "count": 970
+        },
+        {
+          "label": "已取消",
+          "count": 19803
+        }
+      ]
+    },
+    {
+      "group": "三方仓管理",
+      "label": "三方仓入库预报单",
+      "title": "三方仓入库预报单",
+      "status": "loaded_with_data",
+      "paginationTotal": 3309,
+      "statusCounts": [
+        {
+          "label": "下单成功",
+          "count": 3037
+        }
+      ]
+    },
+    {
+      "group": "三方仓管理",
+      "label": "三方仓入库单",
+      "title": "三方仓入库单",
+      "status": "loaded_with_data",
+      "paginationTotal": 17678,
+      "statusCounts": [
+        {
+          "label": "待下单",
+          "count": 2
+        },
+        {
+          "label": "待入库",
+          "count": 2347
+        },
+        {
+          "label": "部分入库",
+          "count": 479
+        },
+        {
+          "label": "已完成",
+          "count": 14629
+        }
+      ]
+    },
+    {
+      "group": "三方仓管理",
+      "label": "三方仓销售出库单",
+      "title": "三方仓销售出库单",
+      "status": "loaded_with_data",
+      "paginationTotal": 0,
+      "statusCounts": []
+    },
+    {
+      "group": "三方仓管理",
+      "label": "三方仓大货出库单",
+      "title": "三方仓大货出库单",
+      "status": "loaded_with_data",
+      "paginationTotal": 91,
+      "statusCounts": [
+        {
+          "label": "待下单",
+          "count": 2
+        },
+        {
+          "label": "已出库",
+          "count": 58
+        }
+      ]
+    },
+    {
+      "group": "库存稽核",
+      "label": "三方仓库存差异",
+      "title": "三方仓库存差异",
+      "status": "loaded_with_data",
+      "paginationTotal": 781,
+      "statusCounts": []
+    },
+    {
+      "group": "基础配置",
+      "label": "仓库资料",
+      "title": "仓库资料",
+      "status": "loaded_with_data",
+      "paginationTotal": 81,
+      "statusCounts": []
+    },
+    {
+      "group": "基础配置",
+      "label": "库存批次初始化",
+      "title": "库存批次初始化",
+      "status": "loaded_with_data",
+      "paginationTotal": 56,
+      "statusCounts": []
+    }
+  ],
+  "modules": [
+    "计划",
+    "采购",
+    "仓库",
+    "物流"
+  ],
+  "businessChain": [
+    "销售订单/目标销量",
+    "智能补货/红绿线",
+    "采购计划/发货计划/装配计划",
+    "分单任务",
+    "采购订单/交货单",
+    "发货单/头程/调拨",
+    "入库/质检",
+    "库存快照/库存流水/批次库存",
+    "销售出库/包裹/物流",
+    "三方仓/FBA/费用对账"
+  ],
+  "dataLayers": [
+    "ODS",
+    "DWD",
+    "DWS",
+    "ADS",
+    "META"
+  ],
+  "metricLayers": [
+    "L0 源字段",
+    "L1 状态指标",
+    "L2 计算指标",
+    "L3 运营指标",
+    "L4 决策指标"
+  ],
+  "priorityFacts": [
+    "fact_inventory_snapshot",
+    "fact_inventory_transaction",
+    "fact_batch_inventory_snapshot",
+    "fact_delivery_order_line",
+    "fact_package_line",
+    "fact_transport_order_line",
+    "fact_third_party_order_line",
+    "fact_inventory_reconciliation_diff"
+  ],
+  "lineageEdges": [
+    [
+      "Page",
+      "contains",
+      "Field"
+    ],
+    [
+      "Field",
+      "maps_to",
+      "Fact"
+    ],
+    [
+      "Fact",
+      "aggregates_to",
+      "Metric"
+    ],
+    [
+      "Parameter",
+      "constrains",
+      "Metric"
+    ],
+    [
+      "Metric",
+      "checked_by",
+      "QualityRule"
+    ]
+  ]
+}

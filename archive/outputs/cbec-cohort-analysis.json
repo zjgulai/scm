@@ -1,0 +1,34 @@
+{
+  "template": "cbec-cohort-analysis",
+  "slides": [
+    {
+      "type": "title",
+      "title": "群组分析",
+      "subtitle": "生成时间: 2026-03-13"
+    },
+    {
+      "type": "summary",
+      "title": "核心发现",
+      "insights": [
+        "物流速度是主要痛点",
+        "产品质量口碑良好",
+        "包装设计有改进空间"
+      ],
+      "next_steps": [
+        "持续监控",
+        "定期分析"
+      ]
+    },
+    {
+      "type": "content",
+      "title": "数据摘要",
+      "bullets": [
+        "total_reviews: 1250",
+        "avg_rating: 4.2",
+        "positive: 68",
+        "neutral: 22",
+        "negative: 10"
+      ]
+    }
+  ]
+}

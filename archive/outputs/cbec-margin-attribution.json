@@ -1,0 +1,66 @@
+{
+  "template": "cbec-margin-attribution",
+  "slides": [
+    {
+      "type": "title",
+      "title": "DTC - 毛利率归因分析",
+      "subtitle": "生成时间: 2026-03-13"
+    },
+    {
+      "type": "summary",
+      "title": "核心发现",
+      "insights": [
+        "DTC平台物流成本环比上涨",
+        "促销活动折扣力度加大",
+        "低价产品占比提升"
+      ],
+      "next_steps": [
+        "优化物流方案，降低物流成本",
+        "调整促销策略，控制折扣力度",
+        "优化产品结构，提升高毛利产品占比"
+      ]
+    },
+    {
+      "type": "chart",
+      "title": "因素分解瀑布图",
+      "chart": {
+        "type": "waterfall",
+        "data": {
+          "items": [
+            {
+              "label": "物流成本上涨",
+              "value": -1.2
+            },
+            {
+              "label": "促销折扣增加",
+              "value": -0.9
+            },
+            {
+              "label": "产品结构变化",
+              "value": -0.7
+            },
+            {
+              "label": "汇率变动",
+              "value": -0.4
+            },
+            {
+              "label": "其他",
+              "value": -0.2
+            }
+          ],
+          "total": -3.4
+        }
+      }
+    },
+    {
+      "type": "content",
+      "title": "数据摘要",
+      "bullets": [
+        "current_margin: 0.324",
+        "previous_margin: 0.358",
+        "change_pp: -3.4",
+        "change_pct: -9.5"
+      ]
+    }
+  ]
+}

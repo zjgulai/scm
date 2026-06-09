@@ -1,0 +1,44 @@
+{
+  "template": "cbec-ad-attribution",
+  "slides": [
+    {
+      "type": "title",
+      "title": "营销ROI分析",
+      "subtitle": "生成时间: 2026-03-13"
+    },
+    {
+      "type": "summary",
+      "title": "核心发现",
+      "insights": [],
+      "next_steps": [
+        "优化广告投放预算",
+        "提升广告素材质量",
+        "精细化投放策略"
+      ]
+    },
+    {
+      "type": "chart",
+      "title": "多维度对比",
+      "chart": {
+        "type": "multi_bar",
+        "data": {
+          "labels": [
+            "Facebook",
+            "Google",
+            "TikTok"
+          ],
+          "series": [
+            {
+              "name": "ROAS",
+              "values": [
+                4.5,
+                3.8,
+                3.2
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

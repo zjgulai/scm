@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 760" width="1280" height="760">
+  <style>
+    text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, 'PingFang SC', 'Microsoft YaHei', sans-serif; }
+  </style>
+  <defs>
+    <marker id="arrow-blue" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#3b82f6"/>
+    </marker>
+  </defs>
+  <rect width="1280" height="760" fill="#ffffff"/>
+  <text x="40" y="44" fill="#111827" font-size="22" font-weight="650">积加 SCM 业务架构图</text>
+  <text x="40" y="68" fill="#6b7280" font-size="13">计划-采购-仓库-物流四模块进入数据底座、指标体系和知识库</text>
+
+  <rect x="40" y="100" width="1180" height="120" rx="8" fill="none" stroke="#d1d5db" stroke-width="1.1" stroke-dasharray="6,4"/>
+  <text x="54" y="122" fill="#6b7280" font-size="11" font-weight="600">业务模块层</text>
+
+  <g id="plan">
+    <rect x="80" y="140" width="150" height="58" rx="4" fill="#f9fafb" stroke="#60a5fa" stroke-width="1.2"/>
+
+    <text x="155" y="168" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">计划</text>
+    <text x="155" y="186" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">补货/红绿线/发货计划</text>
+  </g>
+
+  <g id="purchase">
+    <rect x="310" y="140" width="150" height="58" rx="4" fill="#f9fafb" stroke="#60a5fa" stroke-width="1.2"/>
+
+    <text x="385" y="168" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">采购</text>
+    <text x="385" y="186" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">分单/采购/交货</text>
+  </g>
+
+  <g id="warehouse">
+    <rect x="540" y="140" width="150" height="58" rx="4" fill="#f9fafb" stroke="#60a5fa" stroke-width="1.2"/>
+
+    <text x="615" y="168" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">仓库</text>
+    <text x="615" y="186" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">库存/批次/库内/出库</text>
+  </g>
+
+  <g id="logistics">
+    <rect x="770" y="140" width="150" height="58" rx="4" fill="#f9fafb" stroke="#60a5fa" stroke-width="1.2"/>
+
+    <text x="845" y="168" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">物流</text>
+    <text x="845" y="186" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">发货/头程/费用</text>
+  </g>
+
+  <g id="audit">
+    <rect x="1000" y="140" width="150" height="58" rx="4" fill="#f9fafb" stroke="#60a5fa" stroke-width="1.2"/>
+
+    <text x="1075" y="168" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">稽核对账</text>
+    <text x="1075" y="186" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">三方仓/FBA/费用</text>
+  </g>
+
+  <path d="M 230 169 L 310 169" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+  <rect x="228" y="148" width="84" height="18" rx="3" fill="#ffffff" opacity="0.92"/><text x="270" y="161" fill="#374151" font-size="10" text-anchor="middle">需求</text>
+
+  <path d="M 460 169 L 540 169" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+  <rect x="458" y="148" width="84" height="18" rx="3" fill="#ffffff" opacity="0.92"/><text x="500" y="161" fill="#374151" font-size="10" text-anchor="middle">交付</text>
+
+  <path d="M 690 169 L 770 169" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+  <rect x="688" y="148" width="84" height="18" rx="3" fill="#ffffff" opacity="0.92"/><text x="730" y="161" fill="#374151" font-size="10" text-anchor="middle">出运</text>
+
+  <path d="M 920 169 L 1000 169" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+  <rect x="918" y="148" width="84" height="18" rx="3" fill="#ffffff" opacity="0.92"/><text x="960" y="161" fill="#374151" font-size="10" text-anchor="middle">差异</text>
+
+  <rect x="40" y="270" width="1180" height="160" rx="8" fill="none" stroke="#d1d5db" stroke-width="1.1" stroke-dasharray="6,4"/>
+  <text x="54" y="292" fill="#6b7280" font-size="11" font-weight="600">数据底座层</text>
+
+  <g id="ods">
+    <rect x="80" y="320" width="150" height="58" rx="4" fill="#eff6ff" stroke="#93c5fd" stroke-width="1.2"/>
+
+    <text x="155" y="348" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">ODS 原始层</text>
+    <text x="155" y="366" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">ERP页面/导出/API</text>
+  </g>
+
+  <g id="dwd">
+    <rect x="300" y="320" width="150" height="58" rx="4" fill="#ecfdf5" stroke="#6ee7b7" stroke-width="1.2"/>
+
+    <text x="375" y="348" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">DWD 明细事实</text>
+    <text x="375" y="366" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">单据行/流水</text>
+  </g>
+
+  <g id="dws">
+    <rect x="520" y="320" width="150" height="58" rx="4" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.2"/>
+
+    <text x="595" y="348" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">DWS 汇总宽表</text>
+    <text x="595" y="366" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">SKU/仓库/日期</text>
+  </g>
+
+  <g id="ads">
+    <rect x="740" y="320" width="150" height="58" rx="4" fill="#f5f3ff" stroke="#a78bfa" stroke-width="1.2"/>
+
+    <text x="815" y="348" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">ADS 指标服务</text>
+    <text x="815" y="366" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">看板/预警</text>
+  </g>
+
+  <g id="meta">
+    <rect x="960" y="320" width="150" height="58" rx="4" fill="#f9fafb" stroke="#94a3b8" stroke-width="1.2"/>
+
+    <text x="1035" y="348" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">META 治理</text>
+    <text x="1035" y="366" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">字段/指标/血缘/参数</text>
+  </g>
+
+  <path d="M 230 349 L 300 349" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+  <rect x="223" y="328" width="84" height="18" rx="3" fill="#ffffff" opacity="0.92"/><text x="265" y="341" fill="#374151" font-size="10" text-anchor="middle">清洗</text>
+
+  <path d="M 450 349 L 520 349" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+  <rect x="443" y="328" width="84" height="18" rx="3" fill="#ffffff" opacity="0.92"/><text x="485" y="341" fill="#374151" font-size="10" text-anchor="middle">聚合</text>
+
+  <path d="M 670 349 L 740 349" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+  <rect x="663" y="328" width="84" height="18" rx="3" fill="#ffffff" opacity="0.92"/><text x="705" y="341" fill="#374151" font-size="10" text-anchor="middle">发布</text>
+
+  <path d="M 890 349 L 960 349" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+  <rect x="883" y="328" width="84" height="18" rx="3" fill="#ffffff" opacity="0.92"/><text x="925" y="341" fill="#374151" font-size="10" text-anchor="middle">治理</text>
+
+  <rect x="40" y="480" width="1180" height="160" rx="8" fill="none" stroke="#d1d5db" stroke-width="1.1" stroke-dasharray="6,4"/>
+  <text x="54" y="502" fill="#6b7280" font-size="11" font-weight="600">知识库与指标体系</text>
+
+  <g id="page">
+    <rect x="80" y="530" width="150" height="58" rx="4" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1.2"/>
+
+    <text x="155" y="558" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">页面字典</text>
+    <text x="155" y="576" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">40个仓库页</text>
+  </g>
+
+  <g id="entity">
+    <rect x="300" y="530" width="150" height="58" rx="4" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1.2"/>
+
+    <text x="375" y="558" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">实体字典</text>
+    <text x="375" y="576" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">SKU/仓库/批次/单据</text>
+  </g>
+
+  <g id="metric">
+    <rect x="520" y="530" width="150" height="58" rx="4" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1.2"/>
+
+    <text x="595" y="558" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">指标字典</text>
+    <text x="595" y="576" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">L0-L4 分层</text>
+  </g>
+
+  <g id="lineage">
+    <rect x="740" y="530" width="150" height="58" rx="4" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1.2"/>
+
+    <text x="815" y="558" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">血缘图谱</text>
+    <text x="815" y="576" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">字段-&gt;事实-&gt;指标</text>
+  </g>
+
+  <g id="quality">
+    <rect x="960" y="530" width="150" height="58" rx="4" fill="#f9fafb" stroke="#e5e7eb" stroke-width="1.2"/>
+
+    <text x="1035" y="558" fill="#111827" font-size="13" font-weight="500" text-anchor="middle">质量规则</text>
+    <text x="1035" y="576" fill="#6b7280" font-size="10" font-weight="400" text-anchor="middle">刷新/差异/状态过滤</text>
+  </g>
+
+  <path d="M 230 559 L 300 559" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+
+
+  <path d="M 450 559 L 520 559" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+
+
+  <path d="M 670 559 L 740 559" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+
+
+  <path d="M 890 559 L 960 559" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+
+
+  <path d="M 150 220 L 150 320" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+  <rect x="108" y="249" width="84" height="18" rx="3" fill="#ffffff" opacity="0.92"/><text x="150" y="262" fill="#374151" font-size="10" text-anchor="middle">来源</text>
+
+  <path d="M 1035 430 L 1035 530" fill="none" stroke="#3b82f6" stroke-width="1.7" marker-end="url(#arrow-blue)"/>
+  <rect x="993" y="459" width="84" height="18" rx="3" fill="#ffffff" opacity="0.92"/><text x="1035" y="472" fill="#374151" font-size="10" text-anchor="middle">约束</text>
+
+</svg>

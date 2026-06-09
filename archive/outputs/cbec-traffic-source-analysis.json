@@ -1,0 +1,19 @@
+{
+  "template": "cbec-traffic-source-analysis",
+  "slides": [
+    {
+      "type": "title",
+      "title": "traffic-source-analysis",
+      "subtitle": "生成时间: 2026-03-13"
+    },
+    {
+      "type": "summary",
+      "title": "核心发现",
+      "insights": [],
+      "next_steps": [
+        "持续监控",
+        "定期分析"
+      ]
+    }
+  ]
+}

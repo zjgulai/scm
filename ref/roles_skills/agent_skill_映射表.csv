@@ -1,0 +1,16 @@
+Agent名,Skill/脚本名,调用场景,输入输出摘要
+VOC & 消费者洞察,run_专题一分析.py,货架内/综合VOC分析,数仓VOC表 → 痛点亮点/结论
+VOC & 消费者洞察,maternal_social_voc 方法论与脚本,货架外/垂类社区采集,ods_voc_external/抓取 → 日报与标注
+VOC & 消费者洞察,voc社媒平台目录,垂类平台与区域策略参考,平台清单/区域推荐 → 高浓度社区筛选
+VOC & 消费者洞察,情绪主题标注与高潜需求挖掘,货架外统一编码与第二大单品,待 Phase 2 实现
+订单 & 成本 & 退款 & 仓网,run_专题二_Sheet2_双平台费率归因.py,前后台成本归因,fact_order/成本 → 费率归因表
+订单 & 成本 & 退款 & 仓网,run_专题四_Sheet4_客品数品单价订单数毛利率归因.py,订单价结构与毛利,fact_order/fact_order_item → 归因表
+订单 & 成本 & 退款 & 仓网,build_sheet2_fee_attribution_charts.py,费率归因图表,归因表 → 图表
+订单 & 成本 & 退款 & 仓网,build_sheet4_waterfall.py / build_sheet4_drilldown_charts.py,毛利归因图表,归因表 → 图表
+订单 & 成本 & 退款 & 仓网,订单耗时与退款部分退分析,节点诊断与退款归因,待 Phase 2 实现
+渠道 & 国家运营,生命周期与流量对标与风险雷达,国家×渠道分析与决策矩阵,待 Phase 2 实现
+营销 & LTV & 项目ROI,LTV分段与活动ROI与归因模型,LTV与精细化ROI,待 Phase 2 实现
+战略解码 & 业财一体化,跨专题结论聚合与战略校准,流程闭环与优先级,各Agent输出 → 战略建议
+战略解码 & 业财一体化,crossline_评估模板.md,4条交叉线的状态与效果评估,交叉线评估表 → Phase2/3 优先级建议
+咨询PPT & 故事线,mckinsey_ppt_skills / ref/AIPPT,版式与叙事,各Agent输出 → PPT页
+咨询PPT & 故事线,ppt_page_template_mapping.md,模块到页型/图表示例映射,模块定义 → PPT 页模版

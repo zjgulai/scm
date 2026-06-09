@@ -1,0 +1,62 @@
+{
+  "title": "综合分析报告",
+  "metadata": {
+    "created_at": "2026-03-13",
+    "result_count": 2
+  },
+  "sections": [
+    {
+      "title": "核心洞察",
+      "type": "insight",
+      "data": [
+        "物流成本上涨",
+        "促销力度加大",
+        "产品成本占比最高"
+      ]
+    },
+    {
+      "title": "DTC - 毛利率归因分析",
+      "type": "text",
+      "data": [
+        "current_margin: 0.324",
+        "change_pp: -3.4"
+      ]
+    },
+    {
+      "title": "DTC - 毛利率归因分析 - 洞察",
+      "type": "insight",
+      "data": [
+        "物流成本上涨",
+        "促销力度加大"
+      ]
+    },
+    {
+      "title": "建议措施",
+      "type": "text",
+      "data": [
+        "优化物流方案"
+      ]
+    },
+    {
+      "title": "成本结构分析",
+      "type": "text",
+      "data": [
+        "total_cost: 1000000"
+      ]
+    },
+    {
+      "title": "成本结构分析 - 洞察",
+      "type": "insight",
+      "data": [
+        "产品成本占比最高"
+      ]
+    },
+    {
+      "title": "建议措施",
+      "type": "text",
+      "data": [
+        "与供应商谈判"
+      ]
+    }
+  ]
+}

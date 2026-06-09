@@ -1,0 +1,31 @@
+{
+  "template": "cbec-cost-structure-analysis",
+  "slides": [
+    {
+      "type": "title",
+      "title": "成本结构分析",
+      "subtitle": "生成时间: 2026-03-13"
+    },
+    {
+      "type": "summary",
+      "title": "核心发现",
+      "insights": [
+        "产品成本占比最高",
+        "物流成本有优化空间"
+      ],
+      "next_steps": [
+        "与供应商谈判，降低产品成本",
+        "优化物流渠道",
+        "评估营销投入产出"
+      ]
+    },
+    {
+      "type": "content",
+      "title": "数据摘要",
+      "bullets": [
+        "total_cost: 1000000",
+        "cost_breakdown: 5项"
+      ]
+    }
+  ]
+}

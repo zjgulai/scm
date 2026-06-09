@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "skills": {
+    "architecture-diagram": {
+      "source": "Cocoon-AI/architecture-diagram-generator",
+      "sourceType": "github",
+      "skillPath": "architecture-diagram/SKILL.md",
+      "computedHash": "0109ef20fef39843a3dc14c733c69f4209b9d27ebb320cb8b403ff68a410684b"
+    },
+    "excalidraw": {
+      "source": "softaworks/agent-toolkit",
+      "sourceType": "github",
+      "skillPath": "skills/excalidraw/SKILL.md",
+      "computedHash": "5bbd88e287582f106beb1db21c64e48ba70e4a9bedf7690b80fa6c418f3add71"
+    },
+    "fireworks-tech-graph": {
+      "source": "yizhiyanhua-ai/fireworks-tech-graph",
+      "sourceType": "github",
+      "skillPath": "SKILL.md",
+      "computedHash": "1d8b7e354d802b902d8237e3cf6333410abfa906b83d5ace6c9119d85b366704"
+    }
+  }
+}

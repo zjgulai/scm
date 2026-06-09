@@ -1,0 +1,49 @@
+{
+  "template": "margin-attribution",
+  "slides": [
+    {
+      "type": "title",
+      "title": "DTC - 毛利率归因分析",
+      "subtitle": "生成时间: 2026-03-13"
+    },
+    {
+      "type": "summary",
+      "title": "核心发现",
+      "insights": [
+        "物流成本上涨",
+        "促销力度加大"
+      ],
+      "next_steps": [
+        "优化物流",
+        "控制促销"
+      ]
+    },
+    {
+      "type": "chart",
+      "title": "因素分解瀑布图",
+      "chart": {
+        "type": "waterfall",
+        "data": {
+          "items": [
+            {
+              "label": "物流成本",
+              "value": -1.2
+            },
+            {
+              "label": "促销折扣",
+              "value": -0.9
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "content",
+      "title": "数据摘要",
+      "bullets": [
+        "current_margin: 0.324",
+        "change_pp: -3.4"
+      ]
+    }
+  ]
+}

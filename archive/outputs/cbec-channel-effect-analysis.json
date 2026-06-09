@@ -1,0 +1,42 @@
+{
+  "template": "cbec-channel-effect-analysis",
+  "slides": [
+    {
+      "type": "title",
+      "title": "渠道效果分析",
+      "subtitle": "生成时间: 2026-03-13"
+    },
+    {
+      "type": "summary",
+      "title": "核心发现",
+      "insights": [
+        "TikTok增速最快",
+        "DTC下滑需关注"
+      ],
+      "next_steps": [
+        "加大TikTok投入",
+        "优化DTC渠道策略",
+        "稳定Amazon基本盘"
+      ]
+    },
+    {
+      "type": "chart",
+      "title": "对比分析",
+      "chart": {
+        "type": "bar",
+        "data": {
+          "labels": [
+            "Amazon",
+            "DTC",
+            "TikTok"
+          ],
+          "values": [
+            520000,
+            380000,
+            120000
+          ]
+        }
+      }
+    }
+  ]
+}

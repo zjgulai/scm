@@ -1,0 +1,25 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: detect-private-key
+      - id: check-added-large-files
+        args: ['--maxkb=10000']
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+
+  - repo: local
+    hooks:
+      - id: check-env-not-staged
+        name: check-env-not-staged
+        entry: bash -c 'git diff --cached --name-only | grep -q "^.env$" && echo "ERROR: .env staged!" && exit 1 || exit 0'
+        language: system
+        pass_filenames: false
+
+      - id: pytest
+        name: pytest
+        entry: python -m pytest tests/ -q
+        language: system
+        pass_filenames: false
+        stages: [push]

@@ -110,14 +110,57 @@ SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm run smoke:p0
 - `decisionAction.transitionApproved`
 - `decisionSummary.read`
 
-## 6. 当前限制
+## 6. 部署证据
+
+当前 P1 第二批已部署：
+
+```text
+https://scm.lute-tlz-dddd.top/
+```
+
+部署追溯：
+
+```text
+branch=codex/scm-ledger-workbench
+commit=ac37bec
+release=/opt/scm-governance-workbench/releases/scm-workbench-p1-operational-ac37bec-20260619011059
+backup=/opt/scm-governance-workbench/backups/20260619011059/governance_workbench.sqlite
+```
+
+生产迁移：
+
+```text
+applied=["002_p1_candidate_workflows.sql","003_p1_workflow_ontology_decision.sql"]
+skipped=1
+```
+
+公网只读验收：
+
+```text
+Browser Harness: 12 modules pass
+workflowBoard: filters=true, bulk=true, summaryCards=4
+ontologyPath: pathPanel=true, pathCards=4
+decisionLoop: stateRail=8, decisionForm=true, actionCards=3
+ontology API sku: outbound=2, inbound=2, tags=3, dimensions=3, metrics=60, lineageEdges=9
+decision summary: writeBackPolicy=suggestion_approval_replay_only
+```
+
+边界：
+
+```text
+productionWrites=false
+providerCalls=false
+erpWriteback=false
+```
+
+## 7. 当前限制
 
 - 本体图仍为“类型全覆盖 + 关键实例入图”的只读治理模型；海量明细仍应留在数仓或业务系统。
 - Workflow 批量操作当前只支持批准/拒绝，尚未实现批量改 owner、批量改 due date。
 - Action 状态机当前记录审批与执行状态，不自动触发业务系统动作。
 - 生产站点验收默认只读；生产台账写入需要单独授权。
 
-## 7. 后续建议
+## 8. 后续建议
 
 - 补 `SCM-PRD-P1-009`：ChatBI 上下文认证流。
 - 补 `SCM-PRD-P1-010`：审计日志操作页。

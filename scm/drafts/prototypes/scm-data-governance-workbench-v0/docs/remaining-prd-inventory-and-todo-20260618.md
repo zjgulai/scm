@@ -12,8 +12,8 @@ source_of_truth:
   - "drafts/prototypes/scm-data-governance-workbench-v0/docs/second-iteration-ui-information-architecture-20260618.md"
 current_deploy:
   url: "https://scm.lute-tlz-dddd.top/"
-  deployed_branch_sha: "ce7c0aa"
-  release: "/opt/scm-governance-workbench/releases/scm-workbench-p0-complete-ce7c0aa-20260619001646"
+  deployed_branch_sha: "ac37bec"
+  release: "/opt/scm-governance-workbench/releases/scm-workbench-p1-operational-ac37bec-20260619011059"
 ---
 
 # 供应链数据开发治理工作台剩余 PRD 盘点与 TODO

@@ -5,7 +5,7 @@ module: scm
 topic: scm-data-governance-workbench
 status: draft
 created: 2026-06-18
-updated: 2026-06-18
+updated: 2026-06-19
 owner: self
 source: human+ai
 ---
@@ -23,10 +23,10 @@ source: human+ai
 ## 当前发布快照
 
 - 线上地址：`https://scm.lute-tlz-dddd.top/`
-- 当前部署追溯 SHA：`85fd64d`，分支 `codex/scm-ledger-workbench`
-- 当前 P1 release：`/opt/scm-governance-workbench/releases/scm-workbench-p1-candidate-workflows-85fd64d-20260619004559`
-- 当前 P1 部署备份：`/opt/scm-governance-workbench/backups/20260619004612/governance_workbench.sqlite`
-- 当前 P1 release 来自本地分支 `codex/scm-ledger-workbench` 的 `85fd64d` 提交；推送后以远端分支为代码追溯点。
+- 当前部署追溯 SHA：`ac37bec`，分支 `codex/scm-ledger-workbench`
+- 当前 P1 release：`/opt/scm-governance-workbench/releases/scm-workbench-p1-operational-ac37bec-20260619011059`
+- 当前 P1 部署备份：`/opt/scm-governance-workbench/backups/20260619011059/governance_workbench.sqlite`
+- 当前 P1 release 来自远端仓库 `zjgulai/scm` 的 `codex/scm-ledger-workbench` 分支 `ac37bec` 提交。
 - 容器名：`scm-governance-workbench`
 - 内部端口：`127.0.0.1:5174`
 - 模块数量：12 个工作台模块
@@ -133,6 +133,8 @@ server {
 - `docker exec ai_video_nginx getent hosts scm-governance-workbench` 可解析到应用容器 IP。
 - 公开站点 Browser Harness DOM 检查通过：KPI 画布 `nodeCount=39`、`edgeCount=33`、`selectedCount=1`、`drawerVisible=true`；血缘质量页 `summaryCards=3`、`ruleForm=true`；浅色侧边栏 `sidebarBg=rgb(255,255,255)`。
 - P1 公开站点 Browser Harness DOM 检查通过：总览页存在 `候选资产与治理任务板`，标签/维度/指标工程页均存在候选提交流表单。
+- P1 第二批公开站点 Browser Harness DOM 检查通过：总览页 `.workflowFilters=true`、`.bulkActionBar=true`、`.workflowSummaryGrid > div = 4`；对象本体页 `.ontologyPathPanel=true`、路径卡 `4`；决策闭环页状态轨道 `8`、`.decisionForm=true`、Action 卡 `3`。
+- P1 第二批只读 API 检查通过：`/api/ontology/paths?objectId=sku` 返回 `outbound=2`、`inbound=2`、`tags=3`、`dimensions=3`、`metrics=60`、`lineageEdges=9`；`/api/decision/summary` 返回 `writeBackPolicy=suggestion_approval_replay_only`。
 
 P0 验收命令：
 

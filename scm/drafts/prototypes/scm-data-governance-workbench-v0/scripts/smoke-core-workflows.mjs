@@ -165,6 +165,49 @@ assert(Array.isArray(workflows) && workflows.some((workflow) => workflow.id === 
 
 const workflowSummary = await request("/api/workflows/summary");
 assert(workflowSummary.candidates?.total >= 1, "workflow summary missing candidate counts", workflowSummary);
+assert(Array.isArray(workflowSummary.bySla), "workflow summary missing SLA buckets", workflowSummary);
+
+const bulkCandidate = await request("/api/governance/candidates", {
+  method: "POST",
+  body: JSON.stringify({
+    candidateType: "tag",
+    candidateCode: `smoke_bulk_tag_${Date.now()}`,
+    candidateName: "Smoke bulk review tag",
+    targetAssetType: "ontology_object",
+    targetAssetId: "sku",
+    proposalSummary: "P1 smoke validates workflow filter, SLA enrichment and bulk review.",
+    proposedPayload: {
+      tag_type: "rule",
+      target_object_id: "sku",
+      rule_expression: "smoke = true"
+    },
+    sourceRef: "scripts/smoke-core-workflows.mjs",
+    evidenceRefs: [{ type: "smoke", ref: "scripts/smoke-core-workflows.mjs" }],
+    owner: "p1_bulk_smoke",
+    priority: "P1",
+    createdBy: "p1_bulk_smoke"
+  })
+});
+assert(bulkCandidate.candidate?.workflow_id, "bulk candidate workflow was not created", bulkCandidate);
+
+const filteredWorkflows = await request(`/api/workflows?owner=p1_bulk_smoke&moduleId=tags&priority=P1&q=${encodeURIComponent("Smoke bulk")}&limit=20`);
+assert(
+  Array.isArray(filteredWorkflows) && filteredWorkflows.some((workflow) => workflow.id === bulkCandidate.candidate.workflow_id),
+  "workflow filters did not find bulk smoke workflow",
+  filteredWorkflows
+);
+assert(filteredWorkflows.every((workflow) => workflow.sla_status), "workflow SLA enrichment missing", filteredWorkflows);
+
+const bulkReview = await request("/api/workflows/bulk-review", {
+  method: "POST",
+  body: JSON.stringify({
+    ids: [bulkCandidate.candidate.workflow_id],
+    status: "rejected",
+    reviewer: "p1_bulk_smoke",
+    note: "Smoke bulk review rejected this candidate to avoid canonical changes."
+  })
+});
+assert(bulkReview.updated === 1, "workflow bulk review failed", bulkReview);
 
 const qualityRule = await request("/api/quality/rules", {
   method: "POST",
@@ -251,6 +294,11 @@ const qualitySummary = await request("/api/quality/summary");
 assert(qualitySummary.rules?.total >= 1, "quality summary missing rules", qualitySummary);
 assert(qualitySummary.issues?.total >= 2, "quality summary missing issues", qualitySummary);
 
+const ontologyPath = await request("/api/ontology/paths?objectId=sku");
+assert(ontologyPath.object?.id === "sku", "ontology path did not resolve SKU object", ontologyPath);
+assert(Array.isArray(ontologyPath.outbound) && ontologyPath.outbound.length >= 1, "ontology path missing outbound links", ontologyPath);
+assert(Array.isArray(ontologyPath.metrics) && ontologyPath.metrics.length >= 1, "ontology path missing metric bridge", ontologyPath);
+
 const dryRun = await request("/api/chatbi/dry-run", {
   method: "POST",
   body: JSON.stringify({ question: "库存可售性可以分析哪些认证指标？" })
@@ -282,6 +330,43 @@ assert(
   aiInsufficient.result
 );
 
+const actionTask = await request("/api/decision/action-task", {
+  method: "POST",
+  body: JSON.stringify({
+    insightRef: "decision_1",
+    actionName: "P1 smoke decision action",
+    owner: "p1_decision_smoke",
+    replayNote: "Smoke action remains suggestion + approval + replay only."
+  })
+});
+assert(actionTask.task?.id, "action task was not created", actionTask);
+assert(actionTask.task?.status === "recommended", "action task default state changed", actionTask);
+
+const approvalTransition = await request(`/api/decision/action-tasks/${actionTask.task.id}/transition`, {
+  method: "POST",
+  body: JSON.stringify({
+    status: "pending_approval",
+    actor: "p1_decision_smoke",
+    note: "Smoke moved action to approval queue.",
+    evidence: [{ type: "smoke", ref: "scripts/smoke-core-workflows.mjs", status: "pending_approval" }]
+  })
+});
+assert(approvalTransition.task?.status === "pending_approval", "action transition to pending approval failed", approvalTransition);
+
+const approvedTransition = await request(`/api/decision/action-tasks/${actionTask.task.id}/transition`, {
+  method: "POST",
+  body: JSON.stringify({
+    status: "approved",
+    actor: "p1_decision_smoke",
+    note: "Smoke approved action without provider or ERP write-back.",
+    evidence: [{ type: "smoke", ref: "scripts/smoke-core-workflows.mjs", status: "approved" }]
+  })
+});
+assert(approvedTransition.task?.status === "approved", "action transition to approved failed", approvedTransition);
+
+const decisionSummary = await request("/api/decision/summary");
+assert(decisionSummary.writeBackPolicy === "suggestion_approval_replay_only", "decision write-back policy changed", decisionSummary);
+
 const auditEvents = await request("/api/audit-events?limit=20");
 assert(Array.isArray(auditEvents) && auditEvents.length > 0, "audit events not recorded");
 
@@ -307,6 +392,9 @@ console.log(
         "governanceCandidate.review",
         "workflowBoard.read",
         "workflowSummary.read",
+        "workflowFilters.read",
+        "workflowBulkReview.writeLedgerOnly",
+        "ontologyPath.read",
         "kpiCanvasNode.read",
         "kpiCanvasNode.update",
         "qualityRule.create",
@@ -319,6 +407,10 @@ console.log(
         "chatbi.dryRun",
         "aiChat.supportedOrPartial",
         "aiChat.failClosed",
+        "decisionAction.create",
+        "decisionAction.transitionPendingApproval",
+        "decisionAction.transitionApproved",
+        "decisionSummary.read",
         "auditEvents.read"
       ]
     },

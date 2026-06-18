@@ -2,7 +2,7 @@
 title: "供应链数据开发治理工作台剩余 PRD 盘点与 TODO"
 status: "draft"
 created_at: "2026-06-18"
-updated_at: "2026-06-18"
+updated_at: "2026-06-19"
 scope: "post-main-deploy PRD gap inventory and remaining roadmap"
 boundary: "planning document; no code change; no production writeback"
 source_of_truth:
@@ -34,7 +34,7 @@ current_deploy:
 
 ### 1.2 当前推断
 
-当前版本已经完成 P0 工程验收闭环，具备可重复构建、迁移、备份、浏览器 smoke、核心工作流 smoke、KPI 画布基础交互和质量规则基础工作流。下一阶段差距集中在 P1：候选资产流、统一 workflow board、审批 SLA、对象图谱路径解释和决策闭环状态机。
+当前版本已经完成 P0 工程验收闭环，并已完成两批 P1 交互闭环：候选资产流、统一 workflow board、owner/SLA/批量审核、对象图谱路径解释和决策闭环状态机。下一阶段差距集中在 ChatBI 上下文认证流、审计日志操作页、知识库运营和 AI 语义治理。
 
 ### 1.3 当前不确定项
 
@@ -149,6 +149,21 @@ current_deploy:
 | SCM-PRD-P1-008 | 决策闭环页增加状态机 | `insight -> recommendation -> approval -> task -> result -> review` 可流转 | action_tasks | 10h |
 | SCM-PRD-P1-009 | ChatBI 上下文认证流 | draft 样本可提交审核并发布为 certified context | chatbi samples | 8h |
 | SCM-PRD-P1-010 | 增加审计日志操作页 | 可查询每次 create/update/review/approve 操作 | audit_events | 4h |
+
+### 4.2.1 P1 执行状态更新（2026-06-19）
+
+| ID | 当前状态 | 新鲜证据 | 边界 |
+|---|---|---|---|
+| SCM-PRD-P1-001 | 部分完成 | 各资产详情抽屉已有查询、注解、评论、修订建议、审计；标签/维度/指标已有候选提交 | 还缺每个工作台的批量 CRUD 与专属编辑表单 |
+| SCM-PRD-P1-002 | 完成基础版 | `governance_candidates` 统一承载 tag candidate，标签工程页可提交候选并创建 workflow | 不直接写 `tags` 正本 |
+| SCM-PRD-P1-003 | 完成基础版 | `governance_candidates` 统一承载 dimension candidate，维度工程页可提交候选并创建 workflow | 不直接写 `dimensions` 正本 |
+| SCM-PRD-P1-004 | 完成基础版 | `governance_candidates` 统一承载 metric candidate，指标工程页可提交候选并创建 workflow | 指标字典 2.0 仍保持只读 |
+| SCM-PRD-P1-005 | 完成基础版 | Workflow Board 支持状态、模块、优先级、owner、SLA、关键词筛选和批量批准/拒绝 | 只写 SQLite 治理台账 |
+| SCM-PRD-P1-006 | 完成基础版 | 修订建议创建后自动生成 workflow，审核后同步 workflow 状态 | 不自动 promote canonical 正本 |
+| SCM-PRD-P1-007 | 完成基础版 | `/api/ontology/paths` 与对象本体页路径解释已覆盖关系、标签、维度、指标桥和血缘证据 | 本体只读 |
+| SCM-PRD-P1-008 | 完成基础版 | Action 状态机支持 `recommended -> pending_approval -> approved` 等迁移并写 `action_task_transitions` | 不触发 ERP/Jijia 写回 |
+| SCM-PRD-P1-009 | 未开始 | 无 | 进入下一批 |
+| SCM-PRD-P1-010 | 未开始 | 无 | 进入下一批 |
 
 ### 4.3 P2 TODO：AI 知识库与语义治理
 

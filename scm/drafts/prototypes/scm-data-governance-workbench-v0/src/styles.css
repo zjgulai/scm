@@ -802,7 +802,8 @@ textarea {
 }
 
 .qualityRuleForm,
-.qualityImpact {
+.qualityImpact,
+.decisionForm {
   display: grid;
   gap: 12px;
   padding: 16px;
@@ -811,7 +812,8 @@ textarea {
   background: var(--panel-soft);
 }
 
-.qualityRuleForm button[type="submit"] {
+.qualityRuleForm button[type="submit"],
+.decisionForm button[type="submit"] {
   min-height: 42px;
   border: 0;
   border-radius: 8px;
@@ -835,7 +837,7 @@ textarea {
 
 .workflowSummaryGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
   margin-bottom: 14px;
 }
@@ -889,6 +891,228 @@ textarea {
   color: var(--muted);
   line-height: 1.45;
   overflow-wrap: anywhere;
+}
+
+.workflowFilters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 1fr)) minmax(220px, 1.4fr);
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 12px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-soft);
+}
+
+.workflowFilters label,
+.ontologySelector label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 780;
+}
+
+.workflowSearch {
+  min-width: 0;
+}
+
+.bulkActionBar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+  color: var(--muted);
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+
+.textButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.checkRow,
+.badgeCluster {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  min-width: 0;
+}
+
+.checkRow strong {
+  overflow-wrap: anywhere;
+}
+
+.checkRow input {
+  width: auto;
+}
+
+.workflowMetaGrid {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr 1fr;
+  gap: 8px;
+}
+
+.ontologyPathPanel,
+.decisionForm {
+  margin-bottom: 16px;
+}
+
+.ontologySelector {
+  display: grid;
+  grid-template-columns: minmax(240px, 420px) auto;
+  gap: 10px;
+  align-items: end;
+  margin-bottom: 12px;
+}
+
+.pathNarrative {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.pathNarrative span {
+  min-height: 72px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  color: var(--ink-2);
+  background: linear-gradient(180deg, #fff, var(--panel-soft));
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.pathwayLayout {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.pathCard,
+.actionCards,
+.actionCard {
+  display: grid;
+  gap: 10px;
+}
+
+.pathCard {
+  align-content: start;
+  min-height: 220px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.pathCard > strong {
+  color: var(--ink);
+}
+
+.pathCard button {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 9px 10px;
+  text-align: left;
+  color: var(--ink);
+  background: var(--panel-soft);
+  cursor: pointer;
+}
+
+.pathCard button:hover {
+  border-color: rgba(0, 94, 184, 0.24);
+  background: #fff;
+}
+
+.pathCard small,
+.actionCard small {
+  color: var(--muted);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.decisionSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.decisionSummaryGrid > div {
+  display: grid;
+  gap: 6px;
+  min-height: 104px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fff, var(--panel-soft));
+}
+
+.decisionSummaryGrid span,
+.decisionSummaryGrid small {
+  color: var(--muted);
+}
+
+.decisionSummaryGrid strong {
+  color: var(--ink);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.stateRail {
+  display: flex;
+  gap: 8px;
+  margin: 0 0 14px;
+  overflow-x: auto;
+}
+
+.stateRail span {
+  position: relative;
+  flex: 0 0 auto;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--ink-2);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.stateRail span:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -9px;
+  width: 9px;
+  height: 1px;
+  background: var(--line);
+}
+
+.stateRail .terminal {
+  border-color: rgba(33, 79, 128, 0.22);
+  color: var(--blue);
+  background: var(--blue-soft);
+}
+
+.actionCard {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.actionCard p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
 }
 
 .candidateWorkbench {
@@ -1810,13 +2034,19 @@ tbody tr:hover td {
   .chatSplit,
   .readinessGrid,
   .kbToolbar,
-  .aiChatLayout,
-  .candidateLayout,
-  .workflowSummaryGrid,
-  .qualitySummaryGrid,
-  .qualityWorkbench {
-    grid-template-columns: 1fr;
-  }
+	  .aiChatLayout,
+	  .candidateLayout,
+	  .workflowSummaryGrid,
+	  .workflowFilters,
+	  .workflowMetaGrid,
+	  .ontologySelector,
+	  .pathNarrative,
+	  .pathwayLayout,
+	  .decisionSummaryGrid,
+	  .qualitySummaryGrid,
+	  .qualityWorkbench {
+	    grid-template-columns: 1fr;
+	  }
 
   .moduleGrid,
   .domainGrid,

@@ -102,6 +102,20 @@ function normalizeJsonText(value, fallback = []) {
   return JSON.stringify(value ?? fallback);
 }
 
+const closedWorkflowStatuses = new Set(["approved", "rejected", "closed", "done"]);
+const actionStateOrder = ["draft", "recommended", "pending_approval", "approved", "in_progress", "completed", "reviewed", "rejected"];
+const actionTransitionMap = {
+  draft: ["recommended", "pending_approval", "rejected"],
+  recommended: ["pending_approval", "rejected"],
+  approval_pending: ["approved", "rejected"],
+  pending_approval: ["approved", "rejected"],
+  approved: ["in_progress", "completed"],
+  in_progress: ["completed", "rejected"],
+  completed: ["reviewed"],
+  reviewed: [],
+  rejected: []
+};
+
 function parseLimit(url, fallback = 100, max = 500) {
   const value = Number(url.searchParams.get("limit") || fallback);
   if (!Number.isFinite(value) || value <= 0) return fallback;
@@ -115,6 +129,28 @@ function assertRequired(payload, fields) {
     error.statusCode = 400;
     throw error;
   }
+}
+
+function addDaysIso(days) {
+  const date = new Date();
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString();
+}
+
+function defaultWorkflowDueDate(priority = "P1") {
+  const normalized = normalizeText(priority, "P1").toUpperCase();
+  if (normalized === "P0") return addDaysIso(1);
+  if (normalized === "P2") return addDaysIso(7);
+  return addDaysIso(3);
+}
+
+function normalizeActionState(status = "") {
+  const normalized = normalizeText(status, "draft");
+  return normalized === "approval_pending" ? "pending_approval" : normalized;
+}
+
+function isClosedWorkflowStatus(status = "") {
+  return closedWorkflowStatuses.has(normalizeText(status));
 }
 
 function ensureLedgerSchema() {
@@ -496,6 +532,11 @@ function ensureP1WorkflowSchema() {
   ensureTableColumn("workflow_instances", "title", "TEXT NOT NULL DEFAULT ''");
   ensureTableColumn("workflow_instances", "source_ref", "TEXT NOT NULL DEFAULT ''");
   ensureTableColumn("workflow_instances", "module_id", "TEXT NOT NULL DEFAULT ''");
+  if (tableExists("action_tasks")) {
+    ensureTableColumn("action_tasks", "created_at", "TEXT NOT NULL DEFAULT ''");
+    ensureTableColumn("action_tasks", "updated_at", "TEXT NOT NULL DEFAULT ''");
+    run("UPDATE action_tasks SET created_at = COALESCE(NULLIF(created_at, ''), ?), updated_at = COALESCE(NULLIF(updated_at, ''), ?) WHERE created_at = '' OR updated_at = ''", [nowIso(), nowIso()]);
+  }
   db.exec(`
     CREATE TABLE IF NOT EXISTS governance_candidates (
       id TEXT PRIMARY KEY,
@@ -524,6 +565,20 @@ function ensureP1WorkflowSchema() {
     CREATE INDEX IF NOT EXISTS idx_governance_candidates_workflow ON governance_candidates(workflow_id);
     CREATE INDEX IF NOT EXISTS idx_workflow_instances_status ON workflow_instances(status, priority, owner);
     CREATE INDEX IF NOT EXISTS idx_workflow_instances_module ON workflow_instances(module_id, workflow_type, status);
+    CREATE INDEX IF NOT EXISTS idx_action_tasks_status ON action_tasks(status, owner);
+
+    CREATE TABLE IF NOT EXISTS action_task_transitions (
+      id TEXT PRIMARY KEY,
+      task_id TEXT NOT NULL,
+      from_status TEXT NOT NULL,
+      to_status TEXT NOT NULL,
+      actor TEXT NOT NULL DEFAULT 'local_user',
+      note TEXT NOT NULL DEFAULT '',
+      evidence TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_action_task_transitions_task ON action_task_transitions(task_id, created_at);
   `);
 }
 
@@ -742,6 +797,8 @@ function createWorkflowInstance({
 }) {
   const id = makeId("wf");
   const createdAt = nowIso();
+  const normalizedPriority = normalizeText(priority, "P1");
+  const normalizedDueDate = normalizeText(dueDate) || defaultWorkflowDueDate(normalizedPriority);
   const normalizedSteps = steps.length ? steps : [
     { key: "intake", name: "信息接收", status: "completed", note: "Workflow created." },
     { key: "owner_review", name: "Owner 审核", status: "pending", note: "" },
@@ -757,9 +814,9 @@ function createWorkflowInstance({
       normalizeText(assetType),
       normalizeText(assetId),
       "open",
-      normalizeText(priority, "P1"),
+      normalizedPriority,
       normalizeText(owner, "data_governance"),
-      normalizeText(dueDate),
+      normalizedDueDate,
       normalizeText(createdBy, "local_user"),
       createdAt,
       createdAt,
@@ -1018,6 +1075,26 @@ function reviewGovernanceCandidate(id, body) {
   return get("SELECT * FROM governance_candidates WHERE id = ?", [id]);
 }
 
+function workflowSlaStatus(workflow) {
+  if (isClosedWorkflowStatus(workflow.status)) return { status: "closed", note: "Workflow is already closed." };
+  if (!normalizeText(workflow.due_date)) return { status: "no_due", note: "No due date is configured." };
+  const due = new Date(workflow.due_date);
+  if (Number.isNaN(due.getTime())) return { status: "invalid_due", note: "Due date is not parseable." };
+  const ms = due.getTime() - Date.now();
+  if (ms < 0) return { status: "overdue", note: "Due date has passed." };
+  if (ms <= 24 * 60 * 60 * 1000) return { status: "due_soon", note: "Due within 24 hours." };
+  return { status: "on_track", note: "Due date is still on track." };
+}
+
+function enrichWorkflow(workflow) {
+  const sla = workflowSlaStatus(workflow);
+  return {
+    ...workflow,
+    sla_status: sla.status,
+    sla_note: sla.note
+  };
+}
+
 function getWorkflowInstances(url) {
   const clauses = [];
   const params = [];
@@ -1025,6 +1102,9 @@ function getWorkflowInstances(url) {
   const owner = url.searchParams.get("owner");
   const moduleId = url.searchParams.get("moduleId");
   const workflowType = url.searchParams.get("workflowType");
+  const priority = url.searchParams.get("priority");
+  const q = url.searchParams.get("q");
+  const slaStatus = url.searchParams.get("slaStatus");
   if (status) {
     clauses.push("wi.status = ?");
     params.push(status);
@@ -1041,9 +1121,25 @@ function getWorkflowInstances(url) {
     clauses.push("wi.workflow_type = ?");
     params.push(workflowType);
   }
+  if (priority) {
+    clauses.push("wi.priority = ?");
+    params.push(priority);
+  }
+  if (q) {
+    clauses.push(`(
+      wi.title LIKE ?
+      OR wi.workflow_type LIKE ?
+      OR wi.source_ref LIKE ?
+      OR wi.asset_id LIKE ?
+      OR gc.candidate_name LIKE ?
+      OR gc.candidate_code LIKE ?
+    )`);
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`);
+  }
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
-  params.push(parseLimit(url, 100, 500));
-  return all(
+  const requestedLimit = parseLimit(url, 100, 500);
+  params.push(slaStatus ? 500 : requestedLimit);
+  const rows = all(
     `SELECT
        wi.*,
        gc.candidate_type,
@@ -1061,20 +1157,28 @@ function getWorkflowInstances(url) {
      ORDER BY wi.updated_at DESC, wi.priority, wi.created_at DESC
      LIMIT ?`,
     params
-  );
+  ).map(enrichWorkflow);
+  return slaStatus ? rows.filter((workflow) => workflow.sla_status === slaStatus).slice(0, requestedLimit) : rows;
 }
 
 function getWorkflowSummary() {
+  const workflows = all("SELECT * FROM workflow_instances").map(enrichWorkflow);
+  const slaBuckets = workflows.reduce((acc, workflow) => {
+    acc[workflow.sla_status] = (acc[workflow.sla_status] || 0) + 1;
+    return acc;
+  }, {});
   return {
     total: tableCount("workflow_instances"),
     byStatus: all("SELECT status, COUNT(*) AS count FROM workflow_instances GROUP BY status ORDER BY count DESC"),
     byPriority: all("SELECT priority, COUNT(*) AS count FROM workflow_instances GROUP BY priority ORDER BY priority"),
     byModule: all("SELECT module_id, COUNT(*) AS count FROM workflow_instances GROUP BY module_id ORDER BY count DESC"),
+    byOwner: all("SELECT owner, COUNT(*) AS count FROM workflow_instances GROUP BY owner ORDER BY count DESC LIMIT 20"),
+    bySla: Object.entries(slaBuckets).map(([status, count]) => ({ status, count })),
     candidates: {
       total: tableCount("governance_candidates"),
       byType: all("SELECT candidate_type, lifecycle_status, COUNT(*) AS count FROM governance_candidates GROUP BY candidate_type, lifecycle_status ORDER BY candidate_type, lifecycle_status")
     },
-    openWorkflows: all("SELECT id, workflow_type, title, module_id, priority, owner, status, updated_at FROM workflow_instances WHERE status NOT IN ('approved', 'rejected', 'closed', 'done') ORDER BY priority, updated_at DESC LIMIT 12")
+    openWorkflows: all("SELECT id, workflow_type, title, module_id, priority, owner, due_date, status, updated_at FROM workflow_instances WHERE status NOT IN ('approved', 'rejected', 'closed', 'done') ORDER BY priority, updated_at DESC LIMIT 12").map(enrichWorkflow)
   };
 }
 
@@ -1093,6 +1197,32 @@ function reviewWorkflow(id, body) {
     );
   }
   return workflow;
+}
+
+function bulkReviewWorkflows(body) {
+  const ids = Array.isArray(body.ids) ? body.ids.map((id) => normalizeText(id)).filter(Boolean) : [];
+  if (!ids.length) {
+    const error = new Error("Missing required fields: ids");
+    error.statusCode = 400;
+    throw error;
+  }
+  const status = normalizeText(body.status, "reviewed");
+  const actor = normalizeText(body.reviewer || body.actor, "local_user");
+  const note = normalizeText(body.note || body.reviewNote || body.review_note, `Bulk workflow review marked as ${status}.`);
+  const updated = [];
+  db.exec("BEGIN");
+  try {
+    ids.forEach((id) => {
+      const workflow = reviewWorkflow(id, { status, reviewer: actor, note });
+      if (workflow) updated.push(enrichWorkflow(workflow));
+    });
+    writeAudit("workflow.bulk_reviewed", "workflow", ids.join(","), { ids, status, updated: updated.length, note }, actor);
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+  return { requested: ids.length, updated: updated.length, workflows: updated };
 }
 
 function getAuditEvents(url) {
@@ -1116,6 +1246,151 @@ function getAuditEvents(url) {
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   params.push(parseLimit(url, 100, 500));
   return all(`SELECT * FROM audit_events ${where} ORDER BY created_at DESC LIMIT ?`, params);
+}
+
+function getOntologyPath(url) {
+  const requestedObjectId = normalizeText(url.searchParams.get("objectId"));
+  const object = requestedObjectId
+    ? get("SELECT * FROM ontology_objects WHERE id = ?", [requestedObjectId])
+    : get("SELECT * FROM ontology_objects ORDER BY object_type, id LIMIT 1");
+  if (!object) return null;
+  const outbound = all(
+    `SELECT ol.*, target.name AS target_name, target.object_type AS target_type
+     FROM ontology_links ol
+     LEFT JOIN ontology_objects target ON ol.target_object_id = target.id
+     WHERE ol.source_object_id = ?
+     ORDER BY ol.link_type, ol.target_object_id`,
+    [object.id]
+  );
+  const inbound = all(
+    `SELECT ol.*, source.name AS source_name, source.object_type AS source_type
+     FROM ontology_links ol
+     LEFT JOIN ontology_objects source ON ol.source_object_id = source.id
+     WHERE ol.target_object_id = ?
+     ORDER BY ol.link_type, ol.source_object_id`,
+    [object.id]
+  );
+  const tags = all("SELECT * FROM tags WHERE target_object_id = ? ORDER BY lifecycle_status, id LIMIT 40", [object.id]);
+  const dimensions = all("SELECT * FROM dimensions WHERE bound_object_id = ? ORDER BY dimension_type, id LIMIT 40", [object.id]);
+  const metrics = all(
+    `SELECT DISTINCT m.*
+     FROM metrics m
+     JOIN metric_dimensions md ON md.metric_id = m.id
+     JOIN dimensions d ON d.id = md.dimension_id
+     WHERE d.bound_object_id = ?
+     ORDER BY CASE m.level WHEN 'L0' THEN 0 WHEN 'L1' THEN 1 WHEN 'L2' THEN 2 ELSE 3 END, m.l1_domain, m.code
+     LIMIT 60`,
+    [object.id]
+  );
+  const lineageEdges = all(
+    `SELECT *
+     FROM lineage_edges
+     WHERE source_ref LIKE ? OR target_ref LIKE ? OR evidence LIKE ?
+     ORDER BY status, edge_type
+     LIMIT 40`,
+    [`%${object.id}%`, `%${object.id}%`, `%${object.id}%`]
+  );
+  const narrative = [
+    outbound.length ? `对象 ${object.id} 主动连接 ${outbound.length} 条业务关系。` : `对象 ${object.id} 暂无主动外连关系。`,
+    inbound.length ? `对象 ${object.id} 被 ${inbound.length} 条关系引用，可追溯上游/归属。` : `对象 ${object.id} 暂无入向关系。`,
+    dimensions.length ? `对象绑定 ${dimensions.length} 个一致性/分析维度，可作为指标钻取入口。` : "当前对象未绑定维度。",
+    metrics.length ? `通过维度桥接到 ${metrics.length} 个指标。` : "当前对象尚未通过维度桥接到指标。"
+  ];
+  return { object, outbound, inbound, tags, dimensions, metrics, lineageEdges, narrative };
+}
+
+function getActionTasks(url) {
+  const clauses = [];
+  const params = [];
+  const status = url.searchParams.get("status");
+  const owner = url.searchParams.get("owner");
+  const q = url.searchParams.get("q");
+  if (status) {
+    clauses.push("at.status = ?");
+    params.push(status);
+  }
+  if (owner) {
+    clauses.push("at.owner = ?");
+    params.push(owner);
+  }
+  if (q) {
+    clauses.push("(at.action_name LIKE ? OR at.insight_ref LIKE ? OR at.owner LIKE ? OR at.replay_note LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 100, 500));
+  return all(
+    `SELECT
+       at.*,
+       COUNT(att.id) AS transition_count,
+       MAX(att.created_at) AS last_transition_at
+     FROM action_tasks at
+     LEFT JOIN action_task_transitions att ON att.task_id = at.id
+     ${where}
+     GROUP BY at.id
+     ORDER BY at.updated_at DESC, at.status, at.id
+     LIMIT ?`,
+    params
+  );
+}
+
+function getDecisionSummary() {
+  return {
+    decisions: {
+      total: tableCount("decision_logs"),
+      byStatus: all("SELECT status, COUNT(*) AS count FROM decision_logs GROUP BY status ORDER BY count DESC")
+    },
+    actions: {
+      total: tableCount("action_tasks"),
+      byStatus: all("SELECT status, COUNT(*) AS count FROM action_tasks GROUP BY status ORDER BY count DESC"),
+      byOwner: all("SELECT owner, COUNT(*) AS count FROM action_tasks GROUP BY owner ORDER BY count DESC LIMIT 20")
+    },
+    stateOrder: actionStateOrder,
+    terminalStates: ["reviewed", "rejected"],
+    writeBackPolicy: "suggestion_approval_replay_only"
+  };
+}
+
+function allowedActionTransitions(status) {
+  return actionTransitionMap[normalizeActionState(status)] || [];
+}
+
+function transitionActionTask(id, body) {
+  const current = get("SELECT * FROM action_tasks WHERE id = ?", [id]);
+  if (!current) return null;
+  const fromStatus = normalizeActionState(current.status);
+  const toStatus = normalizeActionState(body.status || body.toStatus);
+  const allowed = allowedActionTransitions(fromStatus);
+  if (!allowed.includes(toStatus) && !body.force) {
+    const error = new Error(`Invalid action transition: ${fromStatus} -> ${toStatus}`);
+    error.statusCode = 400;
+    throw error;
+  }
+  const actor = normalizeText(body.actor || body.reviewer, "local_user");
+  const note = normalizeText(body.note, `Action task moved from ${fromStatus} to ${toStatus}.`);
+  const evidence = normalizeJsonText(body.evidence || body.evidenceRefs || [], []);
+  const createdAt = nowIso();
+  run("UPDATE action_tasks SET status = ?, replay_note = ?, updated_at = ? WHERE id = ?", [
+    toStatus,
+    note || current.replay_note,
+    createdAt,
+    id
+  ]);
+  run(
+    `INSERT INTO action_task_transitions
+      (id, task_id, from_status, to_status, actor, note, evidence, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [makeId("att"), id, fromStatus, toStatus, actor, note, evidence, createdAt]
+  );
+  if (normalizeText(current.insight_ref)) {
+    run("UPDATE decision_logs SET status = ? WHERE id = ?", [toStatus, current.insight_ref]);
+  }
+  writeAudit("action_task.transitioned", "action_task", id, { id, fromStatus, toStatus, note, evidence }, actor);
+  return {
+    task: get("SELECT * FROM action_tasks WHERE id = ?", [id]),
+    allowedNext: allowedActionTransitions(toStatus),
+    transitions: all("SELECT * FROM action_task_transitions WHERE task_id = ? ORDER BY created_at DESC", [id])
+  };
 }
 
 function tableExists(table) {
@@ -2071,7 +2346,8 @@ function getWorkbenchModule(id) {
     "ai-chat": () => ({ sessions: getAiChatSessions(new URL("http://local/api/ai-chat/sessions?limit=20")), summary: getAiChatSummary() }),
     "decision-loop": () => ({
       decisions: all("SELECT * FROM decision_logs ORDER BY status, id"),
-      actions: all("SELECT * FROM action_tasks ORDER BY status, id")
+      actions: getActionTasks(new URL("http://local/api/decision/action-tasks?limit=100")),
+      summary: getDecisionSummary()
     })
   };
   return { ...meta, payload: payloads[id]() };
@@ -2646,6 +2922,10 @@ const server = createServer(async (req, res) => {
       if (req.method === "GET" && url.pathname === "/api/governance/overview") return json(res, getOverview());
       if (req.method === "GET" && url.pathname === "/api/ontology/objects") return json(res, all("SELECT * FROM ontology_objects ORDER BY object_type, id"));
       if (req.method === "GET" && url.pathname === "/api/ontology/links") return json(res, all("SELECT * FROM ontology_links ORDER BY id"));
+      if (req.method === "GET" && url.pathname === "/api/ontology/paths") {
+        const path = getOntologyPath(url);
+        return path ? json(res, path) : json(res, { error: "Ontology object not found" }, 404);
+      }
       if (req.method === "GET" && url.pathname === "/api/tags") return json(res, all("SELECT * FROM tags ORDER BY lifecycle_status, id"));
       if (req.method === "GET" && url.pathname === "/api/dimensions") return json(res, all("SELECT * FROM dimensions ORDER BY dimension_type, id"));
       if (req.method === "GET" && url.pathname === "/api/metrics") return json(res, getMetrics(url));
@@ -2676,6 +2956,10 @@ const server = createServer(async (req, res) => {
       }
       if (req.method === "GET" && url.pathname === "/api/workflows") return json(res, getWorkflowInstances(url));
       if (req.method === "GET" && url.pathname === "/api/workflows/summary") return json(res, getWorkflowSummary());
+      if (req.method === "POST" && url.pathname === "/api/workflows/bulk-review") {
+        const body = await readBody(req);
+        return json(res, { ok: true, ...bulkReviewWorkflows(body) });
+      }
       const workflowReview = url.pathname.match(/^\/api\/workflows\/([^/]+)\/review$/);
       if (req.method === "POST" && workflowReview) {
         const body = await readBody(req);
@@ -2685,8 +2969,15 @@ const server = createServer(async (req, res) => {
       if (req.method === "GET" && url.pathname === "/api/governance/tasks") return json(res, all("SELECT * FROM governance_tasks ORDER BY priority, status, id LIMIT 500"));
       if (req.method === "GET" && url.pathname === "/api/chatbi/context") return json(res, getChatbiContext());
       if (req.method === "GET" && url.pathname === "/api/chatbi/context-samples") return json(res, getChatbiContextSamples(url));
-      if (req.method === "GET" && url.pathname === "/api/decision/action-tasks") return json(res, all("SELECT * FROM action_tasks ORDER BY status, id"));
+      if (req.method === "GET" && url.pathname === "/api/decision/summary") return json(res, getDecisionSummary());
+      if (req.method === "GET" && url.pathname === "/api/decision/action-tasks") return json(res, getActionTasks(url));
       if (req.method === "GET" && url.pathname === "/api/decision/logs") return json(res, all("SELECT * FROM decision_logs ORDER BY status, id"));
+      const actionTaskTransition = url.pathname.match(/^\/api\/decision\/action-tasks\/([^/]+)\/transition$/);
+      if (req.method === "POST" && actionTaskTransition) {
+        const body = await readBody(req);
+        const result = transitionActionTask(actionTaskTransition[1], body);
+        return result ? json(res, { ok: true, ...result }) : json(res, { error: "Action task not found" }, 404);
+      }
       const annotationUpdate = url.pathname.match(/^\/api\/ledger\/annotations\/([^/]+)$/);
       if (req.method === "PATCH" && annotationUpdate) {
         const body = await readBody(req);
@@ -2792,16 +3083,19 @@ const server = createServer(async (req, res) => {
 });
 
 function insertActionTask(id, body) {
+  const createdAt = nowIso();
   run(
-    "INSERT INTO action_tasks (id, insight_ref, action_name, owner, status, approval_required, replay_note) VALUES (?, ?, ?, ?, ?, ?, ?)",
+    "INSERT INTO action_tasks (id, insight_ref, action_name, owner, status, approval_required, replay_note, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
     [
       id,
       body.insightRef || "manual",
       body.actionName || "治理动作",
       body.owner || "供应链数据治理 Owner",
-      "pending_approval",
+      normalizeActionState(body.status || "recommended"),
       1,
-      body.replayNote || "Suggestion + approval + replay only."
+      body.replayNote || "Suggestion + approval + replay only.",
+      createdAt,
+      createdAt
     ]
   );
 }

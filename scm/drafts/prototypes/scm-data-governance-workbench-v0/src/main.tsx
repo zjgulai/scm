@@ -217,6 +217,27 @@ type WorkflowInstance = {
   candidate_name?: string;
   candidate_status?: string;
   step_summary?: string;
+  sla_status?: string;
+  sla_note?: string;
+};
+
+type OntologyPath = {
+  object: AnyRow | null;
+  outbound: AnyRow[];
+  inbound: AnyRow[];
+  tags: AnyRow[];
+  dimensions: AnyRow[];
+  metrics: AnyRow[];
+  lineageEdges: AnyRow[];
+  narrative: string[];
+};
+
+type DecisionSummary = {
+  decisions: { total: number; byStatus: AnyRow[] };
+  actions: { total: number; byStatus: AnyRow[]; byOwner: AnyRow[] };
+  stateOrder: string[];
+  terminalStates: string[];
+  writeBackPolicy: string;
 };
 
 type AuditEvent = {
@@ -321,7 +342,11 @@ const columnLabels: Record<string, string> = {
   workflow_type: "流程类型",
   module_id: "模块",
   due_date: "截止日期",
-  step_summary: "步骤状态"
+  step_summary: "步骤状态",
+  sla_status: "SLA",
+  sla_note: "SLA 说明",
+  transition_count: "状态迁移",
+  last_transition_at: "最近迁移"
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -356,11 +381,26 @@ function useApi<T>(path: string, fallback: T) {
 }
 
 function toneFromStatus(status = "") {
-  if (["active", "certified", "已签字", "done"].includes(status)) return "good";
-  if (["mapped", "reviewed"].includes(status)) return "blue";
-  if (["draft", "review_pending", "pending_approval"].includes(status)) return "warn";
-  if (["deprecated", "blocked"].includes(status)) return "bad";
+  if (["active", "certified", "已签字", "done", "approved", "completed", "on_track"].includes(status)) return "good";
+  if (["mapped", "reviewed", "in_progress", "closed"].includes(status)) return "blue";
+  if (["draft", "review_pending", "pending_approval", "recommended", "due_soon", "no_due"].includes(status)) return "warn";
+  if (["deprecated", "blocked", "rejected", "overdue", "invalid_due"].includes(status)) return "bad";
   return "neutral";
+}
+
+function actionNextStates(status = "") {
+  const state = status === "approval_pending" ? "pending_approval" : status;
+  const transitions: Record<string, string[]> = {
+    draft: ["recommended", "pending_approval", "rejected"],
+    recommended: ["pending_approval", "rejected"],
+    pending_approval: ["approved", "rejected"],
+    approved: ["in_progress", "completed"],
+    in_progress: ["completed", "rejected"],
+    completed: ["reviewed"],
+    reviewed: [],
+    rejected: []
+  };
+  return transitions[state] || [];
 }
 
 function Badge({ children, tone = "neutral" }: { children: React.ReactNode; tone?: "neutral" | "good" | "warn" | "bad" | "blue" }) {
@@ -580,15 +620,33 @@ function OverviewPanel({
 
 function WorkflowBoard({ onOpenAsset }: { onOpenAsset: (asset: AssetRef) => void }) {
   const [refresh, setRefresh] = useState(0);
+  const [filters, setFilters] = useState({
+    status: "",
+    owner: "",
+    moduleId: "",
+    priority: "",
+    slaStatus: "",
+    q: ""
+  });
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const workflowPath = useMemo(() => {
+    const params = new URLSearchParams({ limit: "80", refresh: String(refresh) });
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    return `/api/workflows?${params.toString()}`;
+  }, [filters, refresh]);
   const summary = useApi<any>(`/api/workflows/summary?refresh=${refresh}`, {
     total: 0,
     byStatus: [],
     byPriority: [],
     byModule: [],
+    byOwner: [],
+    bySla: [],
     candidates: { total: 0, byType: [] },
     openWorkflows: []
   });
-  const workflows = useApi<WorkflowInstance[]>(`/api/workflows?limit=80&refresh=${refresh}`, []);
+  const workflows = useApi<WorkflowInstance[]>(workflowPath, []);
   const [note, setNote] = useState("");
 
   async function reviewWorkflow(workflow: WorkflowInstance, status: string) {
@@ -602,6 +660,31 @@ function WorkflowBoard({ onOpenAsset }: { onOpenAsset: (asset: AssetRef) => void
     });
     setNote(`Workflow ${workflow.id} 已更新为 ${status}`);
     setRefresh((value) => value + 1);
+  }
+
+  async function bulkReview(status: string) {
+    if (!selectedIds.length) return;
+    await api("/api/workflows/bulk-review", {
+      method: "POST",
+      body: JSON.stringify({
+        ids: selectedIds,
+        status,
+        reviewer: "local_user",
+        note: `P1 workflow board bulk marked ${selectedIds.length} workflows as ${status}.`
+      })
+    });
+    setNote(`已批量更新 ${selectedIds.length} 个 workflow 为 ${status}`);
+    setSelectedIds([]);
+    setRefresh((value) => value + 1);
+  }
+
+  function toggleWorkflow(id: string) {
+    setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  }
+
+  function selectVisible() {
+    const ids = workflows.data.map((workflow) => workflow.id);
+    setSelectedIds(selectedIds.length === ids.length ? [] : ids);
   }
 
   return (
@@ -630,16 +713,79 @@ function WorkflowBoard({ onOpenAsset }: { onOpenAsset: (asset: AssetRef) => void
           <strong>{summary.data.byModule?.length || 0}</strong>
           <small>{summary.data.byStatus?.map((item: AnyRow) => `${item.status}:${item.count}`).join(" / ") || "no workflow"}</small>
         </div>
+        <div>
+          <span>SLA risk</span>
+          <strong>{summary.data.bySla?.find((item: AnyRow) => item.status === "overdue")?.count || 0}</strong>
+          <small>{summary.data.bySla?.map((item: AnyRow) => `${item.status}:${item.count}`).join(" / ") || "no SLA"}</small>
+        </div>
+      </div>
+      <div className="workflowFilters">
+        <label>
+          状态
+          <select value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value })}>
+            <option value="">全部</option>
+            {summary.data.byStatus?.map((item: AnyRow) => <option key={String(item.status)} value={String(item.status)}>{String(item.status)}</option>)}
+          </select>
+        </label>
+        <label>
+          模块
+          <select value={filters.moduleId} onChange={(event) => setFilters({ ...filters, moduleId: event.target.value })}>
+            <option value="">全部</option>
+            {summary.data.byModule?.map((item: AnyRow) => <option key={String(item.module_id)} value={String(item.module_id)}>{String(item.module_id || "governance")}</option>)}
+          </select>
+        </label>
+        <label>
+          优先级
+          <select value={filters.priority} onChange={(event) => setFilters({ ...filters, priority: event.target.value })}>
+            <option value="">全部</option>
+            {summary.data.byPriority?.map((item: AnyRow) => <option key={String(item.priority)} value={String(item.priority)}>{String(item.priority)}</option>)}
+          </select>
+        </label>
+        <label>
+          Owner
+          <select value={filters.owner} onChange={(event) => setFilters({ ...filters, owner: event.target.value })}>
+            <option value="">全部</option>
+            {summary.data.byOwner?.map((item: AnyRow) => <option key={String(item.owner)} value={String(item.owner)}>{String(item.owner || "--")}</option>)}
+          </select>
+        </label>
+        <label>
+          SLA
+          <select value={filters.slaStatus} onChange={(event) => setFilters({ ...filters, slaStatus: event.target.value })}>
+            <option value="">全部</option>
+            {summary.data.bySla?.map((item: AnyRow) => <option key={String(item.status)} value={String(item.status)}>{String(item.status)}</option>)}
+          </select>
+        </label>
+        <label className="workflowSearch">
+          搜索
+          <input value={filters.q} placeholder="标题 / 编码 / source" onChange={(event) => setFilters({ ...filters, q: event.target.value })} />
+        </label>
+      </div>
+      <div className="bulkActionBar">
+        <button className="textButton" onClick={selectVisible}>{selectedIds.length === workflows.data.length ? "取消全选" : "选择可见项"}</button>
+        <span>{selectedIds.length} selected / {workflows.data.length} visible</span>
+        <button className="textButton" disabled={!selectedIds.length} onClick={() => bulkReview("approved")}>批量批准</button>
+        <button className="textButton" disabled={!selectedIds.length} onClick={() => bulkReview("rejected")}>批量拒绝</button>
+        <button className="textButton" onClick={() => setFilters({ status: "", owner: "", moduleId: "", priority: "", slaStatus: "", q: "" })}>重置筛选</button>
       </div>
       <div className="workflowCards">
         {workflows.data.length ? workflows.data.map((workflow) => (
           <article className="workflowCard" key={workflow.id}>
             <div className="ledgerItemHead">
-              <strong>{workflow.title || workflow.workflow_type}</strong>
-              <Badge tone={toneFromStatus(workflow.status)}>{workflow.status}</Badge>
+              <label className="checkRow">
+                <input type="checkbox" checked={selectedIds.includes(workflow.id)} onChange={() => toggleWorkflow(workflow.id)} />
+                <strong>{workflow.title || workflow.workflow_type}</strong>
+              </label>
+              <div className="badgeCluster">
+                <Badge tone={toneFromStatus(workflow.status)}>{workflow.status}</Badge>
+                <Badge tone={toneFromStatus(workflow.sla_status || "")}>{workflow.sla_status || "no_sla"}</Badge>
+              </div>
             </div>
             <p>{workflow.workflow_type} / {workflow.module_id || "governance"} / {workflow.source_ref || `${workflow.asset_type}:${workflow.asset_id}`}</p>
-            <small>{workflow.step_summary || "no steps"} / owner {workflow.owner || "--"} / {workflow.priority}</small>
+            <div className="workflowMetaGrid">
+              <small>{workflow.step_summary || "no steps"}</small>
+              <small>owner {workflow.owner || "--"} / {workflow.priority}</small>
+              <small>due {workflow.due_date ? new Date(workflow.due_date).toLocaleString() : "--"} / {workflow.sla_note || "--"}</small>
+            </div>
             <div className="qualityActions">
               <button className="textButton" onClick={() => onOpenAsset(makeAsset("workflow", workflow as unknown as AnyRow, ["title", "workflow_type", "id"], ["module_id", "owner"]))}>详情</button>
               {!["approved", "rejected", "closed", "done"].includes(workflow.status) ? (
@@ -659,9 +805,82 @@ function WorkflowBoard({ onOpenAsset }: { onOpenAsset: (asset: AssetRef) => void
 function OntologyPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset: (asset: AssetRef) => void }) {
   const objects = useApi<AnyRow[]>("/api/ontology/objects", []);
   const links = useApi<AnyRow[]>("/api/ontology/links", []);
+  const [selectedObject, setSelectedObject] = useState("");
+  const objectId = selectedObject || String(objects.data[0]?.id || "");
+  const path = useApi<OntologyPath>(`/api/ontology/paths?objectId=${encodeURIComponent(objectId)}`, {
+    object: null,
+    outbound: [],
+    inbound: [],
+    tags: [],
+    dimensions: [],
+    metrics: [],
+    lineageEdges: [],
+    narrative: []
+  });
   return (
     <section className="panel">
       <ModuleHeader module={module} />
+      <div className="ontologyPathPanel">
+        <div className="surfaceHead">
+          <div>
+            <h3>对象关系路径解释</h3>
+            <p className="muted">本体正本只读；这里把对象关系、标签、维度、指标和血缘证据聚合成可解释路径。</p>
+          </div>
+          <Badge tone="blue">{path.data.metrics.length} metrics</Badge>
+        </div>
+        <div className="ontologySelector">
+          <label>
+            选择对象
+            <select value={objectId} onChange={(event) => setSelectedObject(event.target.value)}>
+              {objects.data.map((object) => (
+                <option key={String(object.id)} value={String(object.id)}>{cellValue(object.name)} / {cellValue(object.id)}</option>
+              ))}
+            </select>
+          </label>
+          <button className="textButton" onClick={() => path.data.object && onOpenAsset(makeAsset("ontology_object", path.data.object, ["name", "id"], ["object_type", "owner"], true))}>打开对象注解</button>
+        </div>
+        <div className="pathNarrative">
+          {path.data.narrative.map((item) => <span key={item}>{item}</span>)}
+        </div>
+        <div className="pathwayLayout">
+          <div className="pathCard">
+            <strong>出向关系</strong>
+            {path.data.outbound.length ? path.data.outbound.map((link) => (
+              <button key={String(link.id)} onClick={() => onOpenAsset(makeAsset("ontology_link", link, ["link_type", "id"], ["source_object_id", "target_object_id"], true))}>
+                <span>{cellValue(link.source_object_id)} -- {cellValue(link.link_type)} -- {cellValue(link.target_name || link.target_object_id)}</span>
+                <small>{cellValue(link.business_meaning)}</small>
+              </button>
+            )) : <small>暂无出向关系</small>}
+          </div>
+          <div className="pathCard">
+            <strong>入向关系</strong>
+            {path.data.inbound.length ? path.data.inbound.map((link) => (
+              <button key={String(link.id)} onClick={() => onOpenAsset(makeAsset("ontology_link", link, ["link_type", "id"], ["source_object_id", "target_object_id"], true))}>
+                <span>{cellValue(link.source_name || link.source_object_id)} -- {cellValue(link.link_type)} -- {cellValue(link.target_object_id)}</span>
+                <small>{cellValue(link.business_meaning)}</small>
+              </button>
+            )) : <small>暂无入向关系</small>}
+          </div>
+          <div className="pathCard">
+            <strong>标签与维度</strong>
+            {[...path.data.tags.slice(0, 4), ...path.data.dimensions.slice(0, 4)].length ? (
+              <>
+                {path.data.tags.slice(0, 4).map((tag) => <button key={String(tag.id)} onClick={() => onOpenAsset(makeAsset("tag", tag, ["name", "id"], ["tag_type", "owner"]))}><span>{cellValue(tag.name)}</span><small>tag / {cellValue(tag.lifecycle_status)}</small></button>)}
+                {path.data.dimensions.slice(0, 4).map((dimension) => <button key={String(dimension.id)} onClick={() => onOpenAsset(makeAsset("dimension", dimension, ["name", "id"], ["dimension_type", "owner"]))}><span>{cellValue(dimension.name)}</span><small>dimension / {cellValue(dimension.dimension_type)}</small></button>)}
+              </>
+            ) : <small>暂无标签或维度绑定</small>}
+          </div>
+          <div className="pathCard">
+            <strong>关联指标</strong>
+            {path.data.metrics.length ? path.data.metrics.slice(0, 6).map((metric) => (
+              <button key={String(metric.id)} onClick={() => onOpenAsset(makeAsset("metric", metric, ["name", "code", "id"], ["level", "l1_domain"], true))}>
+                <span>{cellValue(metric.name)}</span>
+                <small>{cellValue(metric.code)} / {cellValue(metric.level)} / {cellValue(metric.certification_status)}</small>
+              </button>
+            )) : <small>暂无指标桥接</small>}
+          </div>
+        </div>
+      </div>
       <div className="split">
         <div className="surface">
           <div className="surfaceHead">
@@ -1857,11 +2076,102 @@ function AiChatPanel({
 }
 
 function DecisionPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset: (asset: AssetRef) => void }) {
-  const actions = useApi<AnyRow[]>("/api/decision/action-tasks", []);
-  const decisions = useApi<AnyRow[]>("/api/decision/logs", []);
+  const [refresh, setRefresh] = useState(0);
+  const [note, setNote] = useState("");
+  const [form, setForm] = useState({
+    insightRef: "decision_1",
+    actionName: "创建供应链治理动作",
+    owner: "供应链数据治理 Owner",
+    replayNote: "Suggestion + approval + replay only."
+  });
+  const actions = useApi<AnyRow[]>(`/api/decision/action-tasks?limit=100&refresh=${refresh}`, []);
+  const decisions = useApi<AnyRow[]>(`/api/decision/logs?refresh=${refresh}`, []);
+  const summary = useApi<DecisionSummary>(`/api/decision/summary?refresh=${refresh}`, {
+    decisions: { total: 0, byStatus: [] },
+    actions: { total: 0, byStatus: [], byOwner: [] },
+    stateOrder: [],
+    terminalStates: [],
+    writeBackPolicy: "suggestion_approval_replay_only"
+  });
+
+  async function createAction(event: React.FormEvent) {
+    event.preventDefault();
+    const result = await api<{ ok: boolean; task: AnyRow }>("/api/decision/action-task", {
+      method: "POST",
+      body: JSON.stringify(form)
+    });
+    setNote(`已创建 Action ${cellValue(result.task.id)}，状态为 ${cellValue(result.task.status)}`);
+    setRefresh((value) => value + 1);
+  }
+
+  async function transitionAction(action: AnyRow, status: string) {
+    const result = await api<{ ok: boolean; task: AnyRow }>(`/api/decision/action-tasks/${encodeURIComponent(String(action.id))}/transition`, {
+      method: "POST",
+      body: JSON.stringify({
+        status,
+        actor: "local_user",
+        note: `Decision loop moved ${cellValue(action.id)} to ${status}.`,
+        evidence: [{ type: "ui_transition", ref: String(action.id), status }]
+      })
+    });
+    setNote(`Action ${cellValue(result.task.id)} 已推进到 ${cellValue(result.task.status)}`);
+    setRefresh((value) => value + 1);
+  }
+
   return (
     <section className="panel">
       <ModuleHeader module={module} />
+      <div className="decisionSummaryGrid">
+        <div>
+          <span>洞察记录</span>
+          <strong>{summary.data.decisions.total}</strong>
+          <small>{summary.data.decisions.byStatus.map((item) => `${item.status}:${item.count}`).join(" / ") || "no decisions"}</small>
+        </div>
+        <div>
+          <span>Action 任务</span>
+          <strong>{summary.data.actions.total}</strong>
+          <small>{summary.data.actions.byStatus.map((item) => `${item.status}:${item.count}`).join(" / ") || "no actions"}</small>
+        </div>
+        <div>
+          <span>写回边界</span>
+          <strong>0</strong>
+          <small>{summary.data.writeBackPolicy}</small>
+        </div>
+      </div>
+      {note ? <div className="kbNotice">{note}</div> : null}
+      <div className="stateRail">
+        {summary.data.stateOrder.map((state) => (
+          <span key={state} className={summary.data.terminalStates.includes(state) ? "terminal" : ""}>{state}</span>
+        ))}
+      </div>
+      <form className="decisionForm" onSubmit={createAction}>
+        <div className="surfaceHead">
+          <h3>创建治理 Action</h3>
+          <Badge tone="blue">suggestion + approval + replay</Badge>
+        </div>
+        <div className="formGrid">
+          <label>
+            洞察引用
+            <select value={form.insightRef} onChange={(event) => setForm({ ...form, insightRef: event.target.value })}>
+              <option value="manual">manual</option>
+              {decisions.data.map((decision) => <option key={String(decision.id)} value={String(decision.id)}>{cellValue(decision.insight_title)}</option>)}
+            </select>
+          </label>
+          <label>
+            动作名称
+            <input value={form.actionName} onChange={(event) => setForm({ ...form, actionName: event.target.value })} />
+          </label>
+          <label>
+            Owner
+            <input value={form.owner} onChange={(event) => setForm({ ...form, owner: event.target.value })} />
+          </label>
+        </div>
+        <label>
+          复盘说明
+          <textarea value={form.replayNote} onChange={(event) => setForm({ ...form, replayNote: event.target.value })} />
+        </label>
+        <button type="submit">创建 Action</button>
+      </form>
       <div className="split">
         <div className="surface">
           <div className="surfaceHead">
@@ -1879,11 +2189,24 @@ function DecisionPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
             <h3>Action 任务</h3>
             <Badge>{actions.data.length} actions</Badge>
           </div>
-          <DataTable
-            rows={actions.data}
-            columns={["id", "insight_ref", "action_name", "owner", "status", "approval_required", "replay_note"]}
-            onSelectRow={(row) => onOpenAsset(makeAsset("action_task", row, ["action_name", "id"], ["owner", "status"]))}
-          />
+          <div className="actionCards">
+            {actions.data.length ? actions.data.map((action) => (
+              <article className="actionCard" key={String(action.id)}>
+                <div className="ledgerItemHead">
+                  <strong>{cellValue(action.action_name)}</strong>
+                  <Badge tone={toneFromStatus(String(action.status))}>{cellValue(action.status)}</Badge>
+                </div>
+                <p>{cellValue(action.insight_ref)} / owner {cellValue(action.owner)} / transitions {cellValue(action.transition_count || 0)}</p>
+                <small>{cellValue(action.replay_note)}</small>
+                <div className="qualityActions">
+                  <button className="textButton" onClick={() => onOpenAsset(makeAsset("action_task", action, ["action_name", "id"], ["owner", "status"]))}>详情</button>
+                  {actionNextStates(String(action.status)).map((state) => (
+                    <button className="textButton" key={state} onClick={() => transitionAction(action, state)}>{state}</button>
+                  ))}
+                </div>
+              </article>
+            )) : <div className="empty compact">暂无 Action。可从上方创建建议/审批/复盘任务。</div>}
+          </div>
         </div>
       </div>
     </section>

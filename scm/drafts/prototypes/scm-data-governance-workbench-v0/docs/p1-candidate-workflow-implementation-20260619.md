@@ -154,9 +154,18 @@ Browser Harness 公开站点检查：
 
 ## 8. 后续 P1
 
-下一批建议继续：
+状态更新（2026-06-19）：以下四项已进入第二批实现，实施记录见：
+
+```text
+docs/p1-operational-workflows-ontology-decision-20260619.md
+```
 
 - `SCM-PRD-P1-005`：扩展 workflow board 的筛选、owner SLA、批量操作。
 - `SCM-PRD-P1-006`：把修订建议和候选流统一成更完整的步骤状态机。
 - `SCM-PRD-P1-007`：对象本体关系路径解释。
 - `SCM-PRD-P1-008`：决策闭环状态机。
+
+仍未进入实现的下一批：
+
+- `SCM-PRD-P1-009`：ChatBI 上下文认证流。
+- `SCM-PRD-P1-010`：审计日志操作页。

@@ -2,8 +2,8 @@
 title: "供应链治理工作台 E2E 验收矩阵"
 status: "draft"
 created_at: "2026-06-18"
-updated_at: "2026-06-18"
-scope: "P0 browser smoke and core workflow smoke"
+updated_at: "2026-06-19"
+scope: "P0 browser smoke, P1 workflow operations, ontology path and decision state machine smoke"
 boundary: "test design and executable smoke scripts; no ERP/Jijia writeback; provider calls remain disabled"
 ---
 
@@ -49,6 +49,9 @@ ALLOW_LEDGER_WRITE_SMOKE=1 SCM_WORKBENCH_URL=https://staging.example.com npm run
 | revision proposal create/review | `smoke-core-workflows.mjs` | 能创建修订建议并 review 为 rejected |
 | governance candidate create/review | `smoke-core-workflows.mjs` | 能创建指标候选、自动生成 workflow，并审核为 approved，不写 canonical 指标表 |
 | workflow board read/summary | `smoke-core-workflows.mjs` | 能读取 workflow 列表和候选汇总 |
+| workflow filters/SLA | `smoke-core-workflows.mjs` | 能按 owner、模块、优先级、关键词筛选 workflow，并返回 SLA 状态 |
+| workflow bulk review | `smoke-core-workflows.mjs` | 能批量拒绝 smoke workflow，只写 SQLite 治理台账，不写 canonical 表 |
+| ontology path explanation | `smoke-core-workflows.mjs` | `sku` 对象可返回出向关系和指标桥接 |
 | KPI canvas node read/update | `smoke-core-workflows.mjs` | 能读取 canvas 节点并更新临时布局版本 |
 | KPI canvas visual rendering | Browser Harness DOM check | 公开站点中 canvas 有可见节点、连线、选中态和可打开的上下文抽屉 |
 | quality rule create | `smoke-core-workflows.mjs` | 能创建数据质量规则 |
@@ -60,6 +63,8 @@ ALLOW_LEDGER_WRITE_SMOKE=1 SCM_WORKBENCH_URL=https://staging.example.com npm run
 | ChatBI dry-run | `smoke-core-workflows.mjs` | 返回 `certified_metric_only` 策略 |
 | AI supported/partial answer | `smoke-core-workflows.mjs` | 返回 evidence-backed answerability，不调用 provider |
 | AI insufficient/fail-closed | `smoke-core-workflows.mjs` | 对弱证据问题返回 insufficient 或 partial，不调用 provider |
+| decision action state machine | `smoke-core-workflows.mjs` | 能创建 Action，并推进 `recommended -> pending_approval -> approved`，不触发 ERP 写回 |
+| decision summary read | `smoke-core-workflows.mjs` | 返回 `suggestion_approval_replay_only` 写回边界 |
 | audit events | `smoke-core-workflows.mjs` | 操作写入 audit event |
 
 ## 4. 当前限制

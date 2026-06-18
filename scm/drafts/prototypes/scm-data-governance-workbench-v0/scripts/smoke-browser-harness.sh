@@ -51,6 +51,7 @@ if missing:
     raise SystemExit(f"Missing navigation labels: {missing}; labels={summary['labels']}")
 
 results = []
+feature_checks = []
 for label in expected:
     clicked = js(f"""
     (() => {{
@@ -74,6 +75,38 @@ for label in expected:
         raise SystemExit(f"Navigation failed for {label}: active header={state['h1']!r}")
     if "Application error" in state["body"] or "Unhandled Runtime Error" in state["body"]:
         raise SystemExit(f"Visible app error after opening {label}")
+    if label == "治理链路总览":
+        workflow = js("""
+        (() => ({
+          filters: !!document.querySelector('.workflowFilters'),
+          bulk: !!document.querySelector('.bulkActionBar'),
+          summaryCards: document.querySelectorAll('.workflowSummaryGrid > div').length
+        }))()
+        """)
+        if not workflow["filters"] or not workflow["bulk"] or workflow["summaryCards"] < 4:
+          raise SystemExit(f"Workflow board feature check failed: {workflow}")
+        feature_checks.append({"workflowBoard": workflow})
+    if label == "对象本体工作台":
+        ontology = js("""
+        (() => ({
+          pathPanel: !!document.querySelector('.ontologyPathPanel'),
+          pathCards: document.querySelectorAll('.pathwayLayout .pathCard').length
+        }))()
+        """)
+        if not ontology["pathPanel"] or ontology["pathCards"] < 4:
+          raise SystemExit(f"Ontology path feature check failed: {ontology}")
+        feature_checks.append({"ontologyPath": ontology})
+    if label == "决策闭环工作台":
+        decision = js("""
+        (() => ({
+          stateRail: document.querySelectorAll('.stateRail span').length,
+          decisionForm: !!document.querySelector('.decisionForm'),
+          actionCards: document.querySelectorAll('.actionCards .actionCard').length
+        }))()
+        """)
+        if decision["stateRail"] < 7 or not decision["decisionForm"]:
+          raise SystemExit(f"Decision loop feature check failed: {decision}")
+        feature_checks.append({"decisionLoop": decision})
     results.append({"label": label, "header": state["h1"]})
 
 print({
@@ -82,5 +115,6 @@ print({
     "title": summary["title"],
     "moduleCount": len(results),
     "modules": results,
+    "featureChecks": feature_checks,
 })
 PY

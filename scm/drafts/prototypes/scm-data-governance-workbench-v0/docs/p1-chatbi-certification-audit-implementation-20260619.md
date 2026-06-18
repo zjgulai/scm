@@ -117,7 +117,43 @@ AuditLog: summaryCards=4, facets=30, filters=true, timeline=true
 - 审计日志工作台为 append-only 查询页，不提供删除或覆盖审计事件能力。
 - 生产站点验收默认只读；生产台账写入需单独授权。
 
-## 7. 后续建议
+## 7. 部署证据
+
+当前 P1 第三批已部署：
+
+```text
+https://scm.lute-tlz-dddd.top/
+```
+
+部署追溯：
+
+```text
+branch=codex/scm-ledger-workbench
+commit=ee30914
+release=/opt/scm-governance-workbench/releases/scm-workbench-p1-chatbi-audit-ee30914-20260619015017
+backup=/opt/scm-governance-workbench/backups/20260619015004/governance_workbench.sqlite
+```
+
+生产迁移：
+
+```text
+applied=["004_p1_chatbi_certification_audit.sql"]
+skipped=3
+```
+
+公网只读验收：
+
+```text
+/api/deploy/health: ok=true, staticBuild=true, providerCalls=false, erpWriteback=false
+/api/workbench/modules: 13 modules
+/api/chatbi/summary: total=8, certified=8, draft=0, rejected=0
+/api/audit/summary: total=1
+Browser Harness: 13 modules pass
+ChatBI DOM: summaryCards=4, form=true, filters=true, dryRun=true
+AuditLog DOM: summaryCards=4, filters=true, timeline=true
+```
+
+## 8. 后续建议
 
 - P2 建立问法样本库、同义词库、拒答样本库和样本质量评分。
 - P2 把 AI 对话生成的 draft context 与 ChatBI 认证台做更强联动。

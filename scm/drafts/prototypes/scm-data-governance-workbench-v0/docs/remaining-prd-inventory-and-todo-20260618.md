@@ -12,8 +12,8 @@ source_of_truth:
   - "drafts/prototypes/scm-data-governance-workbench-v0/docs/second-iteration-ui-information-architecture-20260618.md"
 current_deploy:
   url: "https://scm.lute-tlz-dddd.top/"
-  deployed_branch_sha: "ac37bec"
-  release: "/opt/scm-governance-workbench/releases/scm-workbench-p1-operational-ac37bec-20260619011059"
+  deployed_branch_sha: "ee30914"
+  release: "/opt/scm-governance-workbench/releases/scm-workbench-p1-chatbi-audit-ee30914-20260619015017"
 ---
 
 # 供应链数据开发治理工作台剩余 PRD 盘点与 TODO
@@ -25,7 +25,7 @@ current_deploy:
 当前项目已经从“纯规划文档”推进到“可访问的部署原型”：
 
 - 已部署线上地址：`https://scm.lute-tlz-dddd.top/`
-- 当前部署追溯 SHA：`ce7c0aa`，分支 `codex/scm-ledger-workbench`
+- 当前部署追溯 SHA：`ee30914`，分支 `codex/scm-ledger-workbench`
 - 已实现核心模块：治理总览、本体、标签、维度、指标、指标体系画布、血缘与质量、ChatBI、AI 知识库、AI 对话、决策闭环、审计日志、上下文抽屉。
 - 已落地 SQLite 台账：annotation、comment、revision proposal、workflow instance、workflow step、audit event、AI KB、AI chat evidence 等基础表已存在。
 - 已具备本地证据检索式 AI 对话：当前策略为 `local_kb_evidence_only`，未启用外部模型调用。
@@ -417,3 +417,12 @@ Browser Harness 本地新 UI 检查：
 - 不写积加、ERP、WMS、TMS。
 - 不调用外部 provider。
 - 审计日志为 append-only 查询，不提供删除或覆盖能力。
+
+部署结果：
+
+- 服务器 release：`/opt/scm-governance-workbench/releases/scm-workbench-p1-chatbi-audit-ee30914-20260619015017`
+- 服务器 SQLite 备份：`/opt/scm-governance-workbench/backups/20260619015004/governance_workbench.sqlite`
+- 容器内/发布副本迁移：`004_p1_chatbi_certification_audit.sql` 已应用，`001`、`002`、`003` 已跳过。
+- 公网 health：`ok=true`、`staticBuild=true`、`providerCalls=false`、`erpWriteback=false`、`chatbiPolicy=certified_metric_only`。
+- 公网 API：`/api/workbench/modules` 返回 13 个模块；`/api/chatbi/summary` 返回 `total=8`、`certified=8`；`/api/audit/summary` 返回 `total=1`。
+- 公网 Browser Harness：13 个模块导航通过；ChatBI 认证工作台和审计日志工作台 DOM 检查通过。

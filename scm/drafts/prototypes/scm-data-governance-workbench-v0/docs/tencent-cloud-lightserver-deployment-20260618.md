@@ -23,16 +23,16 @@ source: human+ai
 ## 当前发布快照
 
 - 线上地址：`https://scm.lute-tlz-dddd.top/`
-- 当前部署追溯 SHA：`ac37bec`，分支 `codex/scm-ledger-workbench`
-- 当前 P1 release：`/opt/scm-governance-workbench/releases/scm-workbench-p1-operational-ac37bec-20260619011059`
-- 当前 P1 部署备份：`/opt/scm-governance-workbench/backups/20260619011059/governance_workbench.sqlite`
-- 当前 P1 release 来自远端仓库 `zjgulai/scm` 的 `codex/scm-ledger-workbench` 分支 `ac37bec` 提交。
+- 当前部署追溯 SHA：`ee30914`，分支 `codex/scm-ledger-workbench`
+- 当前 P1 release：`/opt/scm-governance-workbench/releases/scm-workbench-p1-chatbi-audit-ee30914-20260619015017`
+- 当前 P1 部署备份：`/opt/scm-governance-workbench/backups/20260619015004/governance_workbench.sqlite`
+- 当前 P1 release 来自远端仓库 `zjgulai/scm` 的 `codex/scm-ledger-workbench` 分支 `ee30914` 提交。
 - 容器名：`scm-governance-workbench`
 - 内部端口：`127.0.0.1:5174`
-- 模块数量：12 个工作台模块
+- 模块数量：13 个工作台模块
 - 关键边界：`productionWrites=false`、`providerCalls=false`、`erpWriteback=false`
 
-12 个模块为：
+13 个模块为：
 
 1. 治理链路总览
 2. 对象本体工作台
@@ -46,6 +46,7 @@ source: human+ai
 10. AI 知识库
 11. AI 对话
 12. 决策闭环工作台
+13. 审计日志工作台
 
 ## 推荐进程结构
 
@@ -127,14 +128,16 @@ server {
 
 - `npm run init` 成功。
 - `curl /api/deploy/health` 返回 `ok=true`。
-- 页面能加载 12 个工作台模块。
-- `/api/workbench/modules` 返回 12 个模块。
+- 页面能加载 13 个工作台模块。
+- `/api/workbench/modules` 返回 13 个模块。
 - ChatBI dry-run 对未认证问题能拒答，对认证库存类问题能返回证据链。
 - `docker exec ai_video_nginx getent hosts scm-governance-workbench` 可解析到应用容器 IP。
 - 公开站点 Browser Harness DOM 检查通过：KPI 画布 `nodeCount=39`、`edgeCount=33`、`selectedCount=1`、`drawerVisible=true`；血缘质量页 `summaryCards=3`、`ruleForm=true`；浅色侧边栏 `sidebarBg=rgb(255,255,255)`。
 - P1 公开站点 Browser Harness DOM 检查通过：总览页存在 `候选资产与治理任务板`，标签/维度/指标工程页均存在候选提交流表单。
 - P1 第二批公开站点 Browser Harness DOM 检查通过：总览页 `.workflowFilters=true`、`.bulkActionBar=true`、`.workflowSummaryGrid > div = 4`；对象本体页 `.ontologyPathPanel=true`、路径卡 `4`；决策闭环页状态轨道 `8`、`.decisionForm=true`、Action 卡 `3`。
 - P1 第二批只读 API 检查通过：`/api/ontology/paths?objectId=sku` 返回 `outbound=2`、`inbound=2`、`tags=3`、`dimensions=3`、`metrics=60`、`lineageEdges=9`；`/api/decision/summary` 返回 `writeBackPolicy=suggestion_approval_replay_only`。
+- P1 第三批公开站点 Browser Harness DOM 检查通过：13 个模块导航通过；ChatBI 页 `.chatbiSummaryGrid > div = 4`、`.chatbiForm=true`、`.chatbiFilters=true`、dry-run 控件存在；审计日志页 `.auditSummaryGrid > div = 4`、facet 存在、`.auditFilters=true`、`.auditTimeline=true`。
+- P1 第三批只读 API 检查通过：`/api/workbench/modules` 返回 `13`；`/api/chatbi/summary` 返回 `total=8`、`certified=8`；`/api/audit/summary` 返回 `total=1`；`/api/deploy/health` 返回 `providerCalls=false`、`erpWriteback=false`、`chatbiPolicy=certified_metric_only`。
 
 P0 验收命令：
 

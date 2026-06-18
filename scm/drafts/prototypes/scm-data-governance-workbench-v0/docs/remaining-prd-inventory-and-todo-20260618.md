@@ -263,14 +263,10 @@ current_deploy:
 | SCM-PRD-P0-004 | done | `scripts/backup-sqlite.mjs` 与 `docs/sqlite-ops-runbook-20260618.md` 已新增；`SCM_BACKUP_DIR=tmp/backups npm run backup:sqlite` 通过 |
 | SCM-PRD-P0-005 | done | `scripts/migrate-sqlite.mjs` 与 `scripts/migrations/001_p0_canvas_quality_tables.sql` 已新增；SQLite 副本迁移通过 |
 | SCM-PRD-P0-006 | done | `kpi_canvas_nodes` schema、`/api/kpi-canvas/nodes`、节点 PATCH、指标体系页基础 canvas 视图已实现；`npm run smoke:p0` 覆盖 read/update |
+| SCM-PRD-P0-007 | done | 指标体系页已补节点连线、路径高亮、折叠隐藏后代、拖拽布局写回、点击打开注解抽屉；Browser Harness 本地新 bundle 检查到 39 个可见节点和 33 条连线 |
 | SCM-PRD-P0-008 | done | `quality_rules`、`quality_issues` schema、`/api/quality/rules`、`/api/quality/issues`、血缘质量页基础规则/问题视图已实现；`npm run smoke:p0` 覆盖 create/close |
-
-部分启动但未完成：
-
-| ID | 当前进度 | 剩余缺口 |
-|---|---|---|
-| SCM-PRD-P0-007 | 指标体系页已有基础 canvas、节点点击和首节点展开状态切换 | 仍缺拖拽布局、路径高亮、节点关系连线、注解层、完整 L0-L3 编排交互 |
-| SCM-PRD-P0-009 | 血缘质量页已有质量规则/问题表和 API | 仍缺规则审核、检查执行、严重度汇总、影响分析和问题复盘闭环 |
+| SCM-PRD-P0-009 | done | 已补质量 summary、规则创建、规则审核、规则运行、问题生成、问题关闭复盘和影响面视图；`npm run smoke:p0` 覆盖 review/run/summary |
+| SCM-PRD-P0-010 | done | 已将深色侧边栏改为浅色咨询风格；Browser Harness 本地新 bundle 检查 `.sidebar` 背景为白色，导航文字为中性灰 |
 
 验证命令：
 
@@ -296,9 +292,10 @@ npm run build
 - `backup:sqlite`：通过，备份字节数 `8187904`。
 - `migrate`：通过，创建 `kpi_canvas_nodes`、`quality_rules`、`quality_issues`、`schema_migrations`。
 - `smoke:browser`：通过，线上真实 Chrome 标签页验证 12 个模块。
-- `smoke:workflows`：通过，临时 SQLite 副本验证 15 条核心工作流。
+- `smoke:workflows`：通过，临时 SQLite 副本验证 19 条核心工作流。
 - `npm run smoke:p0`：通过，一条命令完成生产构建、临时 SQLite 迁移、临时 API 工作流 smoke、本地新 bundle Browser Harness 导航 smoke、线上 Browser Harness 导航 smoke；覆盖 KPI canvas read/update 和 quality rule/issue create/close。
 - `npm run build`：通过。
+- Browser Harness 本地新 UI 检查：`http://127.0.0.1:5187/` 上指标体系页 `nodeCount=39`、`edgeCount=33`、节点可打开抽屉；血缘质量页 `summaryCards=3`、`ruleForm=true`；浅色侧边栏 `sidebarBg=rgb(255,255,255)`。
 
 部署结果：
 
@@ -313,6 +310,4 @@ npm run build
 
 仍未完成的 P0：
 
-- SCM-PRD-P0-007 的指标体系真画布 UI。
-- SCM-PRD-P0-009 的血缘质量页 DQ 规则与问题视图。
-- SCM-PRD-P0-010 的全局浅色咨询风格重构。
+- 无。下一阶段建议进入 P1：统一工作台 CRUD pattern、候选资产流、workflow board 和决策闭环状态机。

@@ -16,8 +16,12 @@ services:
       - "127.0.0.1:5174:5174"
     networks:
       - scm-governance-net
+      - lighthouse-ai-video-net
 
 networks:
   scm-governance-net:
     name: scm_governance_net
     driver: bridge
+  lighthouse-ai-video-net:
+    name: lighthouse_ai_video_net
+    external: true

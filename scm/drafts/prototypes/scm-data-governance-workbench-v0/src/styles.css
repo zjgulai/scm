@@ -1,23 +1,23 @@
 :root {
-  --ink: #10151b;
-  --ink-2: #1d2733;
-  --muted: #677483;
-  --line: #dfe6ee;
-  --line-strong: #c7d2de;
-  --paper: #f4f7fb;
+  --ink: #17202a;
+  --ink-2: #243244;
+  --muted: #6f7a86;
+  --line: #e3e7ec;
+  --line-strong: #c7d0da;
+  --paper: #f6f7f9;
   --panel: #ffffff;
-  --panel-soft: #f9fbfd;
-  --blue: #005eb8;
-  --blue-soft: #e5f1ff;
-  --teal: #00a5a7;
-  --teal-soft: #dff8f7;
-  --green: #1d8f5f;
-  --green-soft: #e6f6ef;
-  --amber: #b56b00;
-  --amber-soft: #fff2db;
-  --rose: #bc4050;
-  --rose-soft: #fde9ed;
-  --shadow: 0 20px 50px rgba(20, 32, 46, 0.08);
+  --panel-soft: #fbfcfd;
+  --blue: #214f80;
+  --blue-soft: #edf4fb;
+  --teal: #2f8f98;
+  --teal-soft: #e8f6f6;
+  --green: #3d7b5d;
+  --green-soft: #ebf5ef;
+  --amber: #a56a2a;
+  --amber-soft: #fbf2e7;
+  --rose: #ad4c5b;
+  --rose-soft: #f8edf0;
+  --shadow: 0 18px 44px rgba(30, 42, 56, 0.07);
   font-family: Inter, "IBM Plex Sans", "Noto Sans SC", "Aptos", sans-serif;
 }
 
@@ -33,10 +33,10 @@ body {
   margin: 0;
   color: var(--ink);
   background:
-    linear-gradient(rgba(222, 231, 240, 0.72) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(222, 231, 240, 0.58) 1px, transparent 1px),
+    linear-gradient(rgba(215, 222, 230, 0.42) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(215, 222, 230, 0.34) 1px, transparent 1px),
     var(--paper);
-  background-size: 44px 44px;
+  background-size: 48px 48px;
 }
 
 button,
@@ -87,11 +87,12 @@ h3 {
   top: 0;
   height: 100vh;
   padding: 18px;
-  color: #f5f8fb;
+  color: var(--ink);
   background:
-    linear-gradient(180deg, rgba(0, 94, 184, 0.14), transparent 42%),
-    #0d1117;
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 247, 249, 0.96)),
+    var(--panel);
+  border-right: 1px solid var(--line);
+  box-shadow: 12px 0 36px rgba(30, 42, 56, 0.045);
 }
 
 .brand {
@@ -99,7 +100,7 @@ h3 {
   gap: 12px;
   align-items: center;
   padding: 8px 6px 18px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.11);
+  border-bottom: 1px solid var(--line);
   margin-bottom: 14px;
 }
 
@@ -126,7 +127,7 @@ h3 {
 
 .brand small {
   margin-top: 2px;
-  color: rgba(255, 255, 255, 0.55);
+  color: var(--muted);
 }
 
 nav {
@@ -150,8 +151,8 @@ nav button {
   border-radius: 8px;
   padding: 10px;
   text-align: left;
-  color: rgba(255, 255, 255, 0.66);
-  background: transparent;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.62);
   cursor: pointer;
 }
 
@@ -162,9 +163,9 @@ nav button span {
   display: grid;
   place-items: center;
   align-self: center;
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  border: 1px solid var(--line);
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--blue);
   font-size: 12px;
   font-weight: 760;
 }
@@ -176,12 +177,12 @@ nav button strong {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 14px;
-  color: rgba(255, 255, 255, 0.86);
+  color: var(--ink-2);
 }
 
 nav button small {
   grid-area: meta;
-  color: rgba(255, 255, 255, 0.44);
+  color: var(--muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -189,19 +190,19 @@ nav button small {
 
 nav button.active,
 nav button:hover {
-  border-color: rgba(255, 255, 255, 0.2);
-  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(33, 79, 128, 0.22);
+  background: var(--blue-soft);
 }
 
 nav button.active span {
   color: #fff;
-  border-color: rgba(0, 165, 167, 0.75);
-  background: rgba(0, 165, 167, 0.22);
+  border-color: rgba(47, 143, 152, 0.3);
+  background: var(--teal);
 }
 
 .content {
   min-width: 0;
-  padding: 26px;
+  padding: 28px;
 }
 
 .topbar {
@@ -645,6 +646,23 @@ textarea {
   min-width: 1180px;
 }
 
+.kpiEdges {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.kpiEdges path {
+  fill: none;
+  stroke: rgba(111, 122, 134, 0.34);
+  stroke-width: 1.3;
+}
+
+.kpiEdges path.active {
+  stroke: var(--blue);
+  stroke-width: 2.2;
+}
+
 .kpiNode {
   position: absolute;
   display: grid;
@@ -658,6 +676,9 @@ textarea {
   box-shadow: 0 10px 24px rgba(20, 32, 46, 0.08);
   text-align: left;
   cursor: pointer;
+  touch-action: none;
+  user-select: none;
+  z-index: 2;
 }
 
 .kpiNode::before {
@@ -717,13 +738,135 @@ textarea {
   opacity: 0.82;
 }
 
+.kpiNode.pathActive {
+  border-color: rgba(33, 79, 128, 0.42);
+  box-shadow: 0 14px 30px rgba(33, 79, 128, 0.13);
+}
+
+.kpiNode.selected {
+  outline: 3px solid rgba(47, 143, 152, 0.18);
+  border-color: var(--teal);
+}
+
 .canvasHint {
   color: var(--muted);
   font-size: 12px;
 }
 
+.canvasActions,
+.qualityActions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
 .qualitySplit {
   margin-top: 16px;
+}
+
+.qualitySummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.qualitySummaryGrid > div {
+  display: grid;
+  gap: 6px;
+  min-height: 104px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fff, var(--panel-soft));
+}
+
+.qualitySummaryGrid span,
+.qualitySummaryGrid small {
+  color: var(--muted);
+}
+
+.qualitySummaryGrid strong {
+  color: var(--ink);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.qualityWorkbench {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.9fr) minmax(280px, 0.7fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.qualityRuleForm,
+.qualityImpact {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-soft);
+}
+
+.qualityRuleForm button[type="submit"] {
+  min-height: 42px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--blue), var(--teal));
+  cursor: pointer;
+  font-weight: 780;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.impactList,
+.qualityCards {
+  display: grid;
+  gap: 10px;
+}
+
+.impactList article,
+.qualityCard {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.impactList article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 10px;
+  align-items: center;
+}
+
+.impactList article span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.qualityCard {
+  display: grid;
+  gap: 8px;
+}
+
+.qualityCard p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.qualityCard small {
+  color: var(--muted);
+  line-height: 1.45;
 }
 
 .kbToolbar {

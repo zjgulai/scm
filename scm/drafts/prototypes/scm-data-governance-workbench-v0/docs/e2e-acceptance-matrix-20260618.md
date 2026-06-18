@@ -48,8 +48,12 @@ ALLOW_LEDGER_WRITE_SMOKE=1 SCM_WORKBENCH_URL=https://staging.example.com npm run
 | comment create/update | `smoke-core-workflows.mjs` | 能创建评论并归档 |
 | revision proposal create/review | `smoke-core-workflows.mjs` | 能创建修订建议并 review 为 rejected |
 | KPI canvas node read/update | `smoke-core-workflows.mjs` | 能读取 canvas 节点并更新临时布局版本 |
+| KPI canvas visual rendering | Browser Harness DOM check | 本地新 bundle 中 canvas 有可见节点、连线和可打开的上下文抽屉 |
 | quality rule create | `smoke-core-workflows.mjs` | 能创建数据质量规则 |
+| quality rule review/run | `smoke-core-workflows.mjs` | 能审核规则、记录通过、运行生成问题 |
 | quality issue create/close | `smoke-core-workflows.mjs` | 能创建质量问题并关闭 |
+| quality summary rendering | Browser Harness DOM check | 血缘质量页有 summary 卡、规则表单和质量卡片容器 |
+| light consulting style | Browser Harness DOM check | 侧边栏背景为浅色，导航文字为中性灰，不再是深色侧边栏 |
 | ChatBI dry-run | `smoke-core-workflows.mjs` | 返回 `certified_metric_only` 策略 |
 | AI supported/partial answer | `smoke-core-workflows.mjs` | 返回 evidence-backed answerability，不调用 provider |
 | AI insufficient/fail-closed | `smoke-core-workflows.mjs` | 对弱证据问题返回 insufficient 或 partial，不调用 provider |

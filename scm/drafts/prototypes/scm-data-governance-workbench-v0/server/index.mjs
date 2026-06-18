@@ -1974,6 +1974,49 @@ function updateQualityRule(id, body) {
   return get("SELECT * FROM quality_rules WHERE id = ?", [id]);
 }
 
+function reviewQualityRule(id, body) {
+  const current = get("SELECT * FROM quality_rules WHERE id = ?", [id]);
+  if (!current) return null;
+  const lifecycleStatus = normalizeText(body.status || body.lifecycleStatus || body.lifecycle_status, "reviewed");
+  const reviewer = normalizeText(body.reviewer || body.owner, current.owner);
+  const updatedAt = nowIso();
+  run(
+    "UPDATE quality_rules SET lifecycle_status = ?, owner = ?, updated_at = ? WHERE id = ?",
+    [lifecycleStatus, reviewer, updatedAt, id]
+  );
+  writeAudit(
+    "quality_rule.reviewed",
+    "quality_rule",
+    id,
+    { before: current, lifecycleStatus, reviewNote: normalizeText(body.note || body.reviewNote || body.review_note) },
+    reviewer
+  );
+  return get("SELECT * FROM quality_rules WHERE id = ?", [id]);
+}
+
+function runQualityRule(id, body) {
+  const rule = get("SELECT * FROM quality_rules WHERE id = ?", [id]);
+  if (!rule) return null;
+  const result = normalizeText(body.result, "issue");
+  const actor = normalizeText(body.actor, rule.owner || "local_user");
+  let issue = null;
+  if (result !== "pass") {
+    issue = createQualityIssue({
+      ruleId: id,
+      assetType: rule.asset_type,
+      assetId: rule.asset_id,
+      issueTitle: normalizeText(body.issueTitle, `${rule.rule_name} 检查异常`),
+      issueDetail: normalizeText(body.issueDetail, `规则 ${rule.rule_code} 运行后发现需复核的数据质量问题。`),
+      severity: normalizeText(body.severity, rule.severity),
+      owner: normalizeText(body.owner, rule.owner),
+      evidence: body.evidence || [{ type: "quality_rule", ref: rule.rule_code, result }],
+      actor
+    });
+  }
+  writeAudit("quality_rule.executed", "quality_rule", id, { result, issueId: issue?.id || "", rule }, actor);
+  return { rule, result, issue };
+}
+
 function getQualityIssues(url) {
   const clauses = [];
   const params = [];
@@ -2005,6 +2048,30 @@ function getQualityIssues(url) {
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   params.push(parseLimit(url, 100, 500));
   return all(`SELECT * FROM quality_issues ${where} ORDER BY detected_at DESC, severity LIMIT ?`, params);
+}
+
+function getQualitySummary() {
+  return {
+    rules: {
+      total: tableCount("quality_rules"),
+      byStatus: all("SELECT lifecycle_status AS status, COUNT(*) AS count FROM quality_rules GROUP BY lifecycle_status ORDER BY count DESC"),
+      bySeverity: all("SELECT severity, COUNT(*) AS count FROM quality_rules GROUP BY severity ORDER BY count DESC")
+    },
+    issues: {
+      total: tableCount("quality_issues"),
+      byStatus: all("SELECT status, COUNT(*) AS count FROM quality_issues GROUP BY status ORDER BY count DESC"),
+      bySeverity: all("SELECT severity, COUNT(*) AS count FROM quality_issues GROUP BY severity ORDER BY count DESC"),
+      byAssetType: all("SELECT asset_type, COUNT(*) AS count FROM quality_issues GROUP BY asset_type ORDER BY count DESC")
+    },
+    openImpact: all(`
+      SELECT asset_type, asset_id, severity, COUNT(*) AS issue_count
+      FROM quality_issues
+      WHERE status IN ('open', 'reviewing')
+      GROUP BY asset_type, asset_id, severity
+      ORDER BY issue_count DESC, severity
+      LIMIT 30
+    `)
+  };
 }
 
 function createQualityIssue(body) {
@@ -2053,16 +2120,23 @@ function updateQualityIssue(id, body) {
   const status = normalizeText(body.status, current.status);
   const resolvedAt = status === "closed" || status === "resolved" ? nowIso() : normalizeText(body.resolvedAt || body.resolved_at, current.resolved_at);
   run(
-    "UPDATE quality_issues SET status = ?, severity = ?, owner = ?, resolved_at = ? WHERE id = ?",
+    "UPDATE quality_issues SET status = ?, severity = ?, owner = ?, resolved_at = ?, evidence = ? WHERE id = ?",
     [
       status,
       normalizeText(body.severity, current.severity),
       normalizeText(body.owner, current.owner),
       resolvedAt,
+      normalizeJsonText(body.evidence || current.evidence, []),
       id
     ]
   );
-  writeAudit("quality_issue.updated", "quality_issue", id, { before: current, status, resolvedAt }, body.actor || "local_user");
+  writeAudit(
+    "quality_issue.updated",
+    "quality_issue",
+    id,
+    { before: current, status, resolvedAt, reviewNote: normalizeText(body.reviewNote || body.review_note) },
+    body.actor || "local_user"
+  );
   return get("SELECT * FROM quality_issues WHERE id = ?", [id]);
 }
 
@@ -2207,6 +2281,7 @@ const server = createServer(async (req, res) => {
       if (req.method === "GET" && url.pathname === "/api/kpi-tree") return json(res, getKpiTree());
       if (req.method === "GET" && url.pathname === "/api/kpi-canvas/nodes") return json(res, getKpiCanvasNodes(url));
       if (req.method === "GET" && url.pathname === "/api/lineage") return json(res, all("SELECT * FROM lineage_edges ORDER BY status, edge_type LIMIT 1000"));
+      if (req.method === "GET" && url.pathname === "/api/quality/summary") return json(res, getQualitySummary());
       if (req.method === "GET" && url.pathname === "/api/quality/rules") return json(res, getQualityRules(url));
       if (req.method === "POST" && url.pathname === "/api/quality/rules") {
         const body = await readBody(req);
@@ -2283,6 +2358,18 @@ const server = createServer(async (req, res) => {
         const body = await readBody(req);
         const rule = updateQualityRule(qualityRuleUpdate[1], body);
         return rule ? json(res, { ok: true, rule }) : json(res, { error: "Quality rule not found" }, 404);
+      }
+      const qualityRuleReview = url.pathname.match(/^\/api\/quality\/rules\/([^/]+)\/review$/);
+      if (req.method === "POST" && qualityRuleReview) {
+        const body = await readBody(req);
+        const rule = reviewQualityRule(qualityRuleReview[1], body);
+        return rule ? json(res, { ok: true, rule }) : json(res, { error: "Quality rule not found" }, 404);
+      }
+      const qualityRuleRun = url.pathname.match(/^\/api\/quality\/rules\/([^/]+)\/run$/);
+      if (req.method === "POST" && qualityRuleRun) {
+        const body = await readBody(req);
+        const result = runQualityRule(qualityRuleRun[1], body);
+        return result ? json(res, { ok: true, ...result }, 201) : json(res, { error: "Quality rule not found" }, 404);
       }
       const qualityIssueUpdate = url.pathname.match(/^\/api\/quality\/issues\/([^/]+)$/);
       if (req.method === "PATCH" && qualityIssueUpdate) {

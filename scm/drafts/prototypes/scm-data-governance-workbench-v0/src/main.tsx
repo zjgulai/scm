@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./styles.css";
 
@@ -613,6 +613,17 @@ function KpiTreePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
   const [canvasRefresh, setCanvasRefresh] = useState(0);
   const [selectedDomain, setSelectedDomain] = useState("");
   const [scope, setScope] = useState<"core" | "all">("core");
+  const [selectedNodeId, setSelectedNodeId] = useState("");
+  const [draftPositions, setDraftPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const suppressNextClickRef = useRef(false);
+  const [dragState, setDragState] = useState<{
+    id: string;
+    startX: number;
+    startY: number;
+    originX: number;
+    originY: number;
+    moved: boolean;
+  } | null>(null);
   const canvas = useApi<AnyRow[]>(`/api/kpi-canvas/nodes?limit=1000&refresh=${canvasRefresh}`, []);
   const flat = useMemo(() => {
     const rows: AnyRow[] = [];
@@ -634,16 +645,82 @@ function KpiTreePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
   const domains = useMemo(() => {
     return Array.from(new Set(canvas.data.map((node) => String(node.l1_domain || "")).filter(Boolean))).sort();
   }, [canvas.data]);
+  const nodeByMetricId = useMemo(() => {
+    return Object.fromEntries(canvas.data.map((node) => [String(node.metric_id), node]));
+  }, [canvas.data]);
+  const nodeById = useMemo(() => {
+    return Object.fromEntries(canvas.data.map((node) => [String(node.id), node]));
+  }, [canvas.data]);
+  const childMap = useMemo(() => {
+    const map: Record<string, string[]> = {};
+    canvas.data.forEach((node) => {
+      const parentMetricId = String(node.parent_metric_id || "");
+      if (!parentMetricId) return;
+      const parent = nodeByMetricId[parentMetricId];
+      if (!parent) return;
+      const parentNodeId = String(parent.id);
+      map[parentNodeId] = [...(map[parentNodeId] || []), String(node.id)];
+    });
+    return map;
+  }, [canvas.data, nodeByMetricId]);
+  const parentMap = useMemo(() => {
+    const map: Record<string, string> = {};
+    canvas.data.forEach((node) => {
+      const parent = nodeByMetricId[String(node.parent_metric_id || "")];
+      if (parent) map[String(node.id)] = String(parent.id);
+    });
+    return map;
+  }, [canvas.data, nodeByMetricId]);
+  const highlighted = useMemo(() => {
+    if (!selectedNodeId) return new Set<string>();
+    const ids = new Set<string>([selectedNodeId]);
+    let cursor = selectedNodeId;
+    while (parentMap[cursor]) {
+      cursor = parentMap[cursor];
+      ids.add(cursor);
+    }
+    const queue = [...(childMap[selectedNodeId] || [])];
+    while (queue.length) {
+      const id = queue.shift()!;
+      ids.add(id);
+      queue.push(...(childMap[id] || []));
+    }
+    return ids;
+  }, [selectedNodeId, parentMap, childMap]);
+  function isHiddenByCollapsedAncestor(node: AnyRow) {
+    let cursor = String(node.id);
+    while (parentMap[cursor]) {
+      cursor = parentMap[cursor];
+      const parent = nodeById[cursor];
+      if (parent && Number(parent.collapsed || 0)) return true;
+    }
+    return false;
+  }
   const visibleNodes = useMemo(() => {
     return canvas.data.filter((node) => {
       if (selectedDomain && node.l1_domain !== selectedDomain) return false;
       if (scope === "core" && node.level === "L3") return false;
+      if (isHiddenByCollapsedAncestor(node)) return false;
       return true;
     });
-  }, [canvas.data, selectedDomain, scope]);
+  }, [canvas.data, selectedDomain, scope, parentMap, nodeById]);
+  const visibleNodeIds = useMemo(() => new Set(visibleNodes.map((node) => String(node.id))), [visibleNodes]);
+  const canvasEdges = useMemo(() => {
+    return visibleNodes
+      .map((node) => {
+        const parent = nodeByMetricId[String(node.parent_metric_id || "")];
+        if (!parent || !visibleNodeIds.has(String(parent.id))) return null;
+        return { source: parent, target: node };
+      })
+      .filter(Boolean) as Array<{ source: AnyRow; target: AnyRow }>;
+  }, [visibleNodes, nodeByMetricId, visibleNodeIds]);
   const canvasHeight = Math.min(
-    1600,
-    Math.max(420, ...visibleNodes.map((node) => Number(node.y || 0) + Number(node.height || 88) + 80))
+    scope === "all" ? 3200 : 1800,
+    Math.max(460, ...visibleNodes.map((node) => Number(draftPositions[String(node.id)]?.y ?? node.y ?? 0) + Number(node.height || 88) + 96))
+  );
+  const canvasWidth = Math.max(
+    1240,
+    ...visibleNodes.map((node) => Number(draftPositions[String(node.id)]?.x ?? node.x ?? 0) + Number(node.width || 220) + 96)
   );
 
   async function toggleNode(node: AnyRow) {
@@ -657,6 +734,69 @@ function KpiTreePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
     });
     setCanvasRefresh((value) => value + 1);
   }
+
+  function nodePosition(node: AnyRow) {
+    const draft = draftPositions[String(node.id)];
+    return {
+      x: Number(draft?.x ?? node.x ?? 0),
+      y: Number(draft?.y ?? node.y ?? 0),
+      width: Number(node.width || 220),
+      height: Number(node.height || 88)
+    };
+  }
+
+  function openCanvasNode(node: AnyRow) {
+    setSelectedNodeId(String(node.id));
+    onOpenAsset(makeAsset("kpi_canvas_node", node, ["name", "code", "id"], ["level", "l1_domain"]));
+  }
+
+  function startDrag(event: React.PointerEvent, node: AnyRow) {
+    const position = nodePosition(node);
+    setSelectedNodeId(String(node.id));
+    setDragState({
+      id: String(node.id),
+      startX: event.clientX,
+      startY: event.clientY,
+      originX: position.x,
+      originY: position.y,
+      moved: false
+    });
+    event.currentTarget.setPointerCapture(event.pointerId);
+  }
+
+  function moveDrag(event: React.PointerEvent) {
+    if (!dragState) return;
+    const dx = event.clientX - dragState.startX;
+    const dy = event.clientY - dragState.startY;
+    const x = Math.max(16, Math.round(dragState.originX + dx));
+    const y = Math.max(16, Math.round(dragState.originY + dy));
+    setDragState({ ...dragState, moved: dragState.moved || Math.abs(dx) + Math.abs(dy) > 4 });
+    setDraftPositions((current) => ({ ...current, [dragState.id]: { x, y } }));
+  }
+
+  async function endDrag(event: React.PointerEvent, node: AnyRow) {
+    if (!dragState || dragState.id !== String(node.id)) return;
+    event.currentTarget.releasePointerCapture(event.pointerId);
+    const draft = draftPositions[dragState.id];
+    setDragState(null);
+    if (dragState.moved && draft) {
+      suppressNextClickRef.current = true;
+      await api(`/api/kpi-canvas/nodes/${encodeURIComponent(String(node.id))}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          x: draft.x,
+          y: draft.y,
+          layoutVersion: "p0-manual-layout",
+          actor: "local_user"
+        })
+      });
+      setCanvasRefresh((value) => value + 1);
+    } else {
+      openCanvasNode(node);
+    }
+  }
+
+  const selectedNode = selectedNodeId ? nodeById[selectedNodeId] : null;
 
   return (
     <section className="panel">
@@ -676,30 +816,68 @@ function KpiTreePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
         </div>
       </div>
       <div className="kpiCanvasWrap">
-        <div className="kpiCanvas" style={{ height: canvasHeight }}>
+        <div className="kpiCanvas" style={{ height: canvasHeight, width: canvasWidth }}>
+          <svg className="kpiEdges" width={canvasWidth} height={canvasHeight} aria-hidden="true">
+            {canvasEdges.map((edge) => {
+              const source = nodePosition(edge.source);
+              const target = nodePosition(edge.target);
+              const active = highlighted.has(String(edge.source.id)) && highlighted.has(String(edge.target.id));
+              const x1 = source.x + source.width;
+              const y1 = source.y + source.height / 2;
+              const x2 = target.x;
+              const y2 = target.y + target.height / 2;
+              const mid = Math.max(x1 + 28, x1 + (x2 - x1) / 2);
+              return (
+                <path
+                  key={`${edge.source.id}-${edge.target.id}`}
+                  className={active ? "active" : ""}
+                  d={`M ${x1} ${y1} C ${mid} ${y1}, ${mid} ${y2}, ${x2} ${y2}`}
+                />
+              );
+            })}
+          </svg>
           {visibleNodes.map((node) => (
-            <button
+            <div
               key={String(node.id)}
-              className={`kpiNode level-${String(node.level).toLowerCase()} ${Number(node.collapsed || 0) ? "collapsed" : ""}`}
+              className={`kpiNode level-${String(node.level).toLowerCase()} ${Number(node.collapsed || 0) ? "collapsed" : ""} ${highlighted.has(String(node.id)) ? "pathActive" : ""} ${selectedNodeId === String(node.id) ? "selected" : ""}`}
               style={{
-                left: Number(node.x || 0),
-                top: Number(node.y || 0),
+                left: nodePosition(node).x,
+                top: nodePosition(node).y,
                 width: Number(node.width || 220),
                 height: Number(node.height || 88)
               }}
-              onClick={() => onOpenAsset(makeAsset("kpi_canvas_node", node, ["name", "code", "id"], ["level", "l1_domain"]))}
+              role="button"
+              tabIndex={0}
+              onPointerDown={(event) => startDrag(event, node)}
+              onPointerMove={moveDrag}
+              onPointerUp={(event) => endDrag(event, node)}
+              onClick={() => {
+                if (suppressNextClickRef.current) {
+                  suppressNextClickRef.current = false;
+                  return;
+                }
+                openCanvasNode(node);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  openCanvasNode(node);
+                }
+              }}
             >
               <span>{cellValue(node.level)}</span>
               <strong>{cellValue(node.name)}</strong>
               <small>{cellValue(node.code)}</small>
               <em>{Number(node.collapsed || 0) ? "collapsed" : "expanded"}</em>
-            </button>
+            </div>
           ))}
         </div>
       </div>
       <div className="canvasHint">
-        <span>{visibleNodes.length} nodes visible / {canvas.data.length} total</span>
-        {visibleNodes[0] ? <button className="textButton" onClick={() => toggleNode(visibleNodes[0])}>切换首个节点展开状态</button> : null}
+        <span>{visibleNodes.length} nodes visible / {canvas.data.length} total / {canvasEdges.length} links</span>
+        <div className="canvasActions">
+          {selectedNode ? <button className="textButton" onClick={() => toggleNode(selectedNode)}>折叠/展开选中节点</button> : null}
+          {selectedNode ? <button className="textButton" onClick={() => onOpenAsset(makeAsset("kpi_canvas_node", selectedNode, ["name", "code", "id"], ["level", "l1_domain"]))}>打开注解</button> : null}
+        </div>
       </div>
       <DataTable
         rows={flat}
@@ -711,13 +889,166 @@ function KpiTreePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
 }
 
 function LineagePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset: (asset: AssetRef) => void }) {
+  const [refresh, setRefresh] = useState(0);
+  const [ruleForm, setRuleForm] = useState({
+    ruleName: "可用库存负数必须具备业务例外说明",
+    assetType: "metric",
+    assetId: "business_available_qty",
+    severity: "medium",
+    ruleExpression: "available_qty >= 0 OR exception_reason IS NOT NULL",
+    expectedBehavior: "当可用库存为负数时，必须能追溯到超卖、预留、同步延迟、调拨占用等业务例外。"
+  });
+  const [dqNote, setDqNote] = useState("");
   const lineage = useApi<AnyRow[]>("/api/lineage", []);
   const tasks = useApi<AnyRow[]>("/api/governance/tasks", []);
-  const qualityRules = useApi<AnyRow[]>("/api/quality/rules?limit=100", []);
-  const qualityIssues = useApi<AnyRow[]>("/api/quality/issues?limit=100", []);
+  const qualityRules = useApi<AnyRow[]>(`/api/quality/rules?limit=100&refresh=${refresh}`, []);
+  const qualityIssues = useApi<AnyRow[]>(`/api/quality/issues?limit=100&refresh=${refresh}`, []);
+  const qualitySummary = useApi<any>(`/api/quality/summary?refresh=${refresh}`, {
+    rules: { total: 0, byStatus: [], bySeverity: [] },
+    issues: { total: 0, byStatus: [], bySeverity: [], byAssetType: [] },
+    openImpact: []
+  });
+
+  async function createRule(event: React.FormEvent) {
+    event.preventDefault();
+    const ruleCode = `DQ_${Date.now()}`;
+    await api("/api/quality/rules", {
+      method: "POST",
+      body: JSON.stringify({
+        ruleCode,
+        ...ruleForm,
+        owner: "data_governance",
+        actor: "local_user"
+      })
+    });
+    setDqNote(`已创建质量规则 ${ruleCode}`);
+    setRefresh((value) => value + 1);
+  }
+
+  async function reviewRule(rule: AnyRow, status: string) {
+    await api(`/api/quality/rules/${encodeURIComponent(String(rule.id))}/review`, {
+      method: "POST",
+      body: JSON.stringify({
+        status,
+        reviewer: "local_user",
+        note: `P0 quality workflow marked rule as ${status}.`
+      })
+    });
+    setDqNote(`规则 ${cellValue(rule.rule_code)} 已更新为 ${status}`);
+    setRefresh((value) => value + 1);
+  }
+
+  async function runRule(rule: AnyRow, result: "issue" | "pass") {
+    await api(`/api/quality/rules/${encodeURIComponent(String(rule.id))}/run`, {
+      method: "POST",
+      body: JSON.stringify({
+        result,
+        issueTitle: `${cellValue(rule.rule_name)} 检查结果`,
+        issueDetail: result === "pass"
+          ? "本次检查记录为通过，不生成质量问题。"
+          : "本次检查生成待复核质量问题，需要 owner 确认业务例外、字段映射或同步链路。",
+        evidence: [{ type: "quality_rule", ref: String(rule.rule_code), result }],
+        actor: "local_user"
+      })
+    });
+    setDqNote(result === "pass" ? `规则 ${cellValue(rule.rule_code)} 已记录通过` : `规则 ${cellValue(rule.rule_code)} 已生成质量问题`);
+    setRefresh((value) => value + 1);
+  }
+
+  async function closeIssue(issue: AnyRow) {
+    await api(`/api/quality/issues/${encodeURIComponent(String(issue.id))}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        status: "closed",
+        reviewNote: "P0 close-loop smoke: issue reviewed and closed with evidence retained.",
+        evidence: [{ type: "review", ref: String(issue.id), status: "closed" }],
+        actor: "local_user"
+      })
+    });
+    setDqNote(`质量问题 ${cellValue(issue.issue_title)} 已关闭`);
+    setRefresh((value) => value + 1);
+  }
+
   return (
     <section className="panel">
       <ModuleHeader module={module} />
+      <div className="qualitySummaryGrid">
+        <div>
+          <span>规则总数</span>
+          <strong>{qualitySummary.data.rules.total}</strong>
+          <small>{qualitySummary.data.rules.byStatus.map((item: AnyRow) => `${item.status}:${item.count}`).join(" / ") || "no rules"}</small>
+        </div>
+        <div>
+          <span>问题总数</span>
+          <strong>{qualitySummary.data.issues.total}</strong>
+          <small>{qualitySummary.data.issues.byStatus.map((item: AnyRow) => `${item.status}:${item.count}`).join(" / ") || "no issues"}</small>
+        </div>
+        <div>
+          <span>影响资产</span>
+          <strong>{qualitySummary.data.openImpact.length}</strong>
+          <small>open/reviewing impact groups</small>
+        </div>
+      </div>
+      {dqNote ? <div className="kbNotice">{dqNote}</div> : null}
+      <div className="qualityWorkbench">
+        <form className="qualityRuleForm" onSubmit={createRule}>
+          <div className="surfaceHead">
+            <h3>创建质量规则</h3>
+            <Badge tone="blue">ledger workflow</Badge>
+          </div>
+          <label>
+            规则名称
+            <input value={ruleForm.ruleName} onChange={(event) => setRuleForm({ ...ruleForm, ruleName: event.target.value })} />
+          </label>
+          <div className="formGrid">
+            <label>
+              资产类型
+              <input value={ruleForm.assetType} onChange={(event) => setRuleForm({ ...ruleForm, assetType: event.target.value })} />
+            </label>
+            <label>
+              资产 ID
+              <input value={ruleForm.assetId} onChange={(event) => setRuleForm({ ...ruleForm, assetId: event.target.value })} />
+            </label>
+            <label>
+              严重度
+              <select value={ruleForm.severity} onChange={(event) => setRuleForm({ ...ruleForm, severity: event.target.value })}>
+                <option value="low">low</option>
+                <option value="medium">medium</option>
+                <option value="high">high</option>
+                <option value="critical">critical</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            规则表达式
+            <textarea value={ruleForm.ruleExpression} onChange={(event) => setRuleForm({ ...ruleForm, ruleExpression: event.target.value })} />
+          </label>
+          <label>
+            期望行为
+            <textarea value={ruleForm.expectedBehavior} onChange={(event) => setRuleForm({ ...ruleForm, expectedBehavior: event.target.value })} />
+          </label>
+          <button type="submit">创建规则</button>
+        </form>
+        <div className="qualityImpact">
+          <div className="surfaceHead">
+            <h3>影响面</h3>
+            <Badge>{qualitySummary.data.openImpact.length} groups</Badge>
+          </div>
+          {qualitySummary.data.openImpact.length ? (
+            <div className="impactList">
+              {qualitySummary.data.openImpact.map((item: AnyRow) => (
+                <article key={`${item.asset_type}-${item.asset_id}-${item.severity}`}>
+                  <strong>{cellValue(item.asset_id)}</strong>
+                  <span>{cellValue(item.asset_type)} / {cellValue(item.severity)}</span>
+                  <Badge tone="warn">{cellValue(item.issue_count)} issues</Badge>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="empty compact">暂无 open/reviewing 影响面。</div>
+          )}
+        </div>
+      </div>
       <div className="split">
         <div className="surface">
           <div className="surfaceHead">
@@ -748,22 +1079,47 @@ function LineagePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
             <h3>质量规则</h3>
             <Badge>{qualityRules.data.length} rules</Badge>
           </div>
-          <DataTable
-            rows={qualityRules.data}
-            columns={["rule_code", "rule_name", "asset_type", "asset_id", "severity", "lifecycle_status", "owner"]}
-            onSelectRow={(row) => onOpenAsset(makeAsset("quality_rule", row, ["rule_name", "rule_code", "id"], ["asset_type", "asset_id"]))}
-          />
+          <div className="qualityCards">
+            {qualityRules.data.length ? qualityRules.data.map((rule) => (
+              <article className="qualityCard" key={String(rule.id)}>
+                <div className="ledgerItemHead">
+                  <strong>{cellValue(rule.rule_name)}</strong>
+                  <Badge tone={toneFromStatus(String(rule.lifecycle_status))}>{cellValue(rule.lifecycle_status)}</Badge>
+                </div>
+                <p>{cellValue(rule.expected_behavior)}</p>
+                <small>{cellValue(rule.rule_code)} / {cellValue(rule.asset_type)}:{cellValue(rule.asset_id)} / {cellValue(rule.severity)}</small>
+                <div className="qualityActions">
+                  <button className="textButton" onClick={() => onOpenAsset(makeAsset("quality_rule", rule, ["rule_name", "rule_code", "id"], ["asset_type", "asset_id"]))}>详情</button>
+                  <button className="textButton" onClick={() => reviewRule(rule, "reviewed")}>审核</button>
+                  <button className="textButton" onClick={() => reviewRule(rule, "certified")}>认证</button>
+                  <button className="textButton" onClick={() => runRule(rule, "issue")}>运行并生成问题</button>
+                  <button className="textButton" onClick={() => runRule(rule, "pass")}>记录通过</button>
+                </div>
+              </article>
+            )) : <div className="empty compact">暂无质量规则，可先创建一条规则。</div>}
+          </div>
         </div>
         <div className="surface">
           <div className="surfaceHead">
             <h3>质量问题</h3>
             <Badge>{qualityIssues.data.length} issues</Badge>
           </div>
-          <DataTable
-            rows={qualityIssues.data}
-            columns={["issue_title", "asset_type", "asset_id", "severity", "status", "owner", "detected_at"]}
-            onSelectRow={(row) => onOpenAsset(makeAsset("quality_issue", row, ["issue_title", "id"], ["asset_type", "asset_id"]))}
-          />
+          <div className="qualityCards">
+            {qualityIssues.data.length ? qualityIssues.data.map((issue) => (
+              <article className="qualityCard" key={String(issue.id)}>
+                <div className="ledgerItemHead">
+                  <strong>{cellValue(issue.issue_title)}</strong>
+                  <Badge tone={toneFromStatus(String(issue.status))}>{cellValue(issue.status)}</Badge>
+                </div>
+                <p>{cellValue(issue.issue_detail)}</p>
+                <small>{cellValue(issue.asset_type)}:{cellValue(issue.asset_id)} / {cellValue(issue.severity)} / {cellValue(issue.owner)}</small>
+                <div className="qualityActions">
+                  <button className="textButton" onClick={() => onOpenAsset(makeAsset("quality_issue", issue, ["issue_title", "id"], ["asset_type", "asset_id"]))}>详情</button>
+                  {String(issue.status) !== "closed" ? <button className="textButton" onClick={() => closeIssue(issue)}>关闭复盘</button> : null}
+                </div>
+              </article>
+            )) : <div className="empty compact">暂无质量问题。运行规则后可生成问题。</div>}
+          </div>
         </div>
       </div>
     </section>

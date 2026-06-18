@@ -1,0 +1,23 @@
+name: scm_governance_workbench
+
+services:
+  scm-governance-workbench:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: scm-governance-workbench:20260618
+    container_name: scm-governance-workbench
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "5174"
+    ports:
+      - "127.0.0.1:5174:5174"
+    networks:
+      - scm-governance-net
+
+networks:
+  scm-governance-net:
+    name: scm_governance_net
+    driver: bridge

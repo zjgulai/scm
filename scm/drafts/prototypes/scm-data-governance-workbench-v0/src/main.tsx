@@ -863,12 +863,14 @@ function AiChatPanel({
   module,
   onOpenAsset,
   sourceAsset,
-  onClearSourceAsset
+  onClearSourceAsset,
+  onWorkbenchRefresh
 }: {
   module: WorkbenchModule;
   onOpenAsset: (asset: AssetRef) => void;
   sourceAsset: AssetRef | null;
   onClearSourceAsset: () => void;
+  onWorkbenchRefresh: () => void;
 }) {
   const [question, setQuestion] = useState("备货业务库存如何计算？有哪些证据来源？");
   const [selectedDomains, setSelectedDomains] = useState<string[]>([]);
@@ -909,6 +911,7 @@ function AiChatPanel({
       });
       setResult(payload.result);
       setRefresh((value) => value + 1);
+      onWorkbenchRefresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
     } finally {
@@ -1425,6 +1428,7 @@ function App() {
   const [active, setActive] = useState("overview");
   const [selectedAsset, setSelectedAsset] = useState<AssetRef | null>(null);
   const [chatSourceAsset, setChatSourceAsset] = useState<AssetRef | null>(null);
+  const [workbenchRefresh, setWorkbenchRefresh] = useState(0);
   const overview = useApi<Overview>("/api/governance/overview", {
     counts: {},
     lifecycle: [],
@@ -1433,7 +1437,7 @@ function App() {
     moduleHealth: [],
     architectureLayers: []
   });
-  const modulesApi = useApi<WorkbenchModule[]>("/api/workbench/modules", fallbackModules);
+  const modulesApi = useApi<WorkbenchModule[]>(`/api/workbench/modules?refresh=${workbenchRefresh}`, fallbackModules);
   const modules = modulesApi.data.length ? modulesApi.data : fallbackModules;
   const activeModule = modules.find((module) => module.id === active) || modules[0];
   function selectModule(id: string) {
@@ -1481,6 +1485,7 @@ function App() {
             onOpenAsset={setSelectedAsset}
             sourceAsset={chatSourceAsset}
             onClearSourceAsset={() => setChatSourceAsset(null)}
+            onWorkbenchRefresh={() => setWorkbenchRefresh((value) => value + 1)}
           />
         )}
         {active === "decision-loop" && <DecisionPanel module={activeModule} onOpenAsset={setSelectedAsset} />}

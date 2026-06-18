@@ -346,9 +346,16 @@ Browser Harness 本地新 UI 检查：
 - 总览页存在 `候选资产与治理任务板`。
 - 标签、维度、指标工程三页存在 `.candidateWorkbench`、`.candidateForm` 和“提交候选并创建 workflow”按钮。
 
+部署结果：
+
+- 服务器 release：`/opt/scm-governance-workbench/releases/scm-workbench-p1-candidate-workflows-85fd64d-20260619004559`
+- 服务器 SQLite 备份：`/opt/scm-governance-workbench/backups/20260619004612/governance_workbench.sqlite`
+- 容器内迁移：`002_p1_candidate_workflows.sql` 已应用，`001_p0_canvas_quality_tables.sql` 已跳过。
+- 公网 health：`ok=true`、`staticBuild=true`、`governanceCandidates=0`、`workflowInstances=0`。
+- 公网 Browser Harness：12 个模块导航通过，总览 workflow board 和三类候选工作台 DOM 检查通过。
+
 当前边界：
 
-- P1 第一批尚未部署到生产站点。
 - 写入验收只发生在临时 SQLite 副本。
 - 不写积加、ERP、WMS、TMS。
 - 不调用外部 provider。

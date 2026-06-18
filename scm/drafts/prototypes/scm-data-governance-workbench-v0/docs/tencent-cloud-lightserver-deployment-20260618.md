@@ -23,10 +23,10 @@ source: human+ai
 ## 当前发布快照
 
 - 线上地址：`https://scm.lute-tlz-dddd.top/`
-- 当前部署追溯 SHA：`ce7c0aa`，分支 `codex/scm-ledger-workbench`
-- 当前 P0 release：`/opt/scm-governance-workbench/releases/scm-workbench-p0-complete-ce7c0aa-20260619001646`
-- 当前 P0 部署备份：`/opt/scm-governance-workbench/backups/20260619001659/governance_workbench.sqlite`
-- 当前 P0 release 来自本地分支 `codex/scm-ledger-workbench` 的 `ce7c0aa` 提交；推送后以远端分支为代码追溯点。
+- 当前部署追溯 SHA：`85fd64d`，分支 `codex/scm-ledger-workbench`
+- 当前 P1 release：`/opt/scm-governance-workbench/releases/scm-workbench-p1-candidate-workflows-85fd64d-20260619004559`
+- 当前 P1 部署备份：`/opt/scm-governance-workbench/backups/20260619004612/governance_workbench.sqlite`
+- 当前 P1 release 来自本地分支 `codex/scm-ledger-workbench` 的 `85fd64d` 提交；推送后以远端分支为代码追溯点。
 - 容器名：`scm-governance-workbench`
 - 内部端口：`127.0.0.1:5174`
 - 模块数量：12 个工作台模块
@@ -132,6 +132,7 @@ server {
 - ChatBI dry-run 对未认证问题能拒答，对认证库存类问题能返回证据链。
 - `docker exec ai_video_nginx getent hosts scm-governance-workbench` 可解析到应用容器 IP。
 - 公开站点 Browser Harness DOM 检查通过：KPI 画布 `nodeCount=39`、`edgeCount=33`、`selectedCount=1`、`drawerVisible=true`；血缘质量页 `summaryCards=3`、`ruleForm=true`；浅色侧边栏 `sidebarBg=rgb(255,255,255)`。
+- P1 公开站点 Browser Harness DOM 检查通过：总览页存在 `候选资产与治理任务板`，标签/维度/指标工程页均存在候选提交流表单。
 
 P0 验收命令：
 

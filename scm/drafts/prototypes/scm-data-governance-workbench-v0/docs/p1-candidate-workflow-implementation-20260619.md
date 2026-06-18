@@ -98,15 +98,61 @@ Browser Harness 本地新 UI 检查通过：
 - 总览页 `.workflowSummaryGrid > div = 3`。
 - 标签、维度、指标工程三页均存在 `.candidateWorkbench`、`.candidateForm` 和“提交候选并创建 workflow”按钮。
 
-## 6. 当前边界
+## 6. 部署证据
 
-- 未部署到生产站点前，线上站点仍保持上一版 P0 release。
+当前 P1 已部署：
+
+```text
+https://scm.lute-tlz-dddd.top/
+```
+
+部署 release：
+
+```text
+/opt/scm-governance-workbench/releases/scm-workbench-p1-candidate-workflows-85fd64d-20260619004559
+```
+
+SQLite 备份：
+
+```text
+/opt/scm-governance-workbench/backups/20260619004612/governance_workbench.sqlite
+```
+
+生产迁移：
+
+```text
+applied=["002_p1_candidate_workflows.sql"]
+skipped=1
+```
+
+公网 health：
+
+```text
+ok=true
+staticBuild=true
+governanceCandidates=0
+workflowInstances=0
+providerCalls=false
+erpWriteback=false
+```
+
+Browser Harness 公开站点检查：
+
+- 12 个模块导航通过。
+- 总览页存在 `候选资产与治理任务板`。
+- 总览页 `.workflowSummaryGrid > div = 3`。
+- 标签、维度、指标工程页均存在 `.candidateWorkbench`、`.candidateForm` 和“提交候选并创建 workflow”按钮。
+
+说明：生产候选和 workflow 当前为 0 是预期值，因为公开站点验收只做只读 DOM/API 检查，没有写生产台账。
+
+## 7. 当前边界
+
 - 当前 P1 smoke 的写入只发生在临时 SQLite 副本。
 - 当前不接 DeepSeek/Kimi。
 - 当前不写积加、ERP、WMS、TMS。
 - 当前不把候选直接 promote 到 canonical 表。
 
-## 7. 后续 P1
+## 8. 后续 P1
 
 下一批建议继续：
 

@@ -126,6 +126,46 @@ const reviewedProposal = await request(`/api/revision-proposals/${proposal.propo
 });
 assert(reviewedProposal.proposal?.status === "rejected", "revision proposal review failed", reviewedProposal);
 
+const metricCandidate = await request("/api/governance/candidates", {
+  method: "POST",
+  body: JSON.stringify({
+    candidateType: "metric",
+    candidateCode: `smoke_candidate_metric_${Date.now()}`,
+    candidateName: "Smoke candidate metric",
+    targetAssetType: "metric",
+    targetAssetId: assetId,
+    proposalSummary: "P1 smoke validates metric candidate create/review and workflow linkage.",
+    proposedPayload: {
+      formula: "smoke_numerator / smoke_denominator",
+      grain: "SKU x warehouse x date",
+      direction: "higher_is_better"
+    },
+    sourceRef: "scripts/smoke-core-workflows.mjs",
+    evidenceRefs: [{ type: "smoke", ref: "scripts/smoke-core-workflows.mjs" }],
+    owner: "p1_smoke",
+    priority: "P1",
+    createdBy: "p1_smoke"
+  })
+});
+assert(metricCandidate.candidate?.id, "governance candidate was not created", metricCandidate);
+assert(metricCandidate.candidate?.workflow_id, "candidate workflow was not created", metricCandidate);
+
+const reviewedCandidate = await request(`/api/governance/candidates/${metricCandidate.candidate.id}/review`, {
+  method: "POST",
+  body: JSON.stringify({
+    status: "approved",
+    reviewer: "p1_smoke",
+    reviewNote: "Smoke candidate approved without writing canonical metric table."
+  })
+});
+assert(reviewedCandidate.candidate?.lifecycle_status === "approved", "candidate review failed", reviewedCandidate);
+
+const workflows = await request("/api/workflows?limit=20");
+assert(Array.isArray(workflows) && workflows.some((workflow) => workflow.id === metricCandidate.candidate.workflow_id), "workflow board missing candidate workflow", workflows);
+
+const workflowSummary = await request("/api/workflows/summary");
+assert(workflowSummary.candidates?.total >= 1, "workflow summary missing candidate counts", workflowSummary);
+
 const qualityRule = await request("/api/quality/rules", {
   method: "POST",
   body: JSON.stringify({
@@ -263,6 +303,10 @@ console.log(
         "comment.archive",
         "revisionProposal.create",
         "revisionProposal.review",
+        "governanceCandidate.create",
+        "governanceCandidate.review",
+        "workflowBoard.read",
+        "workflowSummary.read",
         "kpiCanvasNode.read",
         "kpiCanvasNode.update",
         "qualityRule.create",

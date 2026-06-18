@@ -14,7 +14,7 @@ boundary: "test design and executable smoke scripts; no ERP/Jijia writeback; pro
 | 命令 | 默认目标 | 写入边界 | 用途 |
 |---|---|---|---|
 | `npm run smoke:browser` | `https://scm.lute-tlz-dddd.top/` | 只读浏览器导航 | 使用 Browser Harness 打开真实 Chrome 标签页，验证 12 个模块可打开 |
-| `npm run smoke:workflows` | `http://127.0.0.1:5174` | 只写本项目治理台账 | 验证注解、评论、修订建议、ChatBI dry-run、AI 本地证据问答 |
+| `npm run smoke:workflows` | `http://127.0.0.1:5174` | 只写本项目治理台账 | 验证注解、评论、修订建议、候选资产流、Workflow Board、ChatBI dry-run、AI 本地证据问答 |
 | `npm run smoke:p0` | 临时本地 API/本地新 bundle + 线上浏览器导航 | 临时 SQLite 副本写入 + 线上只读导航 | 执行 build、SQLite 迁移、临时 API 工作流 smoke、本地 Browser Harness 导航 smoke、线上 Browser Harness 导航 smoke |
 
 `smoke:workflows` 默认拒绝写入非本地 URL。若要对授权 staging 目标执行，需要显式设置：
@@ -47,6 +47,8 @@ ALLOW_LEDGER_WRITE_SMOKE=1 SCM_WORKBENCH_URL=https://staging.example.com npm run
 | annotation create/update | `smoke-core-workflows.mjs` | 能创建注解并归档，不修改 canonical metric |
 | comment create/update | `smoke-core-workflows.mjs` | 能创建评论并归档 |
 | revision proposal create/review | `smoke-core-workflows.mjs` | 能创建修订建议并 review 为 rejected |
+| governance candidate create/review | `smoke-core-workflows.mjs` | 能创建指标候选、自动生成 workflow，并审核为 approved，不写 canonical 指标表 |
+| workflow board read/summary | `smoke-core-workflows.mjs` | 能读取 workflow 列表和候选汇总 |
 | KPI canvas node read/update | `smoke-core-workflows.mjs` | 能读取 canvas 节点并更新临时布局版本 |
 | KPI canvas visual rendering | Browser Harness DOM check | 公开站点中 canvas 有可见节点、连线、选中态和可打开的上下文抽屉 |
 | quality rule create | `smoke-core-workflows.mjs` | 能创建数据质量规则 |
@@ -54,6 +56,7 @@ ALLOW_LEDGER_WRITE_SMOKE=1 SCM_WORKBENCH_URL=https://staging.example.com npm run
 | quality issue create/close | `smoke-core-workflows.mjs` | 能创建质量问题并关闭 |
 | quality summary rendering | Browser Harness DOM check | 公开站点血缘质量页有 summary 卡、规则表单、创建规则按钮和影响面容器 |
 | light consulting style | Browser Harness DOM check | 公开站点侧边栏背景为浅色，导航文字为中性灰，页面背景为浅灰咨询风格 |
+| P1 candidate workbench rendering | Browser Harness DOM check | 本地新 bundle 中总览页有 workflow board，标签/维度/指标工程页有候选表单 |
 | ChatBI dry-run | `smoke-core-workflows.mjs` | 返回 `certified_metric_only` 策略 |
 | AI supported/partial answer | `smoke-core-workflows.mjs` | 返回 evidence-backed answerability，不调用 provider |
 | AI insufficient/fail-closed | `smoke-core-workflows.mjs` | 对弱证据问题返回 insufficient 或 partial，不调用 provider |

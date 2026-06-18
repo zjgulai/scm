@@ -175,6 +175,50 @@ type RevisionProposal = {
   updated_at: string;
 };
 
+type GovernanceCandidate = {
+  id: string;
+  candidate_type: string;
+  candidate_code: string;
+  candidate_name: string;
+  target_asset_type: string;
+  target_asset_id: string;
+  proposal_summary: string;
+  proposed_payload: string;
+  source_ref: string;
+  evidence_refs: string;
+  owner: string;
+  priority: string;
+  lifecycle_status: string;
+  workflow_id: string;
+  reviewer: string;
+  review_note: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type WorkflowInstance = {
+  id: string;
+  workflow_type: string;
+  asset_type: string;
+  asset_id: string;
+  status: string;
+  priority: string;
+  owner: string;
+  due_date: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  title: string;
+  source_ref: string;
+  module_id: string;
+  candidate_type?: string;
+  candidate_code?: string;
+  candidate_name?: string;
+  candidate_status?: string;
+  step_summary?: string;
+};
+
 type AuditEvent = {
   id: string;
   event_type: string;
@@ -264,7 +308,20 @@ const columnLabels: Record<string, string> = {
   evidence_level: "证据等级",
   business_terms: "业务术语",
   crosswalk_count: "关联资产",
-  chunk_count: "证据片段"
+  chunk_count: "证据片段",
+  candidate_type: "候选类型",
+  candidate_code: "候选编码",
+  candidate_name: "候选名称",
+  target_asset_type: "目标资产类型",
+  target_asset_id: "目标资产 ID",
+  proposal_summary: "候选说明",
+  proposed_payload: "建议内容",
+  evidence_refs: "证据引用",
+  workflow_id: "Workflow",
+  workflow_type: "流程类型",
+  module_id: "模块",
+  due_date: "截止日期",
+  step_summary: "步骤状态"
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -470,7 +527,17 @@ function ModuleGrid({ modules, onSelect }: { modules: WorkbenchModule[]; onSelec
   );
 }
 
-function OverviewPanel({ overview, modules, onSelect }: { overview: Overview; modules: WorkbenchModule[]; onSelect: (id: string) => void }) {
+function OverviewPanel({
+  overview,
+  modules,
+  onSelect,
+  onOpenAsset
+}: {
+  overview: Overview;
+  modules: WorkbenchModule[];
+  onSelect: (id: string) => void;
+  onOpenAsset: (asset: AssetRef) => void;
+}) {
   return (
     <div className="stack">
       <MissionHero overview={overview} modules={modules} />
@@ -506,7 +573,86 @@ function OverviewPanel({ overview, modules, onSelect }: { overview: Overview; mo
           ))}
         </div>
       </section>
+      <WorkflowBoard onOpenAsset={onOpenAsset} />
     </div>
+  );
+}
+
+function WorkflowBoard({ onOpenAsset }: { onOpenAsset: (asset: AssetRef) => void }) {
+  const [refresh, setRefresh] = useState(0);
+  const summary = useApi<any>(`/api/workflows/summary?refresh=${refresh}`, {
+    total: 0,
+    byStatus: [],
+    byPriority: [],
+    byModule: [],
+    candidates: { total: 0, byType: [] },
+    openWorkflows: []
+  });
+  const workflows = useApi<WorkflowInstance[]>(`/api/workflows?limit=80&refresh=${refresh}`, []);
+  const [note, setNote] = useState("");
+
+  async function reviewWorkflow(workflow: WorkflowInstance, status: string) {
+    await api(`/api/workflows/${encodeURIComponent(workflow.id)}/review`, {
+      method: "POST",
+      body: JSON.stringify({
+        status,
+        reviewer: "local_user",
+        note: `P1 workflow board marked workflow as ${status}.`
+      })
+    });
+    setNote(`Workflow ${workflow.id} 已更新为 ${status}`);
+    setRefresh((value) => value + 1);
+  }
+
+  return (
+    <section className="panel">
+      <div className="sectionHeader">
+        <div>
+          <p className="eyebrow">P1 workflow board</p>
+          <h2>候选资产与治理任务板</h2>
+        </div>
+        <Badge tone="blue">{summary.data.total} workflows</Badge>
+      </div>
+      {note ? <div className="kbNotice">{note}</div> : null}
+      <div className="workflowSummaryGrid">
+        <div>
+          <span>Open tasks</span>
+          <strong>{summary.data.openWorkflows?.length || 0}</strong>
+          <small>latest visible</small>
+        </div>
+        <div>
+          <span>Candidates</span>
+          <strong>{summary.data.candidates?.total || 0}</strong>
+          <small>{summary.data.candidates?.byType?.map((item: AnyRow) => `${item.candidate_type}:${item.count}`).join(" / ") || "no candidates"}</small>
+        </div>
+        <div>
+          <span>Modules</span>
+          <strong>{summary.data.byModule?.length || 0}</strong>
+          <small>{summary.data.byStatus?.map((item: AnyRow) => `${item.status}:${item.count}`).join(" / ") || "no workflow"}</small>
+        </div>
+      </div>
+      <div className="workflowCards">
+        {workflows.data.length ? workflows.data.map((workflow) => (
+          <article className="workflowCard" key={workflow.id}>
+            <div className="ledgerItemHead">
+              <strong>{workflow.title || workflow.workflow_type}</strong>
+              <Badge tone={toneFromStatus(workflow.status)}>{workflow.status}</Badge>
+            </div>
+            <p>{workflow.workflow_type} / {workflow.module_id || "governance"} / {workflow.source_ref || `${workflow.asset_type}:${workflow.asset_id}`}</p>
+            <small>{workflow.step_summary || "no steps"} / owner {workflow.owner || "--"} / {workflow.priority}</small>
+            <div className="qualityActions">
+              <button className="textButton" onClick={() => onOpenAsset(makeAsset("workflow", workflow as unknown as AnyRow, ["title", "workflow_type", "id"], ["module_id", "owner"]))}>详情</button>
+              {!["approved", "rejected", "closed", "done"].includes(workflow.status) ? (
+                <>
+                  <button className="textButton" onClick={() => reviewWorkflow(workflow, "approved")}>批准</button>
+                  <button className="textButton" onClick={() => reviewWorkflow(workflow, "rejected")}>拒绝</button>
+                </>
+              ) : null}
+            </div>
+          </article>
+        )) : <div className="empty compact">暂无 workflow。提交候选或修订建议后会进入这里。</div>}
+      </div>
+    </section>
   );
 }
 
@@ -544,6 +690,144 @@ function OntologyPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
   );
 }
 
+function CandidateWorkbench({
+  candidateType,
+  title,
+  targetAssetType,
+  defaultPayload,
+  onOpenAsset
+}: {
+  candidateType: "tag" | "dimension" | "metric";
+  title: string;
+  targetAssetType: string;
+  defaultPayload: Record<string, string>;
+  onOpenAsset: (asset: AssetRef) => void;
+}) {
+  const [refresh, setRefresh] = useState(0);
+  const [note, setNote] = useState("");
+  const [form, setForm] = useState({
+    candidateName: defaultPayload.name || "",
+    candidateCode: defaultPayload.code || "",
+    targetAssetId: defaultPayload.targetAssetId || "",
+    proposalSummary: defaultPayload.summary || "",
+    owner: "data_governance",
+    priority: "P1",
+    proposedPayload: JSON.stringify(defaultPayload, null, 2)
+  });
+  const candidates = useApi<GovernanceCandidate[]>(`/api/governance/candidates?candidateType=${candidateType}&limit=80&refresh=${refresh}`, []);
+
+  async function submitCandidate(event: React.FormEvent) {
+    event.preventDefault();
+    let proposedPayload: unknown = form.proposedPayload;
+    try {
+      proposedPayload = JSON.parse(form.proposedPayload || "{}");
+    } catch {
+      proposedPayload = { raw: form.proposedPayload };
+    }
+    const result = await api<{ ok: boolean; candidate: GovernanceCandidate }>("/api/governance/candidates", {
+      method: "POST",
+      body: JSON.stringify({
+        candidateType,
+        candidateCode: form.candidateCode || `${candidateType}_${Date.now()}`,
+        candidateName: form.candidateName,
+        targetAssetType,
+        targetAssetId: form.targetAssetId,
+        proposalSummary: form.proposalSummary,
+        proposedPayload,
+        sourceRef: `${candidateType}_workbench_form`,
+        evidenceRefs: [{ type: "workbench", ref: `${candidateType}_candidate_form` }],
+        owner: form.owner,
+        priority: form.priority,
+        createdBy: "local_user"
+      })
+    });
+    setNote(`已提交候选 ${result.candidate.candidate_code}，并创建 workflow ${result.candidate.workflow_id}`);
+    setRefresh((value) => value + 1);
+  }
+
+  async function reviewCandidate(candidate: GovernanceCandidate, status: "approved" | "rejected") {
+    await api(`/api/governance/candidates/${encodeURIComponent(candidate.id)}/review`, {
+      method: "POST",
+      body: JSON.stringify({
+        status,
+        reviewer: "local_user",
+        reviewNote: `P1 candidate workbench marked candidate as ${status}.`
+      })
+    });
+    setNote(`候选 ${candidate.candidate_code} 已更新为 ${status}`);
+    setRefresh((value) => value + 1);
+  }
+
+  return (
+    <div className="candidateWorkbench">
+      <div className="surfaceHead">
+        <div>
+          <p className="eyebrow">Candidate flow</p>
+          <h3>{title}</h3>
+        </div>
+        <Badge tone="blue">{candidates.data.length} candidates</Badge>
+      </div>
+      {note ? <div className="kbNotice">{note}</div> : null}
+      <div className="candidateLayout">
+        <form className="candidateForm" onSubmit={submitCandidate}>
+          <label>
+            候选名称
+            <input value={form.candidateName} onChange={(event) => setForm({ ...form, candidateName: event.target.value })} required />
+          </label>
+          <div className="formGrid">
+            <label>
+              候选编码
+              <input value={form.candidateCode} onChange={(event) => setForm({ ...form, candidateCode: event.target.value })} />
+            </label>
+            <label>
+              目标资产 ID
+              <input value={form.targetAssetId} onChange={(event) => setForm({ ...form, targetAssetId: event.target.value })} />
+            </label>
+            <label>
+              优先级
+              <select value={form.priority} onChange={(event) => setForm({ ...form, priority: event.target.value })}>
+                <option value="P0">P0</option>
+                <option value="P1">P1</option>
+                <option value="P2">P2</option>
+              </select>
+            </label>
+          </div>
+          <label>
+            候选说明
+            <textarea value={form.proposalSummary} onChange={(event) => setForm({ ...form, proposalSummary: event.target.value })} required />
+          </label>
+          <label>
+            建议内容 JSON
+            <textarea value={form.proposedPayload} onChange={(event) => setForm({ ...form, proposedPayload: event.target.value })} />
+          </label>
+          <button type="submit">提交候选并创建 workflow</button>
+        </form>
+        <div className="candidateCards">
+          {candidates.data.length ? candidates.data.map((candidate) => (
+            <article className="candidateCard" key={candidate.id}>
+              <div className="ledgerItemHead">
+                <strong>{candidate.candidate_name}</strong>
+                <Badge tone={toneFromStatus(candidate.lifecycle_status)}>{candidate.lifecycle_status}</Badge>
+              </div>
+              <p>{candidate.proposal_summary}</p>
+              <small>{candidate.candidate_code} / {candidate.target_asset_type}:{candidate.target_asset_id || "--"} / {candidate.workflow_id}</small>
+              <div className="qualityActions">
+                <button className="textButton" onClick={() => onOpenAsset(makeAsset("governance_candidate", candidate as unknown as AnyRow, ["candidate_name", "candidate_code", "id"], ["candidate_type", "owner"]))}>详情</button>
+                {!["approved", "rejected"].includes(candidate.lifecycle_status) ? (
+                  <>
+                    <button className="textButton" onClick={() => reviewCandidate(candidate, "approved")}>批准候选</button>
+                    <button className="textButton" onClick={() => reviewCandidate(candidate, "rejected")}>拒绝候选</button>
+                  </>
+                ) : null}
+              </div>
+            </article>
+          )) : <div className="empty compact">暂无候选。提交后不会改写 canonical 正本，只进入台账与 workflow。</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function TagsPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset: (asset: AssetRef) => void }) {
   const tags = useApi<AnyRow[]>("/api/tags", []);
   return (
@@ -553,6 +837,18 @@ function TagsPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAss
         rows={tags.data}
         columns={["id", "name", "tag_type", "target_object_id", "rule_expression", "lifecycle_status", "owner", "quality_status"]}
         onSelectRow={(row) => onOpenAsset(makeAsset("tag", row, ["name", "id"], ["tag_type", "owner"]))}
+      />
+      <CandidateWorkbench
+        candidateType="tag"
+        title="标签候选提交流"
+        targetAssetType="tag"
+        defaultPayload={{
+          name: "高风险负库存 SKU",
+          code: "tag_negative_available_inventory_risk",
+          targetAssetId: "sku",
+          summary: "基于可用库存负数、同步延迟和业务例外字段，提出 SKU 风险标签候选。"
+        }}
+        onOpenAsset={onOpenAsset}
       />
     </section>
   );
@@ -567,6 +863,18 @@ function DimensionsPanel({ module, onOpenAsset }: { module: WorkbenchModule; onO
         rows={dimensions.data}
         columns={["id", "name", "dimension_type", "hierarchy", "bound_object_id", "lifecycle_status", "owner"]}
         onSelectRow={(row) => onOpenAsset(makeAsset("dimension", row, ["name", "id"], ["dimension_type", "owner"]))}
+      />
+      <CandidateWorkbench
+        candidateType="dimension"
+        title="维度候选提交流"
+        targetAssetType="dimension"
+        defaultPayload={{
+          name: "库存责任仓维度",
+          code: "dim_inventory_responsible_warehouse",
+          targetAssetId: "warehouse",
+          summary: "补充用于库存责任归属、异常闭环和仓库 SLA 分析的一致性维度候选。"
+        }}
+        onOpenAsset={onOpenAsset}
       />
     </section>
   );
@@ -604,6 +912,20 @@ function MetricsPanel({
         columns={["code", "name", "level", "metric_type", "l1_domain", "l2_group", "lifecycle_status", "certification_status", "owner"]}
         onSelectRow={(row) => onOpenAsset(makeAsset("metric", row, ["name", "code", "id"], ["level", "owner"], dictionary))}
       />
+      {!dictionary ? (
+        <CandidateWorkbench
+          candidateType="metric"
+          title="指标候选提交流"
+          targetAssetType="metric"
+          defaultPayload={{
+            name: "可用库存负数例外覆盖率",
+            code: "negative_available_inventory_exception_coverage_rate",
+            targetAssetId: "business_available_qty",
+            summary: "基于质量规则和业务例外解释，提出衡量负库存可解释性的派生指标候选。"
+          }}
+          onOpenAsset={onOpenAsset}
+        />
+      ) : null}
     </section>
   );
 }
@@ -1930,7 +2252,7 @@ function App() {
         {overview.error ? <div className="error">{overview.error}</div> : null}
         {modulesApi.error ? <div className="error">{modulesApi.error}</div> : null}
         {overview.loading && active === "overview" ? <div className="empty">正在加载治理资产...</div> : null}
-        {active === "overview" && <OverviewPanel overview={overview.data} modules={modules} onSelect={selectModule} />}
+        {active === "overview" && <OverviewPanel overview={overview.data} modules={modules} onSelect={selectModule} onOpenAsset={setSelectedAsset} />}
         {active === "ontology" && <OntologyPanel module={activeModule} onOpenAsset={setSelectedAsset} />}
         {active === "tags" && <TagsPanel module={activeModule} onOpenAsset={setSelectedAsset} />}
         {active === "dimensions" && <DimensionsPanel module={activeModule} onOpenAsset={setSelectedAsset} />}

@@ -314,3 +314,42 @@ npm run build
 仍未完成的 P0：
 
 - 无。下一阶段建议进入 P1：统一工作台 CRUD pattern、候选资产流、workflow board 和决策闭环状态机。
+
+### 2026-06-19 P1 第一批
+
+已完成：
+
+| ID | 状态 | 证据 |
+|---|---|---|
+| SCM-PRD-P1-002 | first_batch_done | 新增 `governance_candidates`，标签工程页可提交/审核标签候选，候选进入 workflow，不改 canonical `tags` |
+| SCM-PRD-P1-003 | first_batch_done | 维度工程页可提交/审核维度候选，候选进入 workflow，不改 canonical `dimensions` |
+| SCM-PRD-P1-004 | first_batch_done | 指标工程页可提交/审核指标候选，候选进入 workflow；指标字典 2.0 保持只读 |
+| SCM-PRD-P1-005 | partial_done | 总览新增 Workflow Board，支持 workflow 列表、汇总、批准/拒绝；owner SLA、筛选和批量操作待下一批 |
+| SCM-PRD-P1-006 | partial_done | `revision_proposals` 创建/审核已自动联动 workflow；更完整状态机待下一批 |
+
+验证命令：
+
+```bash
+npm run build
+npm run smoke:p0
+```
+
+新增验证覆盖：
+
+- `governanceCandidate.create`
+- `governanceCandidate.review`
+- `workflowBoard.read`
+- `workflowSummary.read`
+
+Browser Harness 本地新 UI 检查：
+
+- 总览页存在 `候选资产与治理任务板`。
+- 标签、维度、指标工程三页存在 `.candidateWorkbench`、`.candidateForm` 和“提交候选并创建 workflow”按钮。
+
+当前边界：
+
+- P1 第一批尚未部署到生产站点。
+- 写入验收只发生在临时 SQLite 副本。
+- 不写积加、ERP、WMS、TMS。
+- 不调用外部 provider。
+- 候选批准不等于写入 canonical 表，仍需后续发布/认证流程。

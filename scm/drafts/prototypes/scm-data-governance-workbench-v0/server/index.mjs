@@ -44,6 +44,7 @@ ensureLedgerSchema();
 ensureKnowledgeSchema();
 ensureAiChatSchema();
 ensureP0GovernanceSchema();
+ensureP1WorkflowSchema();
 
 function json(res, payload, status = 200) {
   const body = JSON.stringify(payload);
@@ -491,6 +492,41 @@ function ensureP0GovernanceSchema() {
   }
 }
 
+function ensureP1WorkflowSchema() {
+  ensureTableColumn("workflow_instances", "title", "TEXT NOT NULL DEFAULT ''");
+  ensureTableColumn("workflow_instances", "source_ref", "TEXT NOT NULL DEFAULT ''");
+  ensureTableColumn("workflow_instances", "module_id", "TEXT NOT NULL DEFAULT ''");
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS governance_candidates (
+      id TEXT PRIMARY KEY,
+      candidate_type TEXT NOT NULL,
+      candidate_code TEXT NOT NULL,
+      candidate_name TEXT NOT NULL,
+      target_asset_type TEXT NOT NULL DEFAULT '',
+      target_asset_id TEXT NOT NULL DEFAULT '',
+      proposal_summary TEXT NOT NULL,
+      proposed_payload TEXT NOT NULL DEFAULT '{}',
+      source_ref TEXT NOT NULL DEFAULT '',
+      evidence_refs TEXT NOT NULL DEFAULT '[]',
+      owner TEXT NOT NULL DEFAULT 'data_governance',
+      priority TEXT NOT NULL DEFAULT 'P1',
+      lifecycle_status TEXT NOT NULL DEFAULT 'review_pending',
+      workflow_id TEXT NOT NULL DEFAULT '',
+      reviewer TEXT NOT NULL DEFAULT '',
+      review_note TEXT NOT NULL DEFAULT '',
+      created_by TEXT NOT NULL DEFAULT 'local_user',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_governance_candidates_type ON governance_candidates(candidate_type, lifecycle_status, priority);
+    CREATE INDEX IF NOT EXISTS idx_governance_candidates_target ON governance_candidates(target_asset_type, target_asset_id, lifecycle_status);
+    CREATE INDEX IF NOT EXISTS idx_governance_candidates_workflow ON governance_candidates(workflow_id);
+    CREATE INDEX IF NOT EXISTS idx_workflow_instances_status ON workflow_instances(status, priority, owner);
+    CREATE INDEX IF NOT EXISTS idx_workflow_instances_module ON workflow_instances(module_id, workflow_type, status);
+  `);
+}
+
 function seedKbDomains() {
   const createdAt = nowIso();
   kbDomainSeeds.forEach((domain) => {
@@ -528,6 +564,7 @@ function getLedgerSummary() {
     revisionProposals: tableCount("revision_proposals"),
     workflowInstances: tableCount("workflow_instances"),
     workflowSteps: tableCount("workflow_steps"),
+    governanceCandidates: tableExists("governance_candidates") ? tableCount("governance_candidates") : 0,
     auditEvents: tableCount("audit_events"),
     writable: true,
     actorFallback: "local_user",
@@ -671,6 +708,107 @@ function getRevisionProposals(url) {
   return all(`SELECT * FROM revision_proposals ${where} ORDER BY created_at DESC LIMIT ?`, params);
 }
 
+function moduleForCandidateType(candidateType) {
+  const type = normalizeText(candidateType).toLowerCase();
+  if (type === "tag") return "tags";
+  if (type === "dimension") return "dimensions";
+  if (type === "metric") return "metric-engineering";
+  return "governance";
+}
+
+function moduleForAssetType(assetType) {
+  const type = normalizeText(assetType).toLowerCase();
+  if (type.includes("tag")) return "tags";
+  if (type.includes("dimension")) return "dimensions";
+  if (type.includes("metric") || type.includes("kpi")) return "metric-engineering";
+  if (type.includes("quality") || type.includes("lineage")) return "lineage-quality";
+  if (type.includes("kb")) return "ai-knowledge";
+  if (type.includes("decision") || type.includes("action")) return "decision-loop";
+  return "governance";
+}
+
+function createWorkflowInstance({
+  workflowType,
+  assetType,
+  assetId,
+  title,
+  sourceRef = "",
+  moduleId = "",
+  priority = "P1",
+  owner = "data_governance",
+  dueDate = "",
+  createdBy = "local_user",
+  steps = []
+}) {
+  const id = makeId("wf");
+  const createdAt = nowIso();
+  const normalizedSteps = steps.length ? steps : [
+    { key: "intake", name: "信息接收", status: "completed", note: "Workflow created." },
+    { key: "owner_review", name: "Owner 审核", status: "pending", note: "" },
+    { key: "decision", name: "发布决策", status: "pending", note: "" }
+  ];
+  run(
+    `INSERT INTO workflow_instances
+      (id, workflow_type, asset_type, asset_id, status, priority, owner, due_date, created_by, created_at, updated_at, title, source_ref, module_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      id,
+      normalizeText(workflowType),
+      normalizeText(assetType),
+      normalizeText(assetId),
+      "open",
+      normalizeText(priority, "P1"),
+      normalizeText(owner, "data_governance"),
+      normalizeText(dueDate),
+      normalizeText(createdBy, "local_user"),
+      createdAt,
+      createdAt,
+      normalizeText(title, `${workflowType}:${assetId}`),
+      normalizeText(sourceRef),
+      normalizeText(moduleId, moduleForAssetType(assetType))
+    ]
+  );
+  normalizedSteps.forEach((step, index) => {
+    run(
+      `INSERT INTO workflow_steps
+        (id, workflow_id, step_key, step_name, status, note, completed_by, completed_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        makeId("wfs"),
+        id,
+        normalizeText(step.key || step.step_key, `step_${index + 1}`),
+        normalizeText(step.name || step.step_name, `Step ${index + 1}`),
+        normalizeText(step.status, index === 0 ? "completed" : "pending"),
+        normalizeText(step.note),
+        normalizeText(step.completedBy || step.completed_by, step.status === "completed" ? createdBy : ""),
+        normalizeText(step.completedAt || step.completed_at, step.status === "completed" ? createdAt : "")
+      ]
+    );
+  });
+  writeAudit("workflow.created", assetType, assetId, { id, workflowType, title, sourceRef, moduleId, priority, owner }, createdBy);
+  return get("SELECT * FROM workflow_instances WHERE id = ?", [id]);
+}
+
+function completeWorkflowStep(workflowId, stepKey, status, actor, note = "") {
+  const completedAt = ["completed", "approved", "rejected"].includes(status) ? nowIso() : "";
+  run(
+    `UPDATE workflow_steps
+     SET status = ?, note = COALESCE(NULLIF(?, ''), note), completed_by = ?, completed_at = ?
+     WHERE workflow_id = ? AND step_key = ?`,
+    [status, note, actor || "local_user", completedAt, workflowId, stepKey]
+  );
+}
+
+function setWorkflowStatus(workflowId, status, actor = "local_user", note = "") {
+  const workflow = get("SELECT * FROM workflow_instances WHERE id = ?", [workflowId]);
+  if (!workflow) return null;
+  run("UPDATE workflow_instances SET status = ?, updated_at = ? WHERE id = ?", [status, nowIso(), workflowId]);
+  if (note) {
+    writeAudit("workflow.reviewed", workflow.asset_type, workflow.asset_id, { workflowId, status, note }, actor);
+  }
+  return get("SELECT * FROM workflow_instances WHERE id = ?", [workflowId]);
+}
+
 function createRevisionProposal(body) {
   assertRequired(body, ["assetType", "assetId", "proposalType", "proposedValue", "reason"]);
   const id = makeId("rev");
@@ -713,7 +851,23 @@ function createRevisionProposal(body) {
       record.updated_at
     ]
   );
-  writeAudit("revision_proposal.created", record.asset_type, record.asset_id, record, record.created_by);
+  const workflow = createWorkflowInstance({
+    workflowType: "revision_proposal_review",
+    assetType: record.asset_type,
+    assetId: record.asset_id,
+    title: `修订建议审核: ${record.proposal_type}`,
+    sourceRef: `revision_proposal:${id}`,
+    moduleId: moduleForAssetType(record.asset_type),
+    priority: "P1",
+    owner: "data_governance",
+    createdBy: record.created_by,
+    steps: [
+      { key: "intake", name: "修订建议接收", status: "completed", note: "Revision proposal created." },
+      { key: "owner_review", name: "Owner 审核", status: "pending", note: "Confirm business meaning and evidence." },
+      { key: "decision", name: "采纳/拒绝决策", status: "pending", note: "No canonical write until approved." }
+    ]
+  });
+  writeAudit("revision_proposal.created", record.asset_type, record.asset_id, { ...record, workflowId: workflow.id }, record.created_by);
   return get("SELECT * FROM revision_proposals WHERE id = ?", [id]);
 }
 
@@ -728,8 +882,217 @@ function reviewRevisionProposal(id, body) {
     "UPDATE revision_proposals SET status = ?, reviewer = ?, review_note = ?, updated_at = ? WHERE id = ?",
     [status, reviewer, reviewNote, updatedAt, id]
   );
+  const workflow = get("SELECT * FROM workflow_instances WHERE source_ref = ?", [`revision_proposal:${id}`]);
+  if (workflow) {
+    completeWorkflowStep(workflow.id, "owner_review", ["approved", "rejected"].includes(status) ? "completed" : status, reviewer, reviewNote);
+    completeWorkflowStep(workflow.id, "decision", status === "approved" ? "approved" : status === "rejected" ? "rejected" : "pending", reviewer, reviewNote);
+    setWorkflowStatus(workflow.id, status, reviewer, reviewNote);
+  }
   writeAudit("revision_proposal.reviewed", current.asset_type, current.asset_id, { id, status, reviewer, reviewNote }, reviewer);
   return get("SELECT * FROM revision_proposals WHERE id = ?", [id]);
+}
+
+function getGovernanceCandidates(url) {
+  const clauses = [];
+  const params = [];
+  const candidateType = url.searchParams.get("candidateType");
+  const status = url.searchParams.get("status");
+  const owner = url.searchParams.get("owner");
+  const q = url.searchParams.get("q");
+  if (candidateType) {
+    clauses.push("candidate_type = ?");
+    params.push(candidateType);
+  }
+  if (status) {
+    clauses.push("lifecycle_status = ?");
+    params.push(status);
+  }
+  if (owner) {
+    clauses.push("owner = ?");
+    params.push(owner);
+  }
+  if (q) {
+    clauses.push("(candidate_name LIKE ? OR candidate_code LIKE ? OR proposal_summary LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 100, 500));
+  return all(`SELECT * FROM governance_candidates ${where} ORDER BY updated_at DESC, priority LIMIT ?`, params);
+}
+
+function createGovernanceCandidate(body) {
+  assertRequired(body, ["candidateType", "candidateName", "proposalSummary"]);
+  const candidateType = normalizeText(body.candidateType);
+  const id = makeId("cand");
+  const createdAt = nowIso();
+  const candidateCode = normalizeText(body.candidateCode, `${candidateType}_${Date.now()}`);
+  const owner = normalizeText(body.owner, "data_governance");
+  const priority = normalizeText(body.priority, "P1");
+  const createdBy = normalizeText(body.createdBy || body.actor, "local_user");
+  const workflow = createWorkflowInstance({
+    workflowType: `${candidateType}_candidate_review`,
+    assetType: "governance_candidate",
+    assetId: id,
+    title: `${candidateType} 候选审核: ${body.candidateName}`,
+    sourceRef: `${candidateType}_candidate:${id}`,
+    moduleId: moduleForCandidateType(candidateType),
+    priority,
+    owner,
+    createdBy,
+    steps: [
+      { key: "intake", name: "候选接收", status: "completed", note: "Candidate created in ledger." },
+      { key: "owner_review", name: "Owner 审核", status: "pending", note: "Confirm definition, target object and evidence." },
+      { key: "publish_decision", name: "发布决策", status: "pending", note: "Approved candidates can later be promoted through a controlled publish flow." }
+    ]
+  });
+  const record = {
+    id,
+    candidate_type: candidateType,
+    candidate_code: candidateCode,
+    candidate_name: normalizeText(body.candidateName),
+    target_asset_type: normalizeText(body.targetAssetType || body.target_asset_type),
+    target_asset_id: normalizeText(body.targetAssetId || body.target_asset_id),
+    proposal_summary: normalizeText(body.proposalSummary),
+    proposed_payload: normalizeJsonText(body.proposedPayload || body.proposed_payload, {}),
+    source_ref: normalizeText(body.sourceRef || body.source_ref),
+    evidence_refs: normalizeJsonText(body.evidenceRefs || body.evidence_refs, []),
+    owner,
+    priority,
+    lifecycle_status: normalizeText(body.lifecycleStatus || body.lifecycle_status, "review_pending"),
+    workflow_id: workflow.id,
+    reviewer: "",
+    review_note: "",
+    created_by: createdBy,
+    created_at: createdAt,
+    updated_at: createdAt
+  };
+  run(
+    `INSERT INTO governance_candidates
+      (id, candidate_type, candidate_code, candidate_name, target_asset_type, target_asset_id,
+       proposal_summary, proposed_payload, source_ref, evidence_refs, owner, priority, lifecycle_status,
+       workflow_id, reviewer, review_note, created_by, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      record.id,
+      record.candidate_type,
+      record.candidate_code,
+      record.candidate_name,
+      record.target_asset_type,
+      record.target_asset_id,
+      record.proposal_summary,
+      record.proposed_payload,
+      record.source_ref,
+      record.evidence_refs,
+      record.owner,
+      record.priority,
+      record.lifecycle_status,
+      record.workflow_id,
+      record.reviewer,
+      record.review_note,
+      record.created_by,
+      record.created_at,
+      record.updated_at
+    ]
+  );
+  writeAudit("governance_candidate.created", "governance_candidate", id, record, createdBy);
+  return get("SELECT * FROM governance_candidates WHERE id = ?", [id]);
+}
+
+function reviewGovernanceCandidate(id, body) {
+  const current = get("SELECT * FROM governance_candidates WHERE id = ?", [id]);
+  if (!current) return null;
+  const status = normalizeText(body.status, "reviewed");
+  const reviewer = normalizeText(body.reviewer || body.actor, "local_user");
+  const reviewNote = normalizeText(body.reviewNote || body.review_note);
+  const updatedAt = nowIso();
+  run(
+    "UPDATE governance_candidates SET lifecycle_status = ?, reviewer = ?, review_note = ?, updated_at = ? WHERE id = ?",
+    [status, reviewer, reviewNote, updatedAt, id]
+  );
+  if (current.workflow_id) {
+    completeWorkflowStep(current.workflow_id, "owner_review", ["approved", "rejected"].includes(status) ? "completed" : status, reviewer, reviewNote);
+    completeWorkflowStep(current.workflow_id, "publish_decision", status === "approved" ? "approved" : status === "rejected" ? "rejected" : "pending", reviewer, reviewNote);
+    setWorkflowStatus(current.workflow_id, status, reviewer, reviewNote);
+  }
+  writeAudit("governance_candidate.reviewed", "governance_candidate", id, { id, status, reviewer, reviewNote }, reviewer);
+  return get("SELECT * FROM governance_candidates WHERE id = ?", [id]);
+}
+
+function getWorkflowInstances(url) {
+  const clauses = [];
+  const params = [];
+  const status = url.searchParams.get("status");
+  const owner = url.searchParams.get("owner");
+  const moduleId = url.searchParams.get("moduleId");
+  const workflowType = url.searchParams.get("workflowType");
+  if (status) {
+    clauses.push("wi.status = ?");
+    params.push(status);
+  }
+  if (owner) {
+    clauses.push("wi.owner = ?");
+    params.push(owner);
+  }
+  if (moduleId) {
+    clauses.push("wi.module_id = ?");
+    params.push(moduleId);
+  }
+  if (workflowType) {
+    clauses.push("wi.workflow_type = ?");
+    params.push(workflowType);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 100, 500));
+  return all(
+    `SELECT
+       wi.*,
+       gc.candidate_type,
+       gc.candidate_code,
+       gc.candidate_name,
+       gc.lifecycle_status AS candidate_status,
+       (
+         SELECT group_concat(step_key || ':' || status, ' | ')
+         FROM workflow_steps ws
+         WHERE ws.workflow_id = wi.id
+       ) AS step_summary
+     FROM workflow_instances wi
+     LEFT JOIN governance_candidates gc ON wi.asset_type = 'governance_candidate' AND wi.asset_id = gc.id
+     ${where}
+     ORDER BY wi.updated_at DESC, wi.priority, wi.created_at DESC
+     LIMIT ?`,
+    params
+  );
+}
+
+function getWorkflowSummary() {
+  return {
+    total: tableCount("workflow_instances"),
+    byStatus: all("SELECT status, COUNT(*) AS count FROM workflow_instances GROUP BY status ORDER BY count DESC"),
+    byPriority: all("SELECT priority, COUNT(*) AS count FROM workflow_instances GROUP BY priority ORDER BY priority"),
+    byModule: all("SELECT module_id, COUNT(*) AS count FROM workflow_instances GROUP BY module_id ORDER BY count DESC"),
+    candidates: {
+      total: tableCount("governance_candidates"),
+      byType: all("SELECT candidate_type, lifecycle_status, COUNT(*) AS count FROM governance_candidates GROUP BY candidate_type, lifecycle_status ORDER BY candidate_type, lifecycle_status")
+    },
+    openWorkflows: all("SELECT id, workflow_type, title, module_id, priority, owner, status, updated_at FROM workflow_instances WHERE status NOT IN ('approved', 'rejected', 'closed', 'done') ORDER BY priority, updated_at DESC LIMIT 12")
+  };
+}
+
+function reviewWorkflow(id, body) {
+  const current = get("SELECT * FROM workflow_instances WHERE id = ?", [id]);
+  if (!current) return null;
+  const status = normalizeText(body.status, "reviewed");
+  const actor = normalizeText(body.reviewer || body.actor, "local_user");
+  const note = normalizeText(body.note || body.reviewNote || body.review_note);
+  if (body.stepKey) completeWorkflowStep(id, normalizeText(body.stepKey), status, actor, note);
+  const workflow = setWorkflowStatus(id, status, actor, note);
+  if (current.asset_type === "governance_candidate") {
+    run(
+      "UPDATE governance_candidates SET lifecycle_status = ?, reviewer = ?, review_note = ?, updated_at = ? WHERE id = ?",
+      [status, actor, note, nowIso(), current.asset_id]
+    );
+  }
+  return workflow;
 }
 
 function getAuditEvents(url) {
@@ -1527,6 +1890,10 @@ function getWorkbenchModules() {
   const totalMetrics = tableCount("metrics");
   const l3Metrics = scalar("SELECT COUNT(*) AS count FROM metrics WHERE level = 'L3'");
   const certifiedMetrics = scalar("SELECT COUNT(*) AS count FROM metrics WHERE certification_status = 'certified'");
+  const tagCandidates = scalar("SELECT COUNT(*) AS count FROM governance_candidates WHERE candidate_type = 'tag'");
+  const dimensionCandidates = scalar("SELECT COUNT(*) AS count FROM governance_candidates WHERE candidate_type = 'dimension'");
+  const metricCandidates = scalar("SELECT COUNT(*) AS count FROM governance_candidates WHERE candidate_type = 'metric'");
+  const openWorkflows = scalar("SELECT COUNT(*) AS count FROM workflow_instances WHERE status NOT IN ('approved', 'rejected', 'closed', 'done')");
   const p0Total = scalar("SELECT COUNT(*) AS count FROM governance_tasks WHERE priority = 'P0'");
   const p0Done = scalar("SELECT COUNT(*) AS count FROM governance_tasks WHERE priority = 'P0' AND status IN ('已签字', 'certified', 'done')");
   const lineageMapped = scalar("SELECT COUNT(*) AS count FROM lineage_edges WHERE status IN ('mapped', 'certified')");
@@ -1563,9 +1930,9 @@ function getWorkbenchModules() {
       focus: "治理规则标签、统计标签、模型标签及生命周期。",
       stage: "Model",
       status: "draft",
-      score: 48,
+      score: Math.min(76, 48 + tagCandidates * 4),
       primaryMetric: `${tableCount("tags")} tags`,
-      secondaryMetric: "rule first",
+      secondaryMetric: `${tagCandidates} candidates`,
       apiPath: "/api/workbench/tags"
     },
     {
@@ -1575,9 +1942,9 @@ function getWorkbenchModules() {
       focus: "治理一致性维度、分析维度、层级与指标适配关系。",
       stage: "Model",
       status: "mapped",
-      score: 68,
+      score: Math.min(82, 68 + dimensionCandidates * 3),
       primaryMetric: `${tableCount("dimensions")} dims`,
-      secondaryMetric: "drill ready",
+      secondaryMetric: `${dimensionCandidates} candidates`,
       apiPath: "/api/workbench/dimensions"
     },
     {
@@ -1589,7 +1956,7 @@ function getWorkbenchModules() {
       status: "mapped",
       score: Math.max(8, Math.round((certifiedMetrics / totalMetrics) * 100)),
       primaryMetric: `${totalMetrics} metrics`,
-      secondaryMetric: `${certifiedMetrics} certified`,
+      secondaryMetric: `${metricCandidates} candidates`,
       apiPath: "/api/workbench/metric-engineering"
     },
     {
@@ -1673,7 +2040,7 @@ function getWorkbenchModules() {
       status: "draft",
       score: 40,
       primaryMetric: `${tableCount("decision_logs")} insights`,
-      secondaryMetric: `${p0Done}/${p0Total} P0`,
+      secondaryMetric: `${openWorkflows} workflows`,
       apiPath: "/api/workbench/decision-loop"
     }
   ];
@@ -1728,6 +2095,8 @@ function getDeployHealth() {
       kpiCanvasNodes: tableCount("kpi_canvas_nodes"),
       qualityRules: tableCount("quality_rules"),
       qualityIssues: tableCount("quality_issues"),
+      governanceCandidates: tableCount("governance_candidates"),
+      workflowInstances: tableCount("workflow_instances"),
       ledger: getLedgerSummary(),
       knowledgeBase: getKnowledgeSummary(),
       aiChat: getAiChatSummary()
@@ -1763,7 +2132,9 @@ function getOverview() {
       aiChatMessages: tableCount("ai_chat_messages"),
       kpiCanvasNodes: tableCount("kpi_canvas_nodes"),
       qualityRules: tableCount("quality_rules"),
-      qualityIssues: tableCount("quality_issues")
+      qualityIssues: tableCount("quality_issues"),
+      governanceCandidates: tableCount("governance_candidates"),
+      workflowInstances: tableCount("workflow_instances")
     },
     lifecycle,
     levels,
@@ -2291,6 +2662,25 @@ const server = createServer(async (req, res) => {
       if (req.method === "POST" && url.pathname === "/api/quality/issues") {
         const body = await readBody(req);
         return json(res, { ok: true, issue: createQualityIssue(body) }, 201);
+      }
+      if (req.method === "GET" && url.pathname === "/api/governance/candidates") return json(res, getGovernanceCandidates(url));
+      if (req.method === "POST" && url.pathname === "/api/governance/candidates") {
+        const body = await readBody(req);
+        return json(res, { ok: true, candidate: createGovernanceCandidate(body) }, 201);
+      }
+      const candidateReview = url.pathname.match(/^\/api\/governance\/candidates\/([^/]+)\/review$/);
+      if (req.method === "POST" && candidateReview) {
+        const body = await readBody(req);
+        const candidate = reviewGovernanceCandidate(candidateReview[1], body);
+        return candidate ? json(res, { ok: true, candidate }) : json(res, { error: "Candidate not found" }, 404);
+      }
+      if (req.method === "GET" && url.pathname === "/api/workflows") return json(res, getWorkflowInstances(url));
+      if (req.method === "GET" && url.pathname === "/api/workflows/summary") return json(res, getWorkflowSummary());
+      const workflowReview = url.pathname.match(/^\/api\/workflows\/([^/]+)\/review$/);
+      if (req.method === "POST" && workflowReview) {
+        const body = await readBody(req);
+        const workflow = reviewWorkflow(workflowReview[1], body);
+        return workflow ? json(res, { ok: true, workflow }) : json(res, { error: "Workflow not found" }, 404);
       }
       if (req.method === "GET" && url.pathname === "/api/governance/tasks") return json(res, all("SELECT * FROM governance_tasks ORDER BY priority, status, id LIMIT 500"));
       if (req.method === "GET" && url.pathname === "/api/chatbi/context") return json(res, getChatbiContext());

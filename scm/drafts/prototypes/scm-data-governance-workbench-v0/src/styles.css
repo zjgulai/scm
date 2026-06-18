@@ -833,6 +833,100 @@ textarea {
   gap: 10px;
 }
 
+.workflowSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.workflowSummaryGrid > div {
+  display: grid;
+  gap: 6px;
+  min-height: 104px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fff, var(--panel-soft));
+}
+
+.workflowSummaryGrid span,
+.workflowSummaryGrid small {
+  color: var(--muted);
+}
+
+.workflowSummaryGrid strong {
+  color: var(--ink);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.workflowCards,
+.candidateCards {
+  display: grid;
+  gap: 10px;
+}
+
+.workflowCard,
+.candidateCard {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.workflowCard p,
+.candidateCard p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.workflowCard small,
+.candidateCard small {
+  color: var(--muted);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.candidateWorkbench {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fff, var(--panel-soft));
+}
+
+.candidateLayout {
+  display: grid;
+  grid-template-columns: minmax(360px, 0.9fr) minmax(320px, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.candidateForm {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.candidateForm button[type="submit"] {
+  min-height: 42px;
+  border: 0;
+  border-radius: 8px;
+  color: #fff;
+  background: linear-gradient(135deg, var(--blue), var(--teal));
+  cursor: pointer;
+  font-weight: 780;
+}
+
 .impactList article,
 .qualityCard {
   padding: 12px;
@@ -1716,7 +1810,11 @@ tbody tr:hover td {
   .chatSplit,
   .readinessGrid,
   .kbToolbar,
-  .aiChatLayout {
+  .aiChatLayout,
+  .candidateLayout,
+  .workflowSummaryGrid,
+  .qualitySummaryGrid,
+  .qualityWorkbench {
     grid-template-columns: 1fr;
   }
 

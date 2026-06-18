@@ -250,6 +250,24 @@ type AuditEvent = {
   created_at: string;
 };
 
+type ChatbiSummary = {
+  total: number;
+  certified: number;
+  draft: number;
+  rejected: number;
+  byStatus: AnyRow[];
+  byPolicy: AnyRow[];
+  pending: AnyRow[];
+};
+
+type AuditSummary = {
+  total: number;
+  byEventType: AnyRow[];
+  byAssetType: AnyRow[];
+  byActor: AnyRow[];
+  recent: AuditEvent[];
+};
+
 type LedgerState = {
   annotations: LedgerAnnotation[];
   comments: LedgerComment[];
@@ -269,7 +287,8 @@ const fallbackModules: WorkbenchModule[] = [
   { id: "chatbi", code: "08", title: "ChatBI 语义治理台", focus: "可回答性与证据链。", stage: "Serve", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/chatbi" },
   { id: "ai-knowledge", code: "09", title: "AI 知识库", focus: "三大知识库主题域、本地检索和证据片段。", stage: "Serve", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/ai-knowledge" },
   { id: "ai-chat", code: "10", title: "AI 对话", focus: "本地知识库证据问答和拒答机制。", stage: "Serve", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/ai-chat" },
-  { id: "decision-loop", code: "11", title: "决策闭环工作台", focus: "洞察到审批复盘。", stage: "Act", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/decision-loop" }
+  { id: "decision-loop", code: "11", title: "决策闭环工作台", focus: "洞察到审批复盘。", stage: "Act", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/decision-loop" },
+  { id: "audit-log", code: "12", title: "审计日志工作台", focus: "治理操作审计、筛选和证据回看。", stage: "Control", status: "active", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/audit-log" }
 ];
 
 const columnLabels: Record<string, string> = {
@@ -339,6 +358,20 @@ const columnLabels: Record<string, string> = {
   proposed_payload: "建议内容",
   evidence_refs: "证据引用",
   workflow_id: "Workflow",
+  question_sample: "问法样本",
+  allowed_dimensions: "可用维度",
+  evidence_chain: "证据链",
+  answerability: "可回答性",
+  answerability_score: "可回答性分",
+  evidence_count: "证据数",
+  reviewer: "审核人",
+  certified_at: "认证时间",
+  event_type: "事件类型",
+  asset_type: "资产类型",
+  asset_id: "资产 ID",
+  actor: "操作者",
+  created_at: "创建时间",
+  payload: "载荷",
   workflow_type: "流程类型",
   module_id: "模块",
   due_date: "截止日期",
@@ -1667,43 +1700,241 @@ function LineagePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
   );
 }
 
+function safeJsonList(value: unknown) {
+  try {
+    const parsed = typeof value === "string" ? JSON.parse(value) : value;
+    return Array.isArray(parsed) ? parsed.map(String) : [];
+  } catch {
+    return [];
+  }
+}
+
 function ChatBiPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset: (asset: AssetRef) => void }) {
-  const contexts = useApi<AnyRow[]>("/api/chatbi/context", []);
+  const [refresh, setRefresh] = useState(0);
+  const [filters, setFilters] = useState({ status: "", answerPolicy: "", q: "" });
+  const query = [
+    "limit=160",
+    `refresh=${refresh}`,
+    filters.status ? `status=${encodeURIComponent(filters.status)}` : "",
+    filters.answerPolicy ? `answerPolicy=${encodeURIComponent(filters.answerPolicy)}` : "",
+    filters.q ? `q=${encodeURIComponent(filters.q)}` : ""
+  ].filter(Boolean).join("&");
+  const contexts = useApi<AnyRow[]>(`/api/chatbi/context?${query}`, []);
+  const summary = useApi<ChatbiSummary>(`/api/chatbi/summary?refresh=${refresh}`, {
+    total: 0,
+    certified: 0,
+    draft: 0,
+    rejected: 0,
+    byStatus: [],
+    byPolicy: [],
+    pending: []
+  });
+  const metrics = useApi<Metric[]>("/api/metrics?level=L3&q=库存", []);
   const [question, setQuestion] = useState("库存可售性可以分析哪些认证指标？");
   const [result, setResult] = useState<any>(null);
   const [running, setRunning] = useState(false);
+  const [note, setNote] = useState("");
+  const [form, setForm] = useState({
+    metricId: "",
+    questionSample: "库存可售性可以分析哪些认证指标？",
+    allowedDimensions: "time,sku,warehouse",
+    evidenceChain: "MECE V2 metric blueprint, field mapping template, owner review"
+  });
+
+  useEffect(() => {
+    if (form.metricId || !metrics.data.length) return;
+    setForm((current) => ({ ...current, metricId: String(metrics.data[0].id) }));
+  }, [metrics.data.length, form.metricId]);
+
+  function openContext(row: AnyRow) {
+    onOpenAsset(makeAsset("chatbi_context", row, ["question_sample", "name", "code", "id"], ["answer_policy", "metric_id", "status"]));
+  }
+
   async function dryRun() {
     setRunning(true);
+    setNote("");
     try {
       setResult(await api("/api/chatbi/dry-run", { method: "POST", body: JSON.stringify({ question }) }));
     } finally {
       setRunning(false);
     }
   }
+
+  async function createContext(event: React.FormEvent) {
+    event.preventDefault();
+    if (!form.metricId || !form.questionSample.trim()) return;
+    const payload = await api<{ ok: boolean; context: AnyRow }>("/api/chatbi/context", {
+      method: "POST",
+      body: JSON.stringify({
+        metricId: form.metricId,
+        questionSample: form.questionSample,
+        allowedDimensions: form.allowedDimensions.split(",").map((item) => item.trim()).filter(Boolean),
+        evidenceChain: form.evidenceChain.split(",").map((item) => item.trim()).filter(Boolean),
+        answerability: "partial",
+        answerabilityScore: 68,
+        evidenceCount: Math.max(1, form.evidenceChain.split(",").filter(Boolean).length),
+        actor: "local_user"
+      })
+    });
+    setNote(`已创建 ChatBI 上下文候选 ${cellValue(payload.context.id)}，等待 Owner 审核。`);
+    setRefresh((value) => value + 1);
+  }
+
+  async function reviewContext(row: AnyRow, status: "certified" | "rejected" | "reviewed") {
+    const payload = await api<{ ok: boolean; context: AnyRow }>(`/api/chatbi/context/${encodeURIComponent(String(row.id))}/review`, {
+      method: "POST",
+      body: JSON.stringify({
+        status,
+        reviewer: "local_user",
+        reviewNote: status === "certified"
+          ? "UI owner review: context can be used by certified_metric_only ChatBI dry-run."
+          : status === "rejected"
+            ? "UI owner review: context rejected; keep evidence for audit only."
+            : "UI owner review: semantics checked, pending certification decision."
+      })
+    });
+    setNote(`上下文 ${cellValue(payload.context.id)} 已更新为 ${cellValue(payload.context.status)}。`);
+    setRefresh((value) => value + 1);
+  }
+
+  const pendingContexts = contexts.data.filter((item) => ["draft", "review_pending", "reviewed"].includes(String(item.status)));
+  const certifiedContexts = contexts.data.filter((item) => String(item.status) === "certified");
   return (
     <section className="panel">
       <ModuleHeader module={module} />
-      <div className="split chatSplit">
+      <div className="chatbiSummaryGrid">
+        <div>
+          <span>上下文总数</span>
+          <strong>{summary.data.total}</strong>
+          <small>{summary.data.byStatus.map((item) => `${item.status}:${item.count}`).join(" / ") || "no status"}</small>
+        </div>
+        <div>
+          <span>已认证</span>
+          <strong>{summary.data.certified}</strong>
+          <small>only certified_metric_only can answer</small>
+        </div>
+        <div>
+          <span>待审核</span>
+          <strong>{summary.data.draft}</strong>
+          <small>draft / review_pending / reviewed</small>
+        </div>
+        <div>
+          <span>已拒绝</span>
+          <strong>{summary.data.rejected}</strong>
+          <small>保留证据，不进入正式回答</small>
+        </div>
+      </div>
+      {note ? <div className="kbNotice">{note}</div> : null}
+      <div className="chatbiWorkbench">
+        <form className="chatbiForm" onSubmit={createContext}>
+          <div className="surfaceHead">
+            <h3>创建问法上下文候选</h3>
+            <Badge tone="warn">draft</Badge>
+          </div>
+          <label>
+            绑定 L3 指标
+            <select value={form.metricId} onChange={(event) => setForm({ ...form, metricId: event.target.value })}>
+              {metrics.data.map((metric) => (
+                <option key={metric.id} value={metric.id}>{metric.code} / {metric.name}</option>
+              ))}
+            </select>
+          </label>
+          <label>
+            问法样本
+            <textarea value={form.questionSample} onChange={(event) => setForm({ ...form, questionSample: event.target.value })} />
+          </label>
+          <div className="formGrid">
+            <label>
+              可用维度
+              <input value={form.allowedDimensions} onChange={(event) => setForm({ ...form, allowedDimensions: event.target.value })} />
+            </label>
+            <label>
+              证据链
+              <input value={form.evidenceChain} onChange={(event) => setForm({ ...form, evidenceChain: event.target.value })} />
+            </label>
+          </div>
+          <button type="submit">写入候选上下文</button>
+        </form>
         <div className="surface">
           <div className="surfaceHead">
-            <h3>可回答性判断</h3>
-            <Badge tone="warn">dry-run</Badge>
+            <h3>可回答性 Dry-run</h3>
+            <Badge tone={result?.answerable ? "good" : result ? "bad" : "warn"}>{result?.answerable ? "answerable" : "fail-closed"}</Badge>
           </div>
           <div className="chatBox">
             <textarea value={question} onChange={(event) => setQuestion(event.target.value)} />
             <button onClick={dryRun}>{running ? "判断中..." : "Dry-run"}</button>
           </div>
-          {result && <pre className="result">{JSON.stringify(result, null, 2)}</pre>}
+          {result ? (
+            <div className="dryRunResult">
+              <div className="ledgerItemHead">
+                <strong>{result.answerable ? "命中认证上下文" : "拒答"}</strong>
+                <Badge tone={result.answerable ? "good" : "bad"}>{result.policy}</Badge>
+              </div>
+              {result.rejectReason ? <p>{result.rejectReason}</p> : <p>{result.answerPreview}</p>}
+              <pre>{JSON.stringify(result.candidates || [], null, 2)}</pre>
+            </div>
+          ) : null}
+        </div>
+      </div>
+      <div className="surface chatbiFilters">
+        <label>
+          状态
+          <select value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value })}>
+            <option value="">全部</option>
+            <option value="draft">draft</option>
+            <option value="review_pending">review_pending</option>
+            <option value="reviewed">reviewed</option>
+            <option value="certified">certified</option>
+            <option value="rejected">rejected</option>
+          </select>
+        </label>
+        <label>
+          策略
+          <select value={filters.answerPolicy} onChange={(event) => setFilters({ ...filters, answerPolicy: event.target.value })}>
+            <option value="">全部</option>
+            <option value="certified_metric_only">certified_metric_only</option>
+            <option value="local_kb_evidence_sample">local_kb_evidence_sample</option>
+          </select>
+        </label>
+        <label className="workflowSearch">
+          搜索
+          <input value={filters.q} onChange={(event) => setFilters({ ...filters, q: event.target.value })} placeholder="指标、问法、证据链" />
+        </label>
+      </div>
+      <div className="split">
+        <div className="surface">
+          <div className="surfaceHead">
+            <h3>待审上下文</h3>
+            <Badge>{pendingContexts.length} pending</Badge>
+          </div>
+          <div className="contextCards">
+            {pendingContexts.length ? pendingContexts.map((context) => (
+              <article className="contextCard" key={String(context.id)}>
+                <div className="ledgerItemHead">
+                  <strong>{cellValue(context.question_sample)}</strong>
+                  <Badge tone={toneFromStatus(String(context.status))}>{cellValue(context.status)}</Badge>
+                </div>
+                <p>{cellValue(context.name)} / {cellValue(context.metric_id)}</p>
+                <small>{safeJsonList(context.allowed_dimensions).join(" / ") || "no dimensions"} · evidence {cellValue(context.evidence_count)}</small>
+                <div className="qualityActions">
+                  <button className="textButton" onClick={() => openContext(context)}>详情</button>
+                  <button className="textButton" onClick={() => reviewContext(context, "reviewed")}>标记已审</button>
+                  <button className="textButton" onClick={() => reviewContext(context, "certified")}>认证发布</button>
+                  <button className="textButton" onClick={() => reviewContext(context, "rejected")}>拒绝</button>
+                </div>
+              </article>
+            )) : <div className="empty compact">暂无待审上下文。</div>}
+          </div>
         </div>
         <div className="surface">
           <div className="surfaceHead">
             <h3>认证上下文</h3>
-            <Badge>{contexts.data.length} contexts</Badge>
+            <Badge>{certifiedContexts.length} certified</Badge>
           </div>
           <DataTable
             rows={contexts.data}
-            columns={["code", "name", "formula", "grain", "answer_policy"]}
-            onSelectRow={(row) => onOpenAsset(makeAsset("chatbi_context", row, ["name", "code", "id"], ["answer_policy", "metric_id"]))}
+            columns={["code", "name", "question_sample", "grain", "answer_policy", "status", "reviewer"]}
+            onSelectRow={openContext}
           />
         </div>
       </div>
@@ -2213,6 +2444,153 @@ function DecisionPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
   );
 }
 
+function AuditLogPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset: (asset: AssetRef) => void }) {
+  const [refresh, setRefresh] = useState(0);
+  const [filters, setFilters] = useState({ eventType: "", assetType: "", assetId: "", actor: "", q: "" });
+  const query = [
+    "limit=220",
+    `refresh=${refresh}`,
+    filters.eventType ? `eventType=${encodeURIComponent(filters.eventType)}` : "",
+    filters.assetType ? `assetType=${encodeURIComponent(filters.assetType)}` : "",
+    filters.assetId ? `assetId=${encodeURIComponent(filters.assetId)}` : "",
+    filters.actor ? `actor=${encodeURIComponent(filters.actor)}` : "",
+    filters.q ? `q=${encodeURIComponent(filters.q)}` : ""
+  ].filter(Boolean).join("&");
+  const summary = useApi<AuditSummary>(`/api/audit/summary?refresh=${refresh}`, {
+    total: 0,
+    byEventType: [],
+    byAssetType: [],
+    byActor: [],
+    recent: []
+  });
+  const events = useApi<AuditEvent[]>(`/api/audit-events?${query}`, []);
+
+  function openEvent(event: AuditEvent) {
+    onOpenAsset({
+      type: "audit_event",
+      id: event.id,
+      title: event.event_type,
+      subtitle: `${event.asset_type}:${event.asset_id} / ${event.actor}`,
+      fields: event,
+      readOnly: true
+    });
+  }
+
+  function selectFacet(key: keyof typeof filters, value: string) {
+    setFilters((current) => ({ ...current, [key]: current[key] === value ? "" : value }));
+  }
+
+  return (
+    <section className="panel">
+      <ModuleHeader module={module} />
+      <div className="auditSummaryGrid">
+        <div>
+          <span>审计事件</span>
+          <strong>{summary.data.total}</strong>
+          <small>append-only SQLite ledger</small>
+        </div>
+        <div>
+          <span>事件类型</span>
+          <strong>{summary.data.byEventType.length}</strong>
+          <small>{summary.data.byEventType.slice(0, 3).map((item) => `${item.event_type}:${item.count}`).join(" / ") || "no events"}</small>
+        </div>
+        <div>
+          <span>资产类型</span>
+          <strong>{summary.data.byAssetType.length}</strong>
+          <small>{summary.data.byAssetType.slice(0, 3).map((item) => `${item.asset_type}:${item.count}`).join(" / ") || "no assets"}</small>
+        </div>
+        <div>
+          <span>操作者</span>
+          <strong>{summary.data.byActor.length}</strong>
+          <small>{summary.data.byActor.slice(0, 3).map((item) => `${item.actor}:${item.count}`).join(" / ") || "no actors"}</small>
+        </div>
+      </div>
+      <div className="auditWorkbench">
+        <aside className="auditFacets">
+          <div className="surfaceHead">
+            <h3>事件类型</h3>
+            <Badge>{summary.data.byEventType.length}</Badge>
+          </div>
+          <div className="facetList">
+            {summary.data.byEventType.map((item) => (
+              <button
+                key={String(item.event_type)}
+                className={filters.eventType === item.event_type ? "active" : ""}
+                onClick={() => selectFacet("eventType", String(item.event_type))}
+              >
+                <span>{cellValue(item.event_type)}</span>
+                <strong>{cellValue(item.count)}</strong>
+              </button>
+            ))}
+          </div>
+          <div className="surfaceHead">
+            <h3>资产类型</h3>
+            <Badge>{summary.data.byAssetType.length}</Badge>
+          </div>
+          <div className="facetList">
+            {summary.data.byAssetType.map((item) => (
+              <button
+                key={String(item.asset_type)}
+                className={filters.assetType === item.asset_type ? "active" : ""}
+                onClick={() => selectFacet("assetType", String(item.asset_type))}
+              >
+                <span>{cellValue(item.asset_type) || "empty"}</span>
+                <strong>{cellValue(item.count)}</strong>
+              </button>
+            ))}
+          </div>
+        </aside>
+        <div className="auditMain">
+          <div className="auditFilters">
+            <label>
+              事件类型
+              <input value={filters.eventType} onChange={(event) => setFilters({ ...filters, eventType: event.target.value })} placeholder="例如 chatbi_context.reviewed" />
+            </label>
+            <label>
+              资产类型
+              <input value={filters.assetType} onChange={(event) => setFilters({ ...filters, assetType: event.target.value })} placeholder="例如 chatbi_context" />
+            </label>
+            <label>
+              资产 ID
+              <input value={filters.assetId} onChange={(event) => setFilters({ ...filters, assetId: event.target.value })} />
+            </label>
+            <label>
+              操作者
+              <input value={filters.actor} onChange={(event) => setFilters({ ...filters, actor: event.target.value })} />
+            </label>
+            <label className="workflowSearch">
+              搜索
+              <input value={filters.q} onChange={(event) => setFilters({ ...filters, q: event.target.value })} placeholder="事件、资产、payload" />
+            </label>
+            <button className="secondaryButton" onClick={() => setRefresh((value) => value + 1)}>刷新</button>
+          </div>
+          <div className="surfaceHead">
+            <h3>审计事件时间线</h3>
+            <Badge>{events.data.length} visible</Badge>
+          </div>
+          <div className="auditTimeline">
+            {events.data.length ? events.data.map((event) => (
+              <article key={event.id}>
+                <div className="timelineDot" />
+                <div className="auditEventCard">
+                  <div className="ledgerItemHead">
+                    <strong>{event.event_type}</strong>
+                    <Badge tone="blue">{event.actor}</Badge>
+                  </div>
+                  <p>{event.asset_type}:{event.asset_id}</p>
+                  <pre>{event.payload}</pre>
+                  <small>{event.created_at}</small>
+                  <button className="textButton" onClick={() => openEvent(event)}>打开审计详情</button>
+                </div>
+              </article>
+            )) : <div className="empty compact">当前筛选无审计事件。</div>}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function FieldList({ fields }: { fields: AnyRow }) {
   return (
     <dl className="fieldList">
@@ -2595,6 +2973,7 @@ function App() {
           />
         )}
         {active === "decision-loop" && <DecisionPanel module={activeModule} onOpenAsset={setSelectedAsset} />}
+        {active === "audit-log" && <AuditLogPanel module={activeModule} onOpenAsset={setSelectedAsset} />}
       </section>
       <ContextDrawer asset={selectedAsset} onClose={() => setSelectedAsset(null)} onAskAi={askAiFromAsset} />
     </main>

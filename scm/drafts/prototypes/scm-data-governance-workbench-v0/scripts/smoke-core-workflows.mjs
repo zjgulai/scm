@@ -40,7 +40,8 @@ assert(health.boundary?.providerCalls === false, "provider call boundary changed
 assert(health.boundary?.erpWriteback === false, "ERP writeback boundary changed", health.boundary);
 
 const modules = await request("/api/workbench/modules");
-assert(Array.isArray(modules) && modules.length === 12, "expected 12 workbench modules", { count: modules.length });
+assert(Array.isArray(modules) && modules.length === 13, "expected 13 workbench modules", { count: modules.length });
+assert(modules.some((module) => module.id === "audit-log"), "audit log workbench module missing", modules);
 
 const canvasNodes = await request("/api/kpi-canvas/nodes?limit=20");
 assert(Array.isArray(canvasNodes) && canvasNodes.length > 0, "KPI canvas nodes are not available");
@@ -299,12 +300,55 @@ assert(ontologyPath.object?.id === "sku", "ontology path did not resolve SKU obj
 assert(Array.isArray(ontologyPath.outbound) && ontologyPath.outbound.length >= 1, "ontology path missing outbound links", ontologyPath);
 assert(Array.isArray(ontologyPath.metrics) && ontologyPath.metrics.length >= 1, "ontology path missing metric bridge", ontologyPath);
 
+const inventoryMetrics = await request("/api/metrics?level=L3&q=库存");
+const chatMetric = inventoryMetrics.find((metric) => String(metric.name || "").includes("库存")) || inventoryMetrics[0];
+assert(chatMetric?.id, "no L3 inventory metric available for ChatBI context smoke", inventoryMetrics);
+
+const smokeQuestion = `P1 ChatBI semantic certification smoke ${stamp}`;
+const chatbiContext = await request("/api/chatbi/context", {
+  method: "POST",
+  body: JSON.stringify({
+    metricId: chatMetric.id,
+    questionSample: smokeQuestion,
+    allowedDimensions: ["time", "sku", "warehouse"],
+    evidenceChain: ["scripts/smoke-core-workflows.mjs", "MECE V2 metric blueprint"],
+    answerability: "partial",
+    answerabilityScore: 72,
+    evidenceCount: 2,
+    actor: "p1_chatbi_smoke"
+  })
+});
+assert(chatbiContext.context?.id, "ChatBI context was not created", chatbiContext);
+assert(chatbiContext.context?.workflow_id, "ChatBI context workflow was not created", chatbiContext);
+
+const rejectedBeforeCertification = await request("/api/chatbi/dry-run", {
+  method: "POST",
+  body: JSON.stringify({ question: smokeQuestion })
+});
+assert(rejectedBeforeCertification.answerable === false, "uncertified ChatBI context should fail closed", rejectedBeforeCertification);
+assert(rejectedBeforeCertification.rejectReason?.includes("尚未认证") || rejectedBeforeCertification.rejectReason?.includes("未认证"), "uncertified reject reason missing", rejectedBeforeCertification);
+
+const certifiedContext = await request(`/api/chatbi/context/${chatbiContext.context.id}/review`, {
+  method: "POST",
+  body: JSON.stringify({
+    status: "certified",
+    reviewer: "p1_chatbi_smoke",
+    reviewNote: "Smoke certifies this local context for dry-run only; no SQL execution and no external model call."
+  })
+});
+assert(certifiedContext.context?.status === "certified", "ChatBI context certification failed", certifiedContext);
+assert(certifiedContext.context?.answer_policy === "certified_metric_only", "ChatBI certified policy mismatch", certifiedContext);
+
+const chatbiSummary = await request("/api/chatbi/summary");
+assert(chatbiSummary.certified >= 1, "ChatBI summary missing certified contexts", chatbiSummary);
+
 const dryRun = await request("/api/chatbi/dry-run", {
   method: "POST",
-  body: JSON.stringify({ question: "库存可售性可以分析哪些认证指标？" })
+  body: JSON.stringify({ question: smokeQuestion })
 });
 assert(dryRun.answerable === true, "ChatBI dry-run failed", dryRun);
 assert(dryRun.policy === "certified_metric_only", "ChatBI policy changed", dryRun);
+assert(dryRun.candidates?.some((candidate) => candidate.metricId === chatMetric.id), "ChatBI dry-run missing certified context candidate", dryRun);
 
 const aiSupported = await request("/api/ai-chat/local", {
   method: "POST",
@@ -370,6 +414,16 @@ assert(decisionSummary.writeBackPolicy === "suggestion_approval_replay_only", "d
 const auditEvents = await request("/api/audit-events?limit=20");
 assert(Array.isArray(auditEvents) && auditEvents.length > 0, "audit events not recorded");
 
+const auditSummary = await request("/api/audit/summary");
+assert(auditSummary.total >= auditEvents.length, "audit summary count is inconsistent", auditSummary);
+
+const chatbiAuditEvents = await request(`/api/audit-events?eventType=chatbi_context.reviewed&assetType=chatbi_context&actor=p1_chatbi_smoke&q=${encodeURIComponent(chatbiContext.context.id)}&limit=20`);
+assert(
+  Array.isArray(chatbiAuditEvents) && chatbiAuditEvents.some((event) => event.asset_id === chatbiContext.context.id),
+  "ChatBI context review audit event missing",
+  chatbiAuditEvents
+);
+
 console.log(
   JSON.stringify(
     {
@@ -404,6 +458,10 @@ console.log(
         "qualityIssue.create",
         "qualityIssue.close",
         "qualitySummary.read",
+        "chatbiContext.create",
+        "chatbiContext.failClosedBeforeCertification",
+        "chatbiContext.certify",
+        "chatbiSummary.read",
         "chatbi.dryRun",
         "aiChat.supportedOrPartial",
         "aiChat.failClosed",
@@ -411,7 +469,9 @@ console.log(
         "decisionAction.transitionPendingApproval",
         "decisionAction.transitionApproved",
         "decisionSummary.read",
-        "auditEvents.read"
+        "auditSummary.read",
+        "auditEvents.read",
+        "auditEvents.filterChatbi"
       ]
     },
     null,

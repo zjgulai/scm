@@ -32,6 +32,7 @@ expected = [
     "AI 知识库",
     "AI 对话",
     "决策闭环工作台",
+    "审计日志工作台",
 ]
 
 new_tab(base_url)
@@ -107,6 +108,31 @@ for label in expected:
         if decision["stateRail"] < 7 or not decision["decisionForm"]:
           raise SystemExit(f"Decision loop feature check failed: {decision}")
         feature_checks.append({"decisionLoop": decision})
+    if label == "ChatBI 语义治理台":
+        chatbi = js("""
+        (() => ({
+          summaryCards: document.querySelectorAll('.chatbiSummaryGrid > div').length,
+          form: !!document.querySelector('.chatbiForm'),
+          filters: !!document.querySelector('.chatbiFilters'),
+          contextCards: document.querySelectorAll('.contextCards .contextCard').length,
+          dryRun: !!document.querySelector('.chatBox button')
+        }))()
+        """)
+        if chatbi["summaryCards"] < 4 or not chatbi["form"] or not chatbi["filters"] or not chatbi["dryRun"]:
+          raise SystemExit(f"ChatBI certification feature check failed: {chatbi}")
+        feature_checks.append({"chatbiCertification": chatbi})
+    if label == "审计日志工作台":
+        audit = js("""
+        (() => ({
+          summaryCards: document.querySelectorAll('.auditSummaryGrid > div').length,
+          facets: document.querySelectorAll('.auditFacets .facetList button').length,
+          filters: !!document.querySelector('.auditFilters'),
+          timeline: !!document.querySelector('.auditTimeline')
+        }))()
+        """)
+        if audit["summaryCards"] < 4 or not audit["filters"] or not audit["timeline"]:
+          raise SystemExit(f"Audit log feature check failed: {audit}")
+        feature_checks.append({"auditLog": audit})
     results.append({"label": label, "header": state["h1"]})
 
 print({

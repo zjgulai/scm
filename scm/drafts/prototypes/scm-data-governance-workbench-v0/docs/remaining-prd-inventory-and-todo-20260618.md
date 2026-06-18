@@ -26,7 +26,7 @@ current_deploy:
 
 - 已部署线上地址：`https://scm.lute-tlz-dddd.top/`
 - 当前部署追溯 SHA：`ce7c0aa`，分支 `codex/scm-ledger-workbench`
-- 已实现核心模块：治理总览、本体、标签、维度、指标、指标体系画布、血缘与质量、ChatBI、AI 知识库、AI 对话、决策闭环、上下文抽屉。
+- 已实现核心模块：治理总览、本体、标签、维度、指标、指标体系画布、血缘与质量、ChatBI、AI 知识库、AI 对话、决策闭环、审计日志、上下文抽屉。
 - 已落地 SQLite 台账：annotation、comment、revision proposal、workflow instance、workflow step、audit event、AI KB、AI chat evidence 等基础表已存在。
 - 已具备本地证据检索式 AI 对话：当前策略为 `local_kb_evidence_only`，未启用外部模型调用。
 - 已具备 AI 知识库基础：6 个主题域、295 张知识卡、945 个 chunk、1918 条 crosswalk，FTS 可用。
@@ -34,7 +34,7 @@ current_deploy:
 
 ### 1.2 当前推断
 
-当前版本已经完成 P0 工程验收闭环，并已完成两批 P1 交互闭环：候选资产流、统一 workflow board、owner/SLA/批量审核、对象图谱路径解释和决策闭环状态机。下一阶段差距集中在 ChatBI 上下文认证流、审计日志操作页、知识库运营和 AI 语义治理。
+当前版本已经完成 P0 工程验收闭环，并已完成三批 P1 交互闭环：候选资产流、统一 workflow board、owner/SLA/批量审核、对象图谱路径解释、决策闭环状态机、ChatBI 上下文认证流和审计日志操作页。下一阶段差距集中在知识库运营、AI 语义治理、问法样本质量评分和外部模型接入治理。
 
 ### 1.3 当前不确定项
 
@@ -56,10 +56,11 @@ current_deploy:
 | 指标字典 | 指标口径、owner、版本、认证状态、同义词、常见问法 | 基本完成 | 指标字典 2.0 不重构；需补同义词审核、问法样本认证 | P2 |
 | 指标体系画布 | L0-L3 可点击画布、注解、钻取、证据链 | P0 完成 | 已有节点、连线、路径高亮、折叠、拖拽布局和点击注解；P1 继续补复杂图谱分析 | P1 |
 | 血缘与质量 | 字段血缘、指标血缘、报表影响、DQ 规则、质量评分 | P0 完成 | 已有 quality rules/issues 基础工作流；P1 继续补批量执行、评分模型和任务编排 | P1 |
-| ChatBI 语义治理 | 可问指标、可用维度、证据链、拒答、认证上下文 | 部分完成 | 有 dry-run 与证据策略；缺认证上下文发布流、样本晋级流 | P1 |
+| ChatBI 语义治理 | 可问指标、可用维度、证据链、拒答、认证上下文 | 基础版完成 | 已有上下文候选、审核、认证、拒绝和 fail-closed dry-run；P2 继续补问法质量评分与反馈闭环 | P2 |
 | AI 知识库 | 3 大供应链知识库按主题域沉淀，可检索、可对话 | 基本完成 | 需补知识源治理、过期检测、卡片质量评分、主题域运营视图 | P2 |
 | AI 对话 | 本地检索 + 证据返回，暂不接外部模型 | 基本完成 | 缺多轮上下文质量评估、反馈闭环、问题样本沉淀 | P2 |
-| 决策闭环 | 洞察、建议、审批、任务、执行反馈、复盘 | 部分完成 | 有任务和日志基础，但缺完整状态机、审批 UI、复盘模板 | P1 |
+| 决策闭环 | 洞察、建议、审批、任务、执行反馈、复盘 | 基础版完成 | 有 Action 创建、状态机和审计；P2 继续补复盘模板和场景化审批 | P2 |
+| 审计日志 | 查询 create/update/review/approve 等治理操作 | 基础版完成 | 已有聚合、筛选、时间线和详情抽屉；P2 继续补导出和审计保留策略 | P2 |
 | UI 风格 | light consulting style，参考 Umbrex 配色，不使用深色侧边栏 | P0 完成 | 已切换浅色咨询风格；P1 可继续做页面密度和信息层级优化 | P1 |
 | E2E 验收 | 每页真实浏览器测试，关键工作流可回放 | P0 完成 | Browser Harness 导航 smoke、P0 工作流 smoke、公开 DOM 检查已固化 | P1 |
 | 部署运维 | 腾讯云轻量服务器 Docker 隔离部署、健康检查、回滚 | P0 完成 | 已有 release、备份、migration、health、代理网络固化；P1 继续补自动回滚 SOP | P1 |
@@ -74,7 +75,7 @@ current_deploy:
 
 - 统一 source of truth 文档。
 - Browser Harness E2E 验收脚本。
-- 线上 12 个模块页面 smoke 固化。
+- 线上 13 个模块页面 smoke 固化。
 - SQLite 备份、恢复、迁移方案。
 - 部署文档刷新到当前 12 模块、部署 SHA 和 release。
 - UI light theme 全局底座。
@@ -125,7 +126,7 @@ current_deploy:
 | ID | TODO | Done Criteria | 依赖 | 预计 |
 |---|---|---|---|---:|
 | SCM-PRD-P0-001 | 刷新部署文档，写清当前 main SHA、12 模块、健康检查和边界 | 文档中的模块数、SHA、health 字段与线上一致 | 无 | 2h |
-| SCM-PRD-P0-002 | 固化 Browser Harness/Playwright 导航 smoke | 一条命令可验证 12 个导航模块均可打开 | Browser Harness 已安装 | 4h |
+| SCM-PRD-P0-002 | 固化 Browser Harness/Playwright 导航 smoke | 一条命令可验证 13 个导航模块均可打开 | Browser Harness 已安装 | 4h |
 | SCM-PRD-P0-003 | 增加核心工作流 E2E 用例矩阵 | 覆盖注解、评论、修订建议、AI 支持回答、AI 拒答、ChatBI dry-run | SCM-PRD-P0-002 | 4h |
 | SCM-PRD-P0-004 | 增加 SQLite 备份恢复 runbook | 可从生产容器导出 db，并在本地恢复验证 | 部署权限 | 3h |
 | SCM-PRD-P0-005 | 设计并实现 SQLite migration runner | 新表可幂等创建，部署不依赖手工 SQL | 当前 schema | 6h |
@@ -162,8 +163,8 @@ current_deploy:
 | SCM-PRD-P1-006 | 完成基础版 | 修订建议创建后自动生成 workflow，审核后同步 workflow 状态 | 不自动 promote canonical 正本 |
 | SCM-PRD-P1-007 | 完成基础版 | `/api/ontology/paths` 与对象本体页路径解释已覆盖关系、标签、维度、指标桥和血缘证据 | 本体只读 |
 | SCM-PRD-P1-008 | 完成基础版 | Action 状态机支持 `recommended -> pending_approval -> approved` 等迁移并写 `action_task_transitions` | 不触发 ERP/Jijia 写回 |
-| SCM-PRD-P1-009 | 未开始 | 无 | 进入下一批 |
-| SCM-PRD-P1-010 | 未开始 | 无 | 进入下一批 |
+| SCM-PRD-P1-009 | 完成基础版 | ChatBI 语义治理台支持创建上下文候选、生成 workflow、审核、认证、拒绝；`smoke:p0` 覆盖 `chatbiContext.create`、`failClosedBeforeCertification`、`certify`、`chatbi.dryRun` | 只写 `chatbi_contexts`、workflow 和 audit；不执行真实 SQL，不调用 provider |
+| SCM-PRD-P1-010 | 完成基础版 | 审计日志工作台支持汇总、facet、筛选、时间线和详情；`smoke:p0` 覆盖 `auditSummary.read` 与 `auditEvents.filterChatbi` | append-only 查询页，不删除、不覆盖审计事件 |
 
 ### 4.3 P2 TODO：AI 知识库与语义治理
 
@@ -212,7 +213,7 @@ current_deploy:
 
 - 一条命令可以完成本地构建。
 - 一条命令可以完成本地 API health 检查。
-- 一条命令可以完成 12 个模块导航 E2E。
+- 一条命令可以完成 13 个模块导航 E2E。
 - 一条命令可以完成关键 6 条工作流 E2E。
 - SQLite schema migration 幂等。
 - 生产部署前自动备份 SQLite。
@@ -375,3 +376,44 @@ Browser Harness 本地新 UI 检查：
 - 不写积加、ERP、WMS、TMS。
 - 不调用外部 provider。
 - 候选批准不等于写入 canonical 表，仍需后续发布/认证流程。
+
+### 2026-06-19 P1 第三批
+
+已完成：
+
+| ID | 状态 | 证据 |
+|---|---|---|
+| SCM-PRD-P1-009 | third_batch_done | ChatBI 语义治理台支持创建上下文候选、生成认证 workflow、审核、认证、拒绝和认证后 dry-run |
+| SCM-PRD-P1-010 | third_batch_done | 审计日志工作台支持 summary、facet、筛选、时间线和详情抽屉 |
+
+验证命令：
+
+```bash
+npm run build
+SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm run smoke:p0
+```
+
+新增验证覆盖：
+
+- `chatbiContext.create`
+- `chatbiContext.failClosedBeforeCertification`
+- `chatbiContext.certify`
+- `chatbiSummary.read`
+- `chatbi.dryRun`
+- `auditSummary.read`
+- `auditEvents.read`
+- `auditEvents.filterChatbi`
+
+Browser Harness 本地新 UI 检查：
+
+- 13 个模块导航通过。
+- ChatBI 页存在 4 个 summary 卡、上下文候选表单、筛选条和 dry-run 控件。
+- 审计日志页存在 4 个 summary 卡、facet、筛选条和时间线。
+
+当前边界：
+
+- 写入验收只发生在临时 SQLite 副本。
+- ChatBI dry-run 不执行真实 SQL。
+- 不写积加、ERP、WMS、TMS。
+- 不调用外部 provider。
+- 审计日志为 append-only 查询，不提供删除或覆盖能力。

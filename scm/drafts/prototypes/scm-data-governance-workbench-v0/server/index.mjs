@@ -411,9 +411,16 @@ function ensureAiChatSchema() {
   ensureTableColumn("chatbi_contexts", "evidence_count", "INTEGER NOT NULL DEFAULT 0");
   ensureTableColumn("chatbi_contexts", "status", "TEXT NOT NULL DEFAULT 'certified'");
   ensureTableColumn("chatbi_contexts", "created_at", "TEXT NOT NULL DEFAULT ''");
+  ensureTableColumn("chatbi_contexts", "updated_at", "TEXT NOT NULL DEFAULT ''");
+  ensureTableColumn("chatbi_contexts", "reviewer", "TEXT NOT NULL DEFAULT ''");
+  ensureTableColumn("chatbi_contexts", "review_note", "TEXT NOT NULL DEFAULT ''");
+  ensureTableColumn("chatbi_contexts", "certified_at", "TEXT NOT NULL DEFAULT ''");
+  ensureTableColumn("chatbi_contexts", "workflow_id", "TEXT NOT NULL DEFAULT ''");
+  run("UPDATE chatbi_contexts SET created_at = COALESCE(NULLIF(created_at, ''), ?), updated_at = COALESCE(NULLIF(updated_at, ''), ?) WHERE created_at = '' OR updated_at = ''", [nowIso(), nowIso()]);
   db.exec(`
     CREATE INDEX IF NOT EXISTS idx_chatbi_contexts_policy ON chatbi_contexts(answer_policy, status);
     CREATE INDEX IF NOT EXISTS idx_chatbi_contexts_source_message ON chatbi_contexts(source_message_id);
+    CREATE INDEX IF NOT EXISTS idx_chatbi_contexts_status ON chatbi_contexts(status, metric_id, answer_policy);
   `);
 }
 
@@ -1231,6 +1238,8 @@ function getAuditEvents(url) {
   const assetType = url.searchParams.get("assetType");
   const assetId = url.searchParams.get("assetId");
   const eventType = url.searchParams.get("eventType");
+  const actor = url.searchParams.get("actor");
+  const q = url.searchParams.get("q");
   if (assetType) {
     clauses.push("asset_type = ?");
     params.push(assetType);
@@ -1243,9 +1252,27 @@ function getAuditEvents(url) {
     clauses.push("event_type = ?");
     params.push(eventType);
   }
+  if (actor) {
+    clauses.push("actor = ?");
+    params.push(actor);
+  }
+  if (q) {
+    clauses.push("(event_type LIKE ? OR asset_type LIKE ? OR asset_id LIKE ? OR actor LIKE ? OR payload LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`);
+  }
   const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
   params.push(parseLimit(url, 100, 500));
   return all(`SELECT * FROM audit_events ${where} ORDER BY created_at DESC LIMIT ?`, params);
+}
+
+function getAuditSummary() {
+  return {
+    total: tableCount("audit_events"),
+    byEventType: all("SELECT event_type, COUNT(*) AS count FROM audit_events GROUP BY event_type ORDER BY count DESC LIMIT 20"),
+    byAssetType: all("SELECT asset_type, COUNT(*) AS count FROM audit_events GROUP BY asset_type ORDER BY count DESC LIMIT 20"),
+    byActor: all("SELECT actor, COUNT(*) AS count FROM audit_events GROUP BY actor ORDER BY count DESC LIMIT 20"),
+    recent: all("SELECT id, event_type, asset_type, asset_id, actor, created_at FROM audit_events ORDER BY created_at DESC LIMIT 8")
+  };
 }
 
 function getOntologyPath(url) {
@@ -2056,15 +2083,32 @@ function persistChatbiContextSample({ question, sourceContext, evidence, answera
     sourceContext ? `source_context:${sourceContext.type}/${sourceContext.id}` : "source_context:none",
     ...evidence.slice(0, 6).map((item) => `kb:${item.domain_id}/${item.card_id}/${item.chunk_id}`)
   ];
+  const metricId = resolveMetricIdForChatbiSample(sourceContext, evidence);
+  const workflow = createWorkflowInstance({
+    workflowType: "chatbi_context_certification",
+    assetType: "chatbi_context",
+    assetId: id,
+    title: `ChatBI 上下文认证: ${question.slice(0, 48)}`,
+    sourceRef: `chatbi_context:${id}`,
+    moduleId: "chatbi",
+    priority: "P1",
+    owner: "semantic_governance",
+    createdBy: "local_user",
+    steps: [
+      { key: "sample_intake", name: "问法样本接收", status: "completed", note: "AI local evidence answer created this draft context." },
+      { key: "semantic_owner_review", name: "语义 Owner 审核", status: "pending", note: "Check metric binding, dimensions and evidence chain." },
+      { key: "certification_decision", name: "认证发布决策", status: "pending", note: "Only certified contexts can be used by ChatBI dry-run." }
+    ]
+  });
   run(
     `INSERT INTO chatbi_contexts
       (id, metric_id, question_sample, allowed_dimensions, evidence_chain, answer_policy,
        source_asset_type, source_asset_id, source_message_id, answerability, answerability_score,
-       evidence_count, status, created_at)
-     VALUES (?, ?, ?, ?, ?, 'local_kb_evidence_sample', ?, ?, ?, ?, ?, ?, 'draft', ?)`,
+       evidence_count, status, created_at, updated_at, workflow_id)
+     VALUES (?, ?, ?, ?, ?, 'local_kb_evidence_sample', ?, ?, ?, ?, ?, ?, 'draft', ?, ?, ?)`,
     [
       id,
-      resolveMetricIdForChatbiSample(sourceContext, evidence),
+      metricId,
       question,
       JSON.stringify(inferAllowedDimensions(question, sourceContext)),
       JSON.stringify(evidenceChain),
@@ -2074,10 +2118,75 @@ function persistChatbiContextSample({ question, sourceContext, evidence, answera
       answerability,
       Number(diagnostics?.score || 0),
       evidence.length,
-      createdAt
+      createdAt,
+      createdAt,
+      workflow.id
     ]
   );
+  writeAudit("chatbi_context.sample_created", "chatbi_context", id, { metricId, answerability, score: diagnostics?.score || 0, evidenceCount: evidence.length, workflowId: workflow.id }, "local_user");
   return id;
+}
+
+function createChatbiContext(body) {
+  const metricId = normalizeText(body.metricId || body.metric_id);
+  const questionSample = normalizeText(body.questionSample || body.question_sample);
+  if (!metricId || !questionSample) {
+    const error = new Error("Missing required fields: metricId, questionSample");
+    error.statusCode = 400;
+    throw error;
+  }
+  const metric = get("SELECT * FROM metrics WHERE id = ?", [metricId]);
+  if (!metric) {
+    const error = new Error(`Metric not found: ${metricId}`);
+    error.statusCode = 400;
+    throw error;
+  }
+  const id = makeId("ctx");
+  const createdAt = nowIso();
+  const actor = normalizeText(body.actor || body.createdBy || body.created_by, "local_user");
+  const workflow = createWorkflowInstance({
+    workflowType: "chatbi_context_certification",
+    assetType: "chatbi_context",
+    assetId: id,
+    title: `ChatBI 上下文认证: ${questionSample.slice(0, 48)}`,
+    sourceRef: `chatbi_context:${id}`,
+    moduleId: "chatbi",
+    priority: "P1",
+    owner: normalizeText(body.owner, "semantic_governance"),
+    createdBy: actor,
+    steps: [
+      { key: "sample_intake", name: "问法样本接收", status: "completed", note: "Manual draft context created." },
+      { key: "semantic_owner_review", name: "语义 Owner 审核", status: "pending", note: "Check metric binding, dimensions and evidence chain." },
+      { key: "certification_decision", name: "认证发布决策", status: "pending", note: "Only certified contexts can be used by ChatBI dry-run." }
+    ]
+  });
+  run(
+    `INSERT INTO chatbi_contexts
+      (id, metric_id, question_sample, allowed_dimensions, evidence_chain, answer_policy,
+       source_asset_type, source_asset_id, source_message_id, answerability, answerability_score,
+       evidence_count, status, created_at, updated_at, workflow_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      id,
+      metricId,
+      questionSample,
+      normalizeJsonText(body.allowedDimensions || body.allowed_dimensions, ["time", "sku", "warehouse"]),
+      normalizeJsonText(body.evidenceChain || body.evidence_chain, ["manual_context_candidate"]),
+      normalizeText(body.answerPolicy || body.answer_policy, "local_kb_evidence_sample"),
+      normalizeText(body.sourceAssetType || body.source_asset_type),
+      normalizeText(body.sourceAssetId || body.source_asset_id),
+      normalizeText(body.sourceMessageId || body.source_message_id),
+      normalizeText(body.answerability, "partial"),
+      Number(body.answerabilityScore || body.answerability_score || 60),
+      Number(body.evidenceCount || body.evidence_count || 1),
+      normalizeText(body.status, "draft"),
+      createdAt,
+      createdAt,
+      workflow.id
+    ]
+  );
+  writeAudit("chatbi_context.created", "chatbi_context", id, { metricId, workflowId: workflow.id }, actor);
+  return get("SELECT * FROM chatbi_contexts WHERE id = ?", [id]);
 }
 
 function runLocalAiChat(body) {
@@ -2169,6 +2278,8 @@ function getWorkbenchModules() {
   const dimensionCandidates = scalar("SELECT COUNT(*) AS count FROM governance_candidates WHERE candidate_type = 'dimension'");
   const metricCandidates = scalar("SELECT COUNT(*) AS count FROM governance_candidates WHERE candidate_type = 'metric'");
   const openWorkflows = scalar("SELECT COUNT(*) AS count FROM workflow_instances WHERE status NOT IN ('approved', 'rejected', 'closed', 'done')");
+  const chatbiCertified = scalar("SELECT COUNT(*) AS count FROM chatbi_contexts WHERE answer_policy = 'certified_metric_only' AND status = 'certified'");
+  const chatbiDrafts = scalar("SELECT COUNT(*) AS count FROM chatbi_contexts WHERE status IN ('draft', 'review_pending', 'reviewed')");
   const p0Total = scalar("SELECT COUNT(*) AS count FROM governance_tasks WHERE priority = 'P0'");
   const p0Done = scalar("SELECT COUNT(*) AS count FROM governance_tasks WHERE priority = 'P0' AND status IN ('已签字', 'certified', 'done')");
   const lineageMapped = scalar("SELECT COUNT(*) AS count FROM lineage_edges WHERE status IN ('mapped', 'certified')");
@@ -2277,9 +2388,9 @@ function getWorkbenchModules() {
       focus: "管理 NL2Metric/NL2Object、证据链、拒答机制和可回答性评分。",
       stage: "Serve",
       status: "draft",
-      score: 55,
+      score: Math.min(86, 48 + chatbiCertified * 4 + chatbiDrafts),
       primaryMetric: `${tableCount("chatbi_contexts")} contexts`,
-      secondaryMetric: "certified only",
+      secondaryMetric: `${chatbiCertified} certified`,
       apiPath: "/api/workbench/chatbi"
     },
     {
@@ -2317,6 +2428,18 @@ function getWorkbenchModules() {
       primaryMetric: `${tableCount("decision_logs")} insights`,
       secondaryMetric: `${openWorkflows} workflows`,
       apiPath: "/api/workbench/decision-loop"
+    },
+    {
+      id: "audit-log",
+      code: "12",
+      title: "审计日志工作台",
+      focus: "查询 create/update/review/approve 等治理操作，支撑追责、复盘和影响核验。",
+      stage: "Control",
+      status: "active",
+      score: Math.min(90, 40 + tableCount("audit_events")),
+      primaryMetric: `${tableCount("audit_events")} events`,
+      secondaryMetric: "append-only",
+      apiPath: "/api/workbench/audit-log"
     }
   ];
 }
@@ -2341,13 +2464,17 @@ function getWorkbenchModule(id) {
       qualityRules: getQualityRules(new URL("http://local/api/quality/rules?limit=100")),
       qualityIssues: getQualityIssues(new URL("http://local/api/quality/issues?limit=100"))
     }),
-    chatbi: () => ({ contexts: getChatbiContext() }),
+    chatbi: () => ({ summary: getChatbiSummary(), contexts: getChatbiContext() }),
     "ai-knowledge": () => ({ domains: getKbDomains(), cards: getKbCards(new URL("http://local/api/kb/cards?limit=40")) }),
     "ai-chat": () => ({ sessions: getAiChatSessions(new URL("http://local/api/ai-chat/sessions?limit=20")), summary: getAiChatSummary() }),
     "decision-loop": () => ({
       decisions: all("SELECT * FROM decision_logs ORDER BY status, id"),
       actions: getActionTasks(new URL("http://local/api/decision/action-tasks?limit=100")),
       summary: getDecisionSummary()
+    }),
+    "audit-log": () => ({
+      summary: getAuditSummary(),
+      events: getAuditEvents(new URL("http://local/api/audit-events?limit=100"))
     })
   };
   return { ...meta, payload: payloads[id]() };
@@ -2787,13 +2914,52 @@ function updateQualityIssue(id, body) {
   return get("SELECT * FROM quality_issues WHERE id = ?", [id]);
 }
 
-function getChatbiContext() {
-  return all(`
-    SELECT c.*, m.code, m.name, m.definition, m.formula, m.grain, m.direction
-    FROM chatbi_contexts c
-    LEFT JOIN metrics m ON m.id = c.metric_id
-    ORDER BY c.answer_policy, COALESCE(m.l1_domain, ''), COALESCE(m.code, c.id)
-  `);
+function getChatbiContext(url = null) {
+  const clauses = [];
+  const params = [];
+  const status = url?.searchParams?.get("status");
+  const answerPolicy = url?.searchParams?.get("answerPolicy") || url?.searchParams?.get("answer_policy");
+  const metricId = url?.searchParams?.get("metricId") || url?.searchParams?.get("metric_id");
+  const q = url?.searchParams?.get("q");
+  if (status) {
+    clauses.push("c.status = ?");
+    params.push(status);
+  }
+  if (answerPolicy) {
+    clauses.push("c.answer_policy = ?");
+    params.push(answerPolicy);
+  }
+  if (metricId) {
+    clauses.push("c.metric_id = ?");
+    params.push(metricId);
+  }
+  if (q) {
+    clauses.push("(c.question_sample LIKE ? OR c.metric_id LIKE ? OR m.name LIKE ? OR m.code LIKE ? OR c.evidence_chain LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(url ? parseLimit(url, 100, 500) : 500);
+  return all(
+    `SELECT c.*, m.code, m.name, m.definition, m.formula, m.grain, m.direction
+     FROM chatbi_contexts c
+     LEFT JOIN metrics m ON m.id = c.metric_id
+     ${where}
+     ORDER BY c.answer_policy, c.status, COALESCE(m.l1_domain, ''), COALESCE(m.code, c.id)
+     LIMIT ?`,
+    params
+  );
+}
+
+function getChatbiSummary() {
+  return {
+    total: tableCount("chatbi_contexts"),
+    certified: scalar("SELECT COUNT(*) AS count FROM chatbi_contexts WHERE answer_policy = 'certified_metric_only' AND status = 'certified'"),
+    draft: scalar("SELECT COUNT(*) AS count FROM chatbi_contexts WHERE status IN ('draft', 'review_pending', 'reviewed')"),
+    rejected: scalar("SELECT COUNT(*) AS count FROM chatbi_contexts WHERE status = 'rejected'"),
+    byStatus: all("SELECT status, COUNT(*) AS count FROM chatbi_contexts GROUP BY status ORDER BY count DESC"),
+    byPolicy: all("SELECT answer_policy, status, COUNT(*) AS count FROM chatbi_contexts GROUP BY answer_policy, status ORDER BY answer_policy, status"),
+    pending: all("SELECT id, metric_id, question_sample, answerability, answerability_score, evidence_count, status, workflow_id FROM chatbi_contexts WHERE status IN ('draft', 'review_pending', 'reviewed') ORDER BY updated_at DESC, created_at DESC LIMIT 12")
+  };
 }
 
 function getChatbiContextSamples(url) {
@@ -2806,6 +2972,37 @@ function getChatbiContextSamples(url) {
      LIMIT ?`,
     [parseLimit(url, 50, 200)]
   );
+}
+
+function reviewChatbiContext(id, body) {
+  const current = get("SELECT * FROM chatbi_contexts WHERE id = ?", [id]);
+  if (!current) return null;
+  const status = normalizeText(body.status, "reviewed");
+  const reviewer = normalizeText(body.reviewer || body.actor, "local_user");
+  const reviewNote = normalizeText(body.reviewNote || body.review_note || body.note);
+  const metricId = normalizeText(body.metricId || body.metric_id, current.metric_id);
+  const metric = get("SELECT * FROM metrics WHERE id = ?", [metricId]);
+  if (status === "certified" && !metric) {
+    const error = new Error(`Cannot certify ChatBI context without a valid metric_id: ${metricId}`);
+    error.statusCode = 400;
+    throw error;
+  }
+  const nextPolicy = status === "certified" ? "certified_metric_only" : normalizeText(body.answerPolicy || body.answer_policy, current.answer_policy);
+  const certifiedAt = status === "certified" ? nowIso() : current.certified_at || "";
+  const updatedAt = nowIso();
+  run(
+    `UPDATE chatbi_contexts
+     SET metric_id = ?, answer_policy = ?, status = ?, reviewer = ?, review_note = ?, certified_at = ?, updated_at = ?
+     WHERE id = ?`,
+    [metricId, nextPolicy, status, reviewer, reviewNote, certifiedAt, updatedAt, id]
+  );
+  if (current.workflow_id) {
+    completeWorkflowStep(current.workflow_id, "semantic_owner_review", ["certified", "rejected"].includes(status) ? "completed" : status, reviewer, reviewNote);
+    completeWorkflowStep(current.workflow_id, "certification_decision", status === "certified" ? "approved" : status === "rejected" ? "rejected" : "pending", reviewer, reviewNote);
+    setWorkflowStatus(current.workflow_id, status === "certified" ? "approved" : status, reviewer, reviewNote);
+  }
+  writeAudit("chatbi_context.reviewed", "chatbi_context", id, { id, status, metricId, answerPolicy: nextPolicy, reviewNote }, reviewer);
+  return get("SELECT * FROM chatbi_contexts WHERE id = ?", [id]);
 }
 
 function dryRunChatbi(question) {
@@ -2888,6 +3085,7 @@ const server = createServer(async (req, res) => {
     if (url.pathname.startsWith("/api")) {
       if (req.method === "GET" && url.pathname === "/api/deploy/health") return json(res, getDeployHealth());
       if (req.method === "GET" && url.pathname === "/api/ledger/summary") return json(res, getLedgerSummary());
+      if (req.method === "GET" && url.pathname === "/api/audit/summary") return json(res, getAuditSummary());
       if (req.method === "GET" && url.pathname === "/api/audit-events") return json(res, getAuditEvents(url));
       if (req.method === "GET" && url.pathname === "/api/kb/summary") return json(res, getKnowledgeSummary());
       if (req.method === "GET" && url.pathname === "/api/kb/domains") return json(res, getKbDomains());
@@ -2967,7 +3165,18 @@ const server = createServer(async (req, res) => {
         return workflow ? json(res, { ok: true, workflow }) : json(res, { error: "Workflow not found" }, 404);
       }
       if (req.method === "GET" && url.pathname === "/api/governance/tasks") return json(res, all("SELECT * FROM governance_tasks ORDER BY priority, status, id LIMIT 500"));
-      if (req.method === "GET" && url.pathname === "/api/chatbi/context") return json(res, getChatbiContext());
+      if (req.method === "GET" && url.pathname === "/api/chatbi/summary") return json(res, getChatbiSummary());
+      if (req.method === "GET" && url.pathname === "/api/chatbi/context") return json(res, getChatbiContext(url));
+      if (req.method === "POST" && url.pathname === "/api/chatbi/context") {
+        const body = await readBody(req);
+        return json(res, { ok: true, context: createChatbiContext(body) }, 201);
+      }
+      const chatbiContextReview = url.pathname.match(/^\/api\/chatbi\/context\/([^/]+)\/review$/);
+      if (req.method === "POST" && chatbiContextReview) {
+        const body = await readBody(req);
+        const context = reviewChatbiContext(chatbiContextReview[1], body);
+        return context ? json(res, { ok: true, context }) : json(res, { error: "ChatBI context not found" }, 404);
+      }
       if (req.method === "GET" && url.pathname === "/api/chatbi/context-samples") return json(res, getChatbiContextSamples(url));
       if (req.method === "GET" && url.pathname === "/api/decision/summary") return json(res, getDecisionSummary());
       if (req.method === "GET" && url.pathname === "/api/decision/action-tasks") return json(res, getActionTasks(url));

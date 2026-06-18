@@ -1,0 +1,19 @@
+{
+  "imported_at": "2026-06-18T07:34:24.404Z",
+  "sourceRoot": "/Users/pray/project/ecom_ana_overview/scm/drafts/analysis/business-supply-chain-knowledge-base-draft-20260616/metric-system-blueprint",
+  "counts": {
+    "metrics": 178,
+    "l3Metrics": 139,
+    "fieldMappings": 139,
+    "p0SignoffTasks": 30,
+    "ontologyObjects": 14,
+    "lifecycleStates": [
+      "draft",
+      "mapped",
+      "reviewed",
+      "certified",
+      "active",
+      "deprecated"
+    ]
+  }
+}

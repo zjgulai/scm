@@ -19,6 +19,7 @@ COPY package*.json ./
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY server ./server
+COPY scripts ./scripts
 COPY data ./data
 
 EXPOSE 5174

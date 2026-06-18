@@ -9,7 +9,7 @@ import { dirname } from "node:path";
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
 const analysisRoot = resolve(root, "../../analysis");
-const dbPath = resolve(root, "data/governance_workbench.sqlite");
+const dbPath = resolve(process.env.SCM_DB_PATH || resolve(root, "data/governance_workbench.sqlite"));
 const distPath = resolve(root, "dist");
 const port = Number(process.env.PORT || 5174);
 const host = process.env.HOST || "127.0.0.1";
@@ -43,6 +43,7 @@ function ensureTableColumn(tableName, columnName, definition) {
 ensureLedgerSchema();
 ensureKnowledgeSchema();
 ensureAiChatSchema();
+ensureP0GovernanceSchema();
 
 function json(res, payload, status = 200) {
   const body = JSON.stringify(payload);
@@ -377,6 +378,117 @@ function ensureAiChatSchema() {
     CREATE INDEX IF NOT EXISTS idx_chatbi_contexts_policy ON chatbi_contexts(answer_policy, status);
     CREATE INDEX IF NOT EXISTS idx_chatbi_contexts_source_message ON chatbi_contexts(source_message_id);
   `);
+}
+
+function ensureP0GovernanceSchema() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS kpi_canvas_nodes (
+      id TEXT PRIMARY KEY,
+      metric_id TEXT NOT NULL,
+      parent_metric_id TEXT NOT NULL DEFAULT '',
+      level TEXT NOT NULL,
+      code TEXT NOT NULL,
+      name TEXT NOT NULL,
+      l1_domain TEXT NOT NULL DEFAULT '',
+      x REAL NOT NULL DEFAULT 0,
+      y REAL NOT NULL DEFAULT 0,
+      width REAL NOT NULL DEFAULT 220,
+      height REAL NOT NULL DEFAULT 88,
+      collapsed INTEGER NOT NULL DEFAULT 0,
+      layout_version TEXT NOT NULL DEFAULT 'p0-auto-layout-v1',
+      status TEXT NOT NULL DEFAULT 'active',
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_kpi_canvas_nodes_metric ON kpi_canvas_nodes(metric_id);
+    CREATE INDEX IF NOT EXISTS idx_kpi_canvas_nodes_level ON kpi_canvas_nodes(level, l1_domain);
+
+    CREATE TABLE IF NOT EXISTS quality_rules (
+      id TEXT PRIMARY KEY,
+      rule_code TEXT NOT NULL UNIQUE,
+      rule_name TEXT NOT NULL,
+      asset_type TEXT NOT NULL,
+      asset_id TEXT NOT NULL,
+      severity TEXT NOT NULL DEFAULT 'medium',
+      rule_expression TEXT NOT NULL,
+      expected_behavior TEXT NOT NULL,
+      owner TEXT NOT NULL DEFAULT 'data_governance',
+      lifecycle_status TEXT NOT NULL DEFAULT 'draft',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_quality_rules_asset ON quality_rules(asset_type, asset_id, lifecycle_status);
+    CREATE INDEX IF NOT EXISTS idx_quality_rules_severity ON quality_rules(severity, lifecycle_status);
+
+    CREATE TABLE IF NOT EXISTS quality_issues (
+      id TEXT PRIMARY KEY,
+      rule_id TEXT NOT NULL,
+      asset_type TEXT NOT NULL,
+      asset_id TEXT NOT NULL,
+      issue_title TEXT NOT NULL,
+      issue_detail TEXT NOT NULL,
+      severity TEXT NOT NULL DEFAULT 'medium',
+      status TEXT NOT NULL DEFAULT 'open',
+      detected_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      resolved_at TEXT,
+      owner TEXT NOT NULL DEFAULT 'data_governance',
+      evidence TEXT NOT NULL DEFAULT '[]',
+      FOREIGN KEY (rule_id) REFERENCES quality_rules(id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_quality_issues_rule ON quality_issues(rule_id, status);
+    CREATE INDEX IF NOT EXISTS idx_quality_issues_asset ON quality_issues(asset_type, asset_id, status);
+  `);
+
+  if (tableCount("kpi_canvas_nodes") === 0) {
+    db.exec(`
+      INSERT OR IGNORE INTO kpi_canvas_nodes (
+        id,
+        metric_id,
+        parent_metric_id,
+        level,
+        code,
+        name,
+        l1_domain,
+        x,
+        y,
+        width,
+        height,
+        collapsed,
+        layout_version,
+        status,
+        updated_at
+      )
+      SELECT
+        'canvas_' || m.id,
+        m.id,
+        COALESCE((
+          SELECT kt.parent_metric_id
+          FROM kpi_tree kt
+          WHERE kt.child_metric_id = m.id
+          LIMIT 1
+        ), ''),
+        m.level,
+        m.code,
+        m.name,
+        m.l1_domain,
+        CASE m.level
+          WHEN 'L0' THEN 64
+          WHEN 'L1' THEN 344
+          WHEN 'L2' THEN 624
+          ELSE 904
+        END,
+        56 + ((ROW_NUMBER() OVER (PARTITION BY m.level ORDER BY m.l1_domain, m.l2_group, m.code) - 1) * 112),
+        CASE m.level WHEN 'L0' THEN 240 ELSE 220 END,
+        88,
+        CASE WHEN m.level IN ('L2', 'L3') THEN 1 ELSE 0 END,
+        'p0-auto-layout-v1',
+        'active',
+        CURRENT_TIMESTAMP
+      FROM metrics m;
+    `);
+  }
 }
 
 function seedKbDomains() {
@@ -1580,10 +1692,12 @@ function getWorkbenchModule(id) {
     dimensions: () => ({ dimensions: all("SELECT * FROM dimensions ORDER BY dimension_type, id") }),
     "metric-engineering": () => ({ metrics: all("SELECT * FROM metrics ORDER BY CASE level WHEN 'L0' THEN 0 WHEN 'L1' THEN 1 WHEN 'L2' THEN 2 ELSE 3 END, id LIMIT 500") }),
     "metric-dictionary": () => ({ metrics: all("SELECT * FROM metrics WHERE level = 'L3' ORDER BY l1_domain, l2_group, id LIMIT 500") }),
-    "kpi-system": () => ({ tree: getKpiTree() }),
+    "kpi-system": () => ({ tree: getKpiTree(), canvasNodes: getKpiCanvasNodes(new URL("http://local/api/kpi-canvas/nodes?limit=500")) }),
     "lineage-quality": () => ({
       lineage: all("SELECT * FROM lineage_edges ORDER BY status, edge_type LIMIT 1000"),
-      tasks: all("SELECT * FROM governance_tasks ORDER BY priority, status, id LIMIT 500")
+      tasks: all("SELECT * FROM governance_tasks ORDER BY priority, status, id LIMIT 500"),
+      qualityRules: getQualityRules(new URL("http://local/api/quality/rules?limit=100")),
+      qualityIssues: getQualityIssues(new URL("http://local/api/quality/issues?limit=100"))
     }),
     chatbi: () => ({ contexts: getChatbiContext() }),
     "ai-knowledge": () => ({ domains: getKbDomains(), cards: getKbCards(new URL("http://local/api/kb/cards?limit=40")) }),
@@ -1611,6 +1725,9 @@ function getDeployHealth() {
       metrics: tableCount("metrics"),
       lineageEdges: tableCount("lineage_edges"),
       governanceTasks: tableCount("governance_tasks"),
+      kpiCanvasNodes: tableCount("kpi_canvas_nodes"),
+      qualityRules: tableCount("quality_rules"),
+      qualityIssues: tableCount("quality_issues"),
       ledger: getLedgerSummary(),
       knowledgeBase: getKnowledgeSummary(),
       aiChat: getAiChatSummary()
@@ -1643,7 +1760,10 @@ function getOverview() {
       kbSources: tableCount("kb_sources"),
       kbCards: tableCount("kb_cards"),
       aiChatSessions: tableCount("ai_chat_sessions"),
-      aiChatMessages: tableCount("ai_chat_messages")
+      aiChatMessages: tableCount("ai_chat_messages"),
+      kpiCanvasNodes: tableCount("kpi_canvas_nodes"),
+      qualityRules: tableCount("quality_rules"),
+      qualityIssues: tableCount("quality_issues")
     },
     lifecycle,
     levels,
@@ -1711,6 +1831,239 @@ function getKpiTree() {
     }
   });
   return roots;
+}
+
+function getKpiCanvasNodes(url) {
+  const clauses = [];
+  const params = [];
+  const level = url.searchParams.get("level");
+  const domain = url.searchParams.get("domain");
+  const status = url.searchParams.get("status") || "active";
+  if (level) {
+    clauses.push("level = ?");
+    params.push(level);
+  }
+  if (domain) {
+    clauses.push("l1_domain = ?");
+    params.push(domain);
+  }
+  if (status) {
+    clauses.push("status = ?");
+    params.push(status);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 500, 1000));
+  return all(
+    `SELECT * FROM kpi_canvas_nodes ${where}
+     ORDER BY CASE level WHEN 'L0' THEN 0 WHEN 'L1' THEN 1 WHEN 'L2' THEN 2 ELSE 3 END, y, x, code
+     LIMIT ?`,
+    params
+  );
+}
+
+function updateKpiCanvasNode(id, body) {
+  const current = get("SELECT * FROM kpi_canvas_nodes WHERE id = ?", [id]);
+  if (!current) return null;
+  const next = {
+    x: Number.isFinite(Number(body.x)) ? Number(body.x) : current.x,
+    y: Number.isFinite(Number(body.y)) ? Number(body.y) : current.y,
+    width: Number.isFinite(Number(body.width)) ? Number(body.width) : current.width,
+    height: Number.isFinite(Number(body.height)) ? Number(body.height) : current.height,
+    collapsed: body.collapsed === undefined ? current.collapsed : Number(Boolean(body.collapsed)),
+    layout_version: normalizeText(body.layoutVersion || body.layout_version, current.layout_version),
+    status: normalizeText(body.status, current.status),
+    updated_at: nowIso()
+  };
+  run(
+    `UPDATE kpi_canvas_nodes
+     SET x = ?, y = ?, width = ?, height = ?, collapsed = ?, layout_version = ?, status = ?, updated_at = ?
+     WHERE id = ?`,
+    [next.x, next.y, next.width, next.height, next.collapsed, next.layout_version, next.status, next.updated_at, id]
+  );
+  writeAudit("kpi_canvas_node.updated", "kpi_canvas_node", id, { before: current, after: next }, body.actor || "local_user");
+  return get("SELECT * FROM kpi_canvas_nodes WHERE id = ?", [id]);
+}
+
+function getQualityRules(url) {
+  const clauses = [];
+  const params = [];
+  const assetType = url.searchParams.get("assetType");
+  const assetId = url.searchParams.get("assetId");
+  const status = url.searchParams.get("status");
+  const severity = url.searchParams.get("severity");
+  if (assetType) {
+    clauses.push("asset_type = ?");
+    params.push(assetType);
+  }
+  if (assetId) {
+    clauses.push("asset_id = ?");
+    params.push(assetId);
+  }
+  if (status) {
+    clauses.push("lifecycle_status = ?");
+    params.push(status);
+  }
+  if (severity) {
+    clauses.push("severity = ?");
+    params.push(severity);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 100, 500));
+  return all(`SELECT * FROM quality_rules ${where} ORDER BY severity, lifecycle_status, rule_code LIMIT ?`, params);
+}
+
+function createQualityRule(body) {
+  assertRequired(body, ["ruleCode", "ruleName", "assetType", "assetId", "ruleExpression", "expectedBehavior"]);
+  const id = makeId("dqrule");
+  const createdAt = nowIso();
+  const record = {
+    id,
+    rule_code: normalizeText(body.ruleCode),
+    rule_name: normalizeText(body.ruleName),
+    asset_type: normalizeText(body.assetType),
+    asset_id: normalizeText(body.assetId),
+    severity: normalizeText(body.severity, "medium"),
+    rule_expression: normalizeText(body.ruleExpression),
+    expected_behavior: normalizeText(body.expectedBehavior),
+    owner: normalizeText(body.owner, "data_governance"),
+    lifecycle_status: normalizeText(body.lifecycleStatus || body.lifecycle_status, "draft"),
+    created_at: createdAt,
+    updated_at: createdAt
+  };
+  run(
+    `INSERT INTO quality_rules
+      (id, rule_code, rule_name, asset_type, asset_id, severity, rule_expression, expected_behavior, owner, lifecycle_status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      record.id,
+      record.rule_code,
+      record.rule_name,
+      record.asset_type,
+      record.asset_id,
+      record.severity,
+      record.rule_expression,
+      record.expected_behavior,
+      record.owner,
+      record.lifecycle_status,
+      record.created_at,
+      record.updated_at
+    ]
+  );
+  writeAudit("quality_rule.created", "quality_rule", id, record, body.actor || record.owner);
+  return get("SELECT * FROM quality_rules WHERE id = ?", [id]);
+}
+
+function updateQualityRule(id, body) {
+  const current = get("SELECT * FROM quality_rules WHERE id = ?", [id]);
+  if (!current) return null;
+  const next = {
+    severity: normalizeText(body.severity, current.severity),
+    rule_expression: normalizeText(body.ruleExpression || body.rule_expression, current.rule_expression),
+    expected_behavior: normalizeText(body.expectedBehavior || body.expected_behavior, current.expected_behavior),
+    owner: normalizeText(body.owner, current.owner),
+    lifecycle_status: normalizeText(body.lifecycleStatus || body.lifecycle_status, current.lifecycle_status),
+    updated_at: nowIso()
+  };
+  run(
+    `UPDATE quality_rules
+     SET severity = ?, rule_expression = ?, expected_behavior = ?, owner = ?, lifecycle_status = ?, updated_at = ?
+     WHERE id = ?`,
+    [next.severity, next.rule_expression, next.expected_behavior, next.owner, next.lifecycle_status, next.updated_at, id]
+  );
+  writeAudit("quality_rule.updated", "quality_rule", id, { before: current, after: next }, body.actor || "local_user");
+  return get("SELECT * FROM quality_rules WHERE id = ?", [id]);
+}
+
+function getQualityIssues(url) {
+  const clauses = [];
+  const params = [];
+  const ruleId = url.searchParams.get("ruleId");
+  const assetType = url.searchParams.get("assetType");
+  const assetId = url.searchParams.get("assetId");
+  const status = url.searchParams.get("status");
+  const severity = url.searchParams.get("severity");
+  if (ruleId) {
+    clauses.push("rule_id = ?");
+    params.push(ruleId);
+  }
+  if (assetType) {
+    clauses.push("asset_type = ?");
+    params.push(assetType);
+  }
+  if (assetId) {
+    clauses.push("asset_id = ?");
+    params.push(assetId);
+  }
+  if (status) {
+    clauses.push("status = ?");
+    params.push(status);
+  }
+  if (severity) {
+    clauses.push("severity = ?");
+    params.push(severity);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 100, 500));
+  return all(`SELECT * FROM quality_issues ${where} ORDER BY detected_at DESC, severity LIMIT ?`, params);
+}
+
+function createQualityIssue(body) {
+  assertRequired(body, ["ruleId", "assetType", "assetId", "issueTitle", "issueDetail"]);
+  const id = makeId("dqissue");
+  const record = {
+    id,
+    rule_id: normalizeText(body.ruleId),
+    asset_type: normalizeText(body.assetType),
+    asset_id: normalizeText(body.assetId),
+    issue_title: normalizeText(body.issueTitle),
+    issue_detail: normalizeText(body.issueDetail),
+    severity: normalizeText(body.severity, "medium"),
+    status: normalizeText(body.status, "open"),
+    detected_at: nowIso(),
+    resolved_at: "",
+    owner: normalizeText(body.owner, "data_governance"),
+    evidence: normalizeJsonText(body.evidence, [])
+  };
+  run(
+    `INSERT INTO quality_issues
+      (id, rule_id, asset_type, asset_id, issue_title, issue_detail, severity, status, detected_at, resolved_at, owner, evidence)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      record.id,
+      record.rule_id,
+      record.asset_type,
+      record.asset_id,
+      record.issue_title,
+      record.issue_detail,
+      record.severity,
+      record.status,
+      record.detected_at,
+      record.resolved_at,
+      record.owner,
+      record.evidence
+    ]
+  );
+  writeAudit("quality_issue.created", "quality_issue", id, record, body.actor || record.owner);
+  return get("SELECT * FROM quality_issues WHERE id = ?", [id]);
+}
+
+function updateQualityIssue(id, body) {
+  const current = get("SELECT * FROM quality_issues WHERE id = ?", [id]);
+  if (!current) return null;
+  const status = normalizeText(body.status, current.status);
+  const resolvedAt = status === "closed" || status === "resolved" ? nowIso() : normalizeText(body.resolvedAt || body.resolved_at, current.resolved_at);
+  run(
+    "UPDATE quality_issues SET status = ?, severity = ?, owner = ?, resolved_at = ? WHERE id = ?",
+    [
+      status,
+      normalizeText(body.severity, current.severity),
+      normalizeText(body.owner, current.owner),
+      resolvedAt,
+      id
+    ]
+  );
+  writeAudit("quality_issue.updated", "quality_issue", id, { before: current, status, resolvedAt }, body.actor || "local_user");
+  return get("SELECT * FROM quality_issues WHERE id = ?", [id]);
 }
 
 function getChatbiContext() {
@@ -1852,7 +2205,18 @@ const server = createServer(async (req, res) => {
       if (req.method === "GET" && url.pathname === "/api/dimensions") return json(res, all("SELECT * FROM dimensions ORDER BY dimension_type, id"));
       if (req.method === "GET" && url.pathname === "/api/metrics") return json(res, getMetrics(url));
       if (req.method === "GET" && url.pathname === "/api/kpi-tree") return json(res, getKpiTree());
+      if (req.method === "GET" && url.pathname === "/api/kpi-canvas/nodes") return json(res, getKpiCanvasNodes(url));
       if (req.method === "GET" && url.pathname === "/api/lineage") return json(res, all("SELECT * FROM lineage_edges ORDER BY status, edge_type LIMIT 1000"));
+      if (req.method === "GET" && url.pathname === "/api/quality/rules") return json(res, getQualityRules(url));
+      if (req.method === "POST" && url.pathname === "/api/quality/rules") {
+        const body = await readBody(req);
+        return json(res, { ok: true, rule: createQualityRule(body) }, 201);
+      }
+      if (req.method === "GET" && url.pathname === "/api/quality/issues") return json(res, getQualityIssues(url));
+      if (req.method === "POST" && url.pathname === "/api/quality/issues") {
+        const body = await readBody(req);
+        return json(res, { ok: true, issue: createQualityIssue(body) }, 201);
+      }
       if (req.method === "GET" && url.pathname === "/api/governance/tasks") return json(res, all("SELECT * FROM governance_tasks ORDER BY priority, status, id LIMIT 500"));
       if (req.method === "GET" && url.pathname === "/api/chatbi/context") return json(res, getChatbiContext());
       if (req.method === "GET" && url.pathname === "/api/chatbi/context-samples") return json(res, getChatbiContextSamples(url));
@@ -1907,6 +2271,24 @@ const server = createServer(async (req, res) => {
       if (req.method === "POST" && url.pathname === "/api/chatbi/dry-run") {
         const body = await readBody(req);
         return json(res, dryRunChatbi(body.question));
+      }
+      const kpiCanvasNodeUpdate = url.pathname.match(/^\/api\/kpi-canvas\/nodes\/([^/]+)$/);
+      if (req.method === "PATCH" && kpiCanvasNodeUpdate) {
+        const body = await readBody(req);
+        const node = updateKpiCanvasNode(kpiCanvasNodeUpdate[1], body);
+        return node ? json(res, { ok: true, node }) : json(res, { error: "KPI canvas node not found" }, 404);
+      }
+      const qualityRuleUpdate = url.pathname.match(/^\/api\/quality\/rules\/([^/]+)$/);
+      if (req.method === "PATCH" && qualityRuleUpdate) {
+        const body = await readBody(req);
+        const rule = updateQualityRule(qualityRuleUpdate[1], body);
+        return rule ? json(res, { ok: true, rule }) : json(res, { error: "Quality rule not found" }, 404);
+      }
+      const qualityIssueUpdate = url.pathname.match(/^\/api\/quality\/issues\/([^/]+)$/);
+      if (req.method === "PATCH" && qualityIssueUpdate) {
+        const body = await readBody(req);
+        const issue = updateQualityIssue(qualityIssueUpdate[1], body);
+        return issue ? json(res, { ok: true, issue }) : json(res, { error: "Quality issue not found" }, 404);
       }
       const taskReview = url.pathname.match(/^\/api\/governance\/tasks\/([^/]+)\/review$/);
       if (req.method === "POST" && taskReview) {

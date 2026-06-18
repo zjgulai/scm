@@ -538,7 +538,8 @@ nav button.active span {
 }
 
 input,
-textarea {
+textarea,
+select {
   width: 100%;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -549,7 +550,8 @@ textarea {
 }
 
 input:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   border-color: var(--blue);
   box-shadow: 0 0 0 3px rgba(0, 94, 184, 0.12);
 }
@@ -578,6 +580,150 @@ textarea {
   cursor: pointer;
   font-weight: 780;
   box-shadow: 0 10px 24px rgba(0, 94, 184, 0.22);
+}
+
+.canvasToolbar,
+.canvasHint {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.canvasToolbar h3 {
+  margin-bottom: 0;
+}
+
+.canvasControls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.canvasControls button {
+  min-height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+  color: var(--ink-2);
+  background: #fff;
+  cursor: pointer;
+  font-weight: 780;
+}
+
+.canvasControls button.active,
+.canvasControls button:hover {
+  color: var(--blue);
+  border-color: rgba(0, 94, 184, 0.26);
+  background: var(--blue-soft);
+}
+
+.canvasControls select {
+  width: 220px;
+  min-height: 38px;
+  padding: 8px 10px;
+}
+
+.kpiCanvasWrap {
+  overflow: auto;
+  max-height: 620px;
+  margin-bottom: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background:
+    linear-gradient(rgba(205, 216, 228, 0.45) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(205, 216, 228, 0.35) 1px, transparent 1px),
+    #fbfcfe;
+  background-size: 28px 28px;
+}
+
+.kpiCanvas {
+  position: relative;
+  min-width: 1180px;
+}
+
+.kpiNode {
+  position: absolute;
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 24px rgba(20, 32, 46, 0.08);
+  text-align: left;
+  cursor: pointer;
+}
+
+.kpiNode::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 8px 0 0 8px;
+  background: var(--blue);
+}
+
+.kpiNode span {
+  color: var(--blue);
+  font-size: 11px;
+  font-weight: 820;
+}
+
+.kpiNode strong {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.35;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.kpiNode small,
+.kpiNode em {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kpiNode.level-l0 {
+  border-color: rgba(0, 94, 184, 0.34);
+  background: #f6faff;
+}
+
+.kpiNode.level-l1::before {
+  background: var(--teal);
+}
+
+.kpiNode.level-l2::before {
+  background: var(--amber);
+}
+
+.kpiNode.level-l3::before {
+  background: var(--green);
+}
+
+.kpiNode.collapsed {
+  border-style: dashed;
+  opacity: 0.82;
+}
+
+.canvasHint {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.qualitySplit {
+  margin-top: 16px;
 }
 
 .kbToolbar {

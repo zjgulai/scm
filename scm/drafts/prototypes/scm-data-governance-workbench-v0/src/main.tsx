@@ -227,7 +227,7 @@ const columnLabels: Record<string, string> = {
   target_object_id: "目标对象",
   business_meaning: "业务含义",
   tag_type: "标签类型",
-  rule_expression: "规则",
+  rule_expression: "规则表达式",
   quality_status: "质量状态",
   dimension_type: "维度类型",
   hierarchy: "层级",
@@ -238,6 +238,14 @@ const columnLabels: Record<string, string> = {
   edge_type: "血缘类型",
   target_ref: "目标",
   confidence: "置信度",
+  rule_code: "规则编码",
+  rule_name: "规则名称",
+  severity: "严重度",
+  expected_behavior: "期望行为",
+  issue_title: "问题",
+  issue_detail: "问题说明",
+  detected_at: "发现时间",
+  resolved_at: "关闭时间",
   task_type: "任务类型",
   priority: "优先级",
   metric_id: "指标 ID",
@@ -602,6 +610,10 @@ function MetricsPanel({
 
 function KpiTreePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset: (asset: AssetRef) => void }) {
   const tree = useApi<any[]>("/api/kpi-tree", []);
+  const [canvasRefresh, setCanvasRefresh] = useState(0);
+  const [selectedDomain, setSelectedDomain] = useState("");
+  const [scope, setScope] = useState<"core" | "all">("core");
+  const canvas = useApi<AnyRow[]>(`/api/kpi-canvas/nodes?limit=1000&refresh=${canvasRefresh}`, []);
   const flat = useMemo(() => {
     const rows: AnyRow[] = [];
     function walk(nodes: any[], depth = 0) {
@@ -619,9 +631,76 @@ function KpiTreePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
     walk(tree.data);
     return rows;
   }, [tree.data]);
+  const domains = useMemo(() => {
+    return Array.from(new Set(canvas.data.map((node) => String(node.l1_domain || "")).filter(Boolean))).sort();
+  }, [canvas.data]);
+  const visibleNodes = useMemo(() => {
+    return canvas.data.filter((node) => {
+      if (selectedDomain && node.l1_domain !== selectedDomain) return false;
+      if (scope === "core" && node.level === "L3") return false;
+      return true;
+    });
+  }, [canvas.data, selectedDomain, scope]);
+  const canvasHeight = Math.min(
+    1600,
+    Math.max(420, ...visibleNodes.map((node) => Number(node.y || 0) + Number(node.height || 88) + 80))
+  );
+
+  async function toggleNode(node: AnyRow) {
+    await api(`/api/kpi-canvas/nodes/${encodeURIComponent(String(node.id))}`, {
+      method: "PATCH",
+      body: JSON.stringify({
+        collapsed: !Boolean(Number(node.collapsed || 0)),
+        layoutVersion: "p0-click-toggle",
+        actor: "local_user"
+      })
+    });
+    setCanvasRefresh((value) => value + 1);
+  }
+
   return (
     <section className="panel">
       <ModuleHeader module={module} />
+      <div className="canvasToolbar">
+        <div>
+          <p className="eyebrow">KPI canvas</p>
+          <h3>MECE V2 L0-L3 指标体系画布</h3>
+        </div>
+        <div className="canvasControls">
+          <button className={scope === "core" ? "active" : ""} onClick={() => setScope("core")}>L0-L2</button>
+          <button className={scope === "all" ? "active" : ""} onClick={() => setScope("all")}>含 L3</button>
+          <select value={selectedDomain} onChange={(event) => setSelectedDomain(event.target.value)}>
+            <option value="">全部 L1 域</option>
+            {domains.map((domain) => <option key={domain} value={domain}>{domain}</option>)}
+          </select>
+        </div>
+      </div>
+      <div className="kpiCanvasWrap">
+        <div className="kpiCanvas" style={{ height: canvasHeight }}>
+          {visibleNodes.map((node) => (
+            <button
+              key={String(node.id)}
+              className={`kpiNode level-${String(node.level).toLowerCase()} ${Number(node.collapsed || 0) ? "collapsed" : ""}`}
+              style={{
+                left: Number(node.x || 0),
+                top: Number(node.y || 0),
+                width: Number(node.width || 220),
+                height: Number(node.height || 88)
+              }}
+              onClick={() => onOpenAsset(makeAsset("kpi_canvas_node", node, ["name", "code", "id"], ["level", "l1_domain"]))}
+            >
+              <span>{cellValue(node.level)}</span>
+              <strong>{cellValue(node.name)}</strong>
+              <small>{cellValue(node.code)}</small>
+              <em>{Number(node.collapsed || 0) ? "collapsed" : "expanded"}</em>
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="canvasHint">
+        <span>{visibleNodes.length} nodes visible / {canvas.data.length} total</span>
+        {visibleNodes[0] ? <button className="textButton" onClick={() => toggleNode(visibleNodes[0])}>切换首个节点展开状态</button> : null}
+      </div>
       <DataTable
         rows={flat}
         columns={["id", "level", "code", "name", "l1_domain"]}
@@ -634,6 +713,8 @@ function KpiTreePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
 function LineagePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset: (asset: AssetRef) => void }) {
   const lineage = useApi<AnyRow[]>("/api/lineage", []);
   const tasks = useApi<AnyRow[]>("/api/governance/tasks", []);
+  const qualityRules = useApi<AnyRow[]>("/api/quality/rules?limit=100", []);
+  const qualityIssues = useApi<AnyRow[]>("/api/quality/issues?limit=100", []);
   return (
     <section className="panel">
       <ModuleHeader module={module} />
@@ -658,6 +739,30 @@ function LineagePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
             rows={tasks.data.slice(0, 140)}
             columns={["task_type", "target_ref", "title", "owner", "status", "priority"]}
             onSelectRow={(row) => onOpenAsset(makeAsset("governance_task", row, ["title", "id"], ["task_type", "owner"]))}
+          />
+        </div>
+      </div>
+      <div className="split qualitySplit">
+        <div className="surface">
+          <div className="surfaceHead">
+            <h3>质量规则</h3>
+            <Badge>{qualityRules.data.length} rules</Badge>
+          </div>
+          <DataTable
+            rows={qualityRules.data}
+            columns={["rule_code", "rule_name", "asset_type", "asset_id", "severity", "lifecycle_status", "owner"]}
+            onSelectRow={(row) => onOpenAsset(makeAsset("quality_rule", row, ["rule_name", "rule_code", "id"], ["asset_type", "asset_id"]))}
+          />
+        </div>
+        <div className="surface">
+          <div className="surfaceHead">
+            <h3>质量问题</h3>
+            <Badge>{qualityIssues.data.length} issues</Badge>
+          </div>
+          <DataTable
+            rows={qualityIssues.data}
+            columns={["issue_title", "asset_type", "asset_id", "severity", "status", "owner", "detected_at"]}
+            onSelectRow={(row) => onOpenAsset(makeAsset("quality_issue", row, ["issue_title", "id"], ["asset_type", "asset_id"]))}
           />
         </div>
       </div>

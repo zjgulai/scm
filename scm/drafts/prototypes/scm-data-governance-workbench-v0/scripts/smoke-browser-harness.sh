@@ -1,0 +1,86 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE_URL="${SCM_WORKBENCH_URL:-https://scm.lute-tlz-dddd.top/}"
+BROWSER_HARNESS_BIN="${BROWSER_HARNESS_BIN:-browser-harness}"
+export BASE_URL
+
+if ! command -v "$BROWSER_HARNESS_BIN" >/dev/null 2>&1; then
+  if [ -x "/Users/pray/.local/bin/browser-harness" ]; then
+    BROWSER_HARNESS_BIN="/Users/pray/.local/bin/browser-harness"
+  else
+    echo "browser-harness not found. Set BROWSER_HARNESS_BIN or install Browser Harness." >&2
+    exit 127
+  fi
+fi
+
+"$BROWSER_HARNESS_BIN" <<'PY'
+import os
+from time import sleep
+
+base_url = os.environ["BASE_URL"]
+expected = [
+    "治理链路总览",
+    "对象本体工作台",
+    "标签工程工作台",
+    "维度工程工作台",
+    "指标工程工作台",
+    "指标字典工作台",
+    "指标体系编排台",
+    "血缘与质量工作台",
+    "ChatBI 语义治理台",
+    "AI 知识库",
+    "AI 对话",
+    "决策闭环工作台",
+]
+
+new_tab(base_url)
+wait_for_load()
+
+summary = js("""
+(() => ({
+  title: document.title,
+  url: location.href,
+  labels: Array.from(document.querySelectorAll('aside button')).map((button) => button.textContent.trim()),
+  visibleText: document.body.innerText.slice(0, 5000)
+}))()
+""")
+
+missing = [label for label in expected if not any(label in text for text in summary["labels"])]
+if missing:
+    raise SystemExit(f"Missing navigation labels: {missing}; labels={summary['labels']}")
+
+results = []
+for label in expected:
+    clicked = js(f"""
+    (() => {{
+      const button = Array.from(document.querySelectorAll('aside button')).find((el) => el.textContent.includes({label!r}));
+      if (!button) return {{ ok: false, label: {label!r}, reason: 'nav button not found' }};
+      button.click();
+      return {{ ok: true, label: {label!r} }};
+    }})()
+    """)
+    if not clicked.get("ok"):
+        raise SystemExit(clicked)
+    sleep(0.25)
+    state = js("""
+    (() => ({
+      h1: document.querySelector('header h1')?.textContent?.trim() || '',
+      body: document.body.innerText,
+      error: document.querySelector('.error, [role="alert"]')?.textContent?.trim() || ''
+    }))()
+    """)
+    if label not in state["h1"]:
+        raise SystemExit(f"Navigation failed for {label}: active header={state['h1']!r}")
+    if "Application error" in state["body"] or "Unhandled Runtime Error" in state["body"]:
+        raise SystemExit(f"Visible app error after opening {label}")
+    results.append({"label": label, "header": state["h1"]})
+
+print({
+    "ok": True,
+    "baseUrl": base_url,
+    "title": summary["title"],
+    "moduleCount": len(results),
+    "modules": results,
+})
+PY

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "import": "node scripts/import-assets.mjs",
+    "migrate": "node scripts/migrate-sqlite.mjs",
     "dev:web": "vite --host 127.0.0.1 --port 5173",
     "dev:api": "node server/index.mjs",
     "build": "tsc && vite build",
@@ -12,7 +13,11 @@
     "start": "node server/index.mjs",
     "start:cloud": "HOST=0.0.0.0 NODE_ENV=production node server/index.mjs",
     "health": "node -e \"fetch('http://127.0.0.1:'+(process.env.PORT||5174)+'/api/deploy/health').then(r=>r.json()).then(j=>console.log(JSON.stringify(j,null,2)))\"",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit",
+    "backup:sqlite": "node scripts/backup-sqlite.mjs",
+    "smoke:browser": "bash scripts/smoke-browser-harness.sh",
+    "smoke:workflows": "node scripts/smoke-core-workflows.mjs",
+    "smoke:p0": "npm run build && node scripts/smoke-p0.mjs"
   },
   "dependencies": {
     "@vitejs/plugin-react": "^5.0.0",

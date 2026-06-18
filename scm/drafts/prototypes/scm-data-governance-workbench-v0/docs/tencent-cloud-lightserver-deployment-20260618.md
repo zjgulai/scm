@@ -23,10 +23,10 @@ source: human+ai
 ## 当前发布快照
 
 - 线上地址：`https://scm.lute-tlz-dddd.top/`
-- main release SHA：`315775f9398507e0cdbf47d2441c82bc8e0593ad`
-- 当前 P0 release：`/opt/scm-governance-workbench/releases/scm-workbench-p0-todo-bfda947-20260618233102`
-- 当前 P0 部署备份：`/opt/scm-governance-workbench/backups/20260618233131/governance_workbench.sqlite`
-- 当前 P0 release 最初来自本地工作树打包，包名中的 `bfda947` 是打包时分支 HEAD；本批 P0 改动已随后提交并推送到 `scm/codex/scm-ledger-workbench`，以该分支最新提交为代码追溯点。
+- 当前部署追溯 SHA：`ce7c0aa`，分支 `codex/scm-ledger-workbench`
+- 当前 P0 release：`/opt/scm-governance-workbench/releases/scm-workbench-p0-complete-ce7c0aa-20260619001646`
+- 当前 P0 部署备份：`/opt/scm-governance-workbench/backups/20260619001659/governance_workbench.sqlite`
+- 当前 P0 release 来自本地分支 `codex/scm-ledger-workbench` 的 `ce7c0aa` 提交；推送后以远端分支为代码追溯点。
 - 容器名：`scm-governance-workbench`
 - 内部端口：`127.0.0.1:5174`
 - 模块数量：12 个工作台模块
@@ -51,9 +51,9 @@ source: human+ai
 
 - Node 进程：Docker 容器内 `server/index.mjs` 同时提供 API 和静态前端。
 - 进程守护：Docker Compose + `restart: unless-stopped`。
-- 外部访问：Nginx 反代到 `127.0.0.1:5174`。
+- 外部访问：Docker 化 Nginx 容器 `ai_video_nginx` 通过外部网络 `lighthouse_ai_video_net` 反代到 `scm-governance-workbench:5174`；宿主机同时保留 `127.0.0.1:5174` 只读健康检查入口。
 - 防火墙：仅开放 80/443，Node 端口不直接暴露公网。
-- 隔离边界：独立目录、独立 Compose project、独立 bridge network、独立容器名。
+- 隔离边界：独立目录、独立 Compose project、独立 `scm_governance_net`、独立容器名；仅为域名反代额外加入现有 `lighthouse_ai_video_net`。
 
 ## 初始化
 
@@ -109,11 +109,11 @@ docs/sqlite-ops-runbook-20260618.md
 
 ```nginx
 server {
-    listen 80;
+    listen 443 ssl http2;
     server_name scm.lute-tlz-dddd.top;
 
     location / {
-        proxy_pass http://127.0.0.1:5174;
+        proxy_pass http://scm-governance-workbench:5174;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -130,6 +130,8 @@ server {
 - 页面能加载 12 个工作台模块。
 - `/api/workbench/modules` 返回 12 个模块。
 - ChatBI dry-run 对未认证问题能拒答，对认证库存类问题能返回证据链。
+- `docker exec ai_video_nginx getent hosts scm-governance-workbench` 可解析到应用容器 IP。
+- 公开站点 Browser Harness DOM 检查通过：KPI 画布 `nodeCount=39`、`edgeCount=33`、`selectedCount=1`、`drawerVisible=true`；血缘质量页 `summaryCards=3`、`ruleForm=true`；浅色侧边栏 `sidebarBg=rgb(255,255,255)`。
 
 P0 验收命令：
 

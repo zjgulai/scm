@@ -12,7 +12,8 @@ source_of_truth:
   - "drafts/prototypes/scm-data-governance-workbench-v0/docs/second-iteration-ui-information-architecture-20260618.md"
 current_deploy:
   url: "https://scm.lute-tlz-dddd.top/"
-  main_sha: "315775f9398507e0cdbf47d2441c82bc8e0593ad"
+  deployed_branch_sha: "ce7c0aa"
+  release: "/opt/scm-governance-workbench/releases/scm-workbench-p0-complete-ce7c0aa-20260619001646"
 ---
 
 # 供应链数据开发治理工作台剩余 PRD 盘点与 TODO
@@ -24,8 +25,8 @@ current_deploy:
 当前项目已经从“纯规划文档”推进到“可访问的部署原型”：
 
 - 已部署线上地址：`https://scm.lute-tlz-dddd.top/`
-- 当前 main release SHA：`315775f9398507e0cdbf47d2441c82bc8e0593ad`
-- 已实现核心模块：治理总览、本体、标签、维度、指标、指标体系、血缘、ChatBI、AI 知识库、AI 对话、决策闭环、上下文抽屉。
+- 当前部署追溯 SHA：`ce7c0aa`，分支 `codex/scm-ledger-workbench`
+- 已实现核心模块：治理总览、本体、标签、维度、指标、指标体系画布、血缘与质量、ChatBI、AI 知识库、AI 对话、决策闭环、上下文抽屉。
 - 已落地 SQLite 台账：annotation、comment、revision proposal、workflow instance、workflow step、audit event、AI KB、AI chat evidence 等基础表已存在。
 - 已具备本地证据检索式 AI 对话：当前策略为 `local_kb_evidence_only`，未启用外部模型调用。
 - 已具备 AI 知识库基础：6 个主题域、295 张知识卡、945 个 chunk、1918 条 crosswalk，FTS 可用。
@@ -33,7 +34,7 @@ current_deploy:
 
 ### 1.2 当前推断
 
-当前版本更接近“治理工作台可运行原型”，尚未达到“完整 PRD 交互闭环”。主要原因不是数据缺失，而是每个工作台仍偏展示与注解，距离完整的增删查改、审批流、认证流、质量闭环、画布交互和可重复 E2E 验收还有差距。
+当前版本已经完成 P0 工程验收闭环，具备可重复构建、迁移、备份、浏览器 smoke、核心工作流 smoke、KPI 画布基础交互和质量规则基础工作流。下一阶段差距集中在 P1：候选资产流、统一 workflow board、审批 SLA、对象图谱路径解释和决策闭环状态机。
 
 ### 1.3 当前不确定项
 
@@ -53,15 +54,15 @@ current_deploy:
 | 维度工程工作台 | 一致性维度、维度层级、维度主数据、指标适配 | 部分完成 | 缺层级编辑建议、维度候选、指标适配矩阵、冲突检测 | P1 |
 | 指标工程工作台 | 原子/派生/复合指标、公式、字段映射、异常处理 | 部分完成 | 指标字典 2.0 保持不变，但缺候选指标、字段映射审核、公式变更流 | P1 |
 | 指标字典 | 指标口径、owner、版本、认证状态、同义词、常见问法 | 基本完成 | 指标字典 2.0 不重构；需补同义词审核、问法样本认证 | P2 |
-| 指标体系画布 | L0-L3 可点击画布、注解、钻取、证据链 | 部分完成 | 当前更像树/列表，不是真画布；缺布局持久化、路径高亮、节点注解层 | P0 |
-| 血缘与质量 | 字段血缘、指标血缘、报表影响、DQ 规则、质量评分 | 部分完成 | 缺 quality_rules、质量检查执行、问题生命周期和影响面闭环 | P0 |
+| 指标体系画布 | L0-L3 可点击画布、注解、钻取、证据链 | P0 完成 | 已有节点、连线、路径高亮、折叠、拖拽布局和点击注解；P1 继续补复杂图谱分析 | P1 |
+| 血缘与质量 | 字段血缘、指标血缘、报表影响、DQ 规则、质量评分 | P0 完成 | 已有 quality rules/issues 基础工作流；P1 继续补批量执行、评分模型和任务编排 | P1 |
 | ChatBI 语义治理 | 可问指标、可用维度、证据链、拒答、认证上下文 | 部分完成 | 有 dry-run 与证据策略；缺认证上下文发布流、样本晋级流 | P1 |
 | AI 知识库 | 3 大供应链知识库按主题域沉淀，可检索、可对话 | 基本完成 | 需补知识源治理、过期检测、卡片质量评分、主题域运营视图 | P2 |
 | AI 对话 | 本地检索 + 证据返回，暂不接外部模型 | 基本完成 | 缺多轮上下文质量评估、反馈闭环、问题样本沉淀 | P2 |
 | 决策闭环 | 洞察、建议、审批、任务、执行反馈、复盘 | 部分完成 | 有任务和日志基础，但缺完整状态机、审批 UI、复盘模板 | P1 |
-| UI 风格 | light consulting style，参考 Umbrex 配色，不使用深色侧边栏 | 部分完成 | 现有风格仍需系统性 light theme 重构和页面密度优化 | P0 |
-| E2E 验收 | 每页真实浏览器测试，关键工作流可回放 | 部分完成 | 已做导航/AI 局部验证；缺 Browser Harness/Playwright 固化脚本 | P0 |
-| 部署运维 | 腾讯云轻量服务器 Docker 隔离部署、健康检查、回滚 | 部分完成 | 已部署；缺持久化卷、备份恢复、迁移脚本、回滚 SOP | P0 |
+| UI 风格 | light consulting style，参考 Umbrex 配色，不使用深色侧边栏 | P0 完成 | 已切换浅色咨询风格；P1 可继续做页面密度和信息层级优化 | P1 |
+| E2E 验收 | 每页真实浏览器测试，关键工作流可回放 | P0 完成 | Browser Harness 导航 smoke、P0 工作流 smoke、公开 DOM 检查已固化 | P1 |
+| 部署运维 | 腾讯云轻量服务器 Docker 隔离部署、健康检查、回滚 | P0 完成 | 已有 release、备份、migration、health、代理网络固化；P1 继续补自动回滚 SOP | P1 |
 
 ## 3. 剩余建设路线
 
@@ -72,12 +73,12 @@ current_deploy:
 产出：
 
 - 统一 source of truth 文档。
-- Browser Harness 或 Playwright E2E 验收脚本。
+- Browser Harness E2E 验收脚本。
 - 线上 12 个模块页面 smoke 固化。
-- SQLite 持久化、备份、恢复、迁移方案。
-- 部署文档刷新到当前 12 模块和 main SHA。
+- SQLite 备份、恢复、迁移方案。
+- 部署文档刷新到当前 12 模块、部署 SHA 和 release。
 - UI light theme 全局底座。
-- 指标体系真画布基础表与交互。
+- 指标体系画布基础表与交互。
 - 血缘质量规则基础表。
 
 ### P1：补齐每个工作台的“治理工作流”
@@ -263,10 +264,10 @@ current_deploy:
 | SCM-PRD-P0-004 | done | `scripts/backup-sqlite.mjs` 与 `docs/sqlite-ops-runbook-20260618.md` 已新增；`SCM_BACKUP_DIR=tmp/backups npm run backup:sqlite` 通过 |
 | SCM-PRD-P0-005 | done | `scripts/migrate-sqlite.mjs` 与 `scripts/migrations/001_p0_canvas_quality_tables.sql` 已新增；SQLite 副本迁移通过 |
 | SCM-PRD-P0-006 | done | `kpi_canvas_nodes` schema、`/api/kpi-canvas/nodes`、节点 PATCH、指标体系页基础 canvas 视图已实现；`npm run smoke:p0` 覆盖 read/update |
-| SCM-PRD-P0-007 | done | 指标体系页已补节点连线、路径高亮、折叠隐藏后代、拖拽布局写回、点击打开注解抽屉；Browser Harness 本地新 bundle 检查到 39 个可见节点和 33 条连线 |
+| SCM-PRD-P0-007 | done | 指标体系页已补节点连线、路径高亮、折叠隐藏后代、拖拽布局写回、点击打开注解抽屉；Browser Harness 公开站点检查到 39 个可见节点、33 条连线、选中态和抽屉 |
 | SCM-PRD-P0-008 | done | `quality_rules`、`quality_issues` schema、`/api/quality/rules`、`/api/quality/issues`、血缘质量页基础规则/问题视图已实现；`npm run smoke:p0` 覆盖 create/close |
 | SCM-PRD-P0-009 | done | 已补质量 summary、规则创建、规则审核、规则运行、问题生成、问题关闭复盘和影响面视图；`npm run smoke:p0` 覆盖 review/run/summary |
-| SCM-PRD-P0-010 | done | 已将深色侧边栏改为浅色咨询风格；Browser Harness 本地新 bundle 检查 `.sidebar` 背景为白色，导航文字为中性灰 |
+| SCM-PRD-P0-010 | done | 已将深色侧边栏改为浅色咨询风格；Browser Harness 公开站点检查 `.sidebar` 背景为白色，导航文字为中性灰 |
 
 验证命令：
 
@@ -295,16 +296,18 @@ npm run build
 - `smoke:workflows`：通过，临时 SQLite 副本验证 19 条核心工作流。
 - `npm run smoke:p0`：通过，一条命令完成生产构建、临时 SQLite 迁移、临时 API 工作流 smoke、本地新 bundle Browser Harness 导航 smoke、线上 Browser Harness 导航 smoke；覆盖 KPI canvas read/update 和 quality rule/issue create/close。
 - `npm run build`：通过。
-- Browser Harness 本地新 UI 检查：`http://127.0.0.1:5187/` 上指标体系页 `nodeCount=39`、`edgeCount=33`、节点可打开抽屉；血缘质量页 `summaryCards=3`、`ruleForm=true`；浅色侧边栏 `sidebarBg=rgb(255,255,255)`。
+- Browser Harness 公开站点 DOM 检查：`https://scm.lute-tlz-dddd.top/` 上指标体系页 `nodeCount=39`、`edgeCount=33`、`selectedCount=1`、`drawerVisible=true`；血缘质量页 `summaryCards=3`、`ruleForm=true`、`createButton=true`、`impactPanel=true`；浅色侧边栏 `sidebarBg=rgb(255,255,255)`、页面背景 `bodyBg=rgb(246,247,249)`。
 
 部署结果：
 
-- 服务器 release：`/opt/scm-governance-workbench/releases/scm-workbench-p0-todo-bfda947-20260618233102`
+- 服务器 release：`/opt/scm-governance-workbench/releases/scm-workbench-p0-complete-ce7c0aa-20260619001646`
 - 服务器 current：`/opt/scm-governance-workbench/current`
-- source boundary：该 release 最初来自本地工作树打包，包名中的 `bfda947` 是打包时分支 HEAD；本批 P0 改动已随后提交并推送到 `scm/codex/scm-ledger-workbench`，以该分支最新提交为代码追溯点。
-- 服务器 SQLite 备份：`/opt/scm-governance-workbench/backups/20260618233131/governance_workbench.sqlite`
-- 容器内迁移：`npm run migrate` 通过，应用 `001_p0_canvas_quality_tables.sql`。
+- source boundary：该 release 来自分支 `codex/scm-ledger-workbench` 的 `ce7c0aa` 本地提交；推送后以远端分支为代码追溯点。
+- 服务器 SQLite 备份：`/opt/scm-governance-workbench/backups/20260619001659/governance_workbench.sqlite`
+- 容器内迁移：`npm run migrate` 通过，`001_p0_canvas_quality_tables.sql` 已存在，本次 `applied=[]`、`skipped=1`。
+- 反向代理网络：`scm-governance-workbench` 已加入 `lighthouse_ai_video_net`，`ai_video_nginx` 可解析 `scm-governance-workbench -> 172.20.0.13`。
 - 公网 health：`ok=true`、`staticBuild=true`、`kpiCanvasNodes=178`、`qualityRules=0`、`qualityIssues=0`。
+- 生产台账边界：本次公开站点检查未创建质量规则或问题，因此 `qualityRules=0`、`qualityIssues=0` 是预期值。
 - 公网边界：`productionWrites=false`、`providerCalls=false`、`erpWriteback=false`、`chatbiPolicy=certified_metric_only`。
 - 公网 Browser Harness：`https://scm.lute-tlz-dddd.top/` 12 个模块导航 smoke 通过。
 

@@ -1391,6 +1391,49 @@ function PaginationBar({ pager, label }: { pager: PaginationController<unknown>;
   );
 }
 
+type WorkbenchSectionDefinition = {
+  id: string;
+  label: string;
+  helper: string;
+  badge?: string | number;
+};
+
+function WorkbenchSectionNav({
+  sections,
+  active,
+  onChange,
+  ariaLabel = "工作台页面分区"
+}: {
+  sections: WorkbenchSectionDefinition[];
+  active: string;
+  onChange: (id: string) => void;
+  ariaLabel?: string;
+}) {
+  return (
+    <div className="workbenchSectionNav" role="tablist" aria-label={ariaLabel}>
+      {sections.map((section, index) => (
+        <button
+          key={section.id}
+          type="button"
+          role="tab"
+          aria-selected={active === section.id}
+          className={active === section.id ? "active" : ""}
+          onClick={() => onChange(section.id)}
+        >
+          <span>{String(index + 1).padStart(2, "0")}</span>
+          <strong>{section.label}</strong>
+          <small>{section.helper}</small>
+          {section.badge !== undefined ? <em>{section.badge}</em> : null}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function sectionPaneClass(active: string, id: string) {
+  return `workbenchSectionPane ${active === id ? "active" : ""}`;
+}
+
 function DataTable({
   rows,
   columns,
@@ -2810,12 +2853,19 @@ function WorkflowOrchestrationPanel({
   const [refresh, setRefresh] = useState(0);
   const [selectedModuleId, setSelectedModuleId] = useState("workflow-orchestration");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
+  const [activeWorkflowSection, setActiveWorkflowSection] = useState("templates");
   const [note, setNote] = useState("");
   const summary = useApi<WorkflowOrchestrationSummary>(`/api/workflow-orchestration/summary?limit=16&refresh=${refresh}`, emptySummary);
   const selectedModule = summary.data.moduleMap.find((item) => item.id === selectedModuleId) || summary.data.moduleMap[0];
   const selectedTemplate = summary.data.templates.find((item) => item.id === selectedTemplateId) || summary.data.templates[0];
   const moduleContractPager = usePagination<OrchestrationModule>(summary.data.moduleMap, 4);
   const handoffPager = usePagination<OrchestrationHandoff>(summary.data.handoffs, 4);
+  const workflowSections = [
+    { id: "templates", label: "模板门禁", helper: "标准流程、步骤、入口出口", badge: summary.data.templates.length },
+    { id: "lanes", label: "阶段画布", helper: "跨工作台阶段与模块分布", badge: summary.data.lanes.length },
+    { id: "contracts", label: "协作契约", helper: "输入输出、handoff、任务池", badge: summary.data.moduleMap.length },
+    { id: "board", label: "任务板", helper: "治理 workflow 查询与批量审核", badge: summary.data.recentWorkflows.length }
+  ];
 
   async function createOrchestrationOperation(target?: OrchestrationModule) {
     const targetModule = target || selectedModule;
@@ -2921,6 +2971,14 @@ function WorkflowOrchestrationPanel({
           </div>
         </div>
 
+        <WorkbenchSectionNav
+          sections={workflowSections}
+          active={activeWorkflowSection}
+          onChange={setActiveWorkflowSection}
+          ariaLabel="工作流编排台分区"
+        />
+
+        <div className={sectionPaneClass(activeWorkflowSection, "templates")}>
         <div className="workflowTemplatePanel">
           <div className="sectionHeader compactHeader">
             <div>
@@ -2984,7 +3042,9 @@ function WorkflowOrchestrationPanel({
             )}
           </div>
         </div>
+        </div>
 
+        <div className={sectionPaneClass(activeWorkflowSection, "lanes")}>
         <div className="orchestrationLaneCanvas">
           {summary.data.lanes.map((lane, index) => (
             <article className="orchestrationLane" key={lane.id}>
@@ -3006,7 +3066,9 @@ function WorkflowOrchestrationPanel({
             </article>
           ))}
         </div>
+        </div>
 
+        <div className={sectionPaneClass(activeWorkflowSection, "contracts")}>
         <div className="orchestrationDetailGrid">
           <div className="orchestrationModuleMatrix">
             <div className="sectionHeader compactHeader">
@@ -3096,8 +3158,11 @@ function WorkflowOrchestrationPanel({
             </div>
           </div>
         </div>
+        </div>
 
+        <div className={sectionPaneClass(activeWorkflowSection, "board")}>
         <WorkflowBoard onOpenAsset={onOpenAsset} />
+        </div>
       </div>
     </section>
   );
@@ -3386,6 +3451,7 @@ function OntologyPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
   const objects = useApi<AnyRow[]>("/api/ontology/objects", []);
   const links = useApi<AnyRow[]>("/api/ontology/links", []);
   const [selectedObject, setSelectedObject] = useState("");
+  const [activeOntologySection, setActiveOntologySection] = useState("object360");
   const objectId = selectedObject || String(objects.data[0]?.id || "");
   const path = useApi<OntologyPath>(`/api/ontology/paths?objectId=${encodeURIComponent(objectId)}`, {
     object: null,
@@ -3397,10 +3463,24 @@ function OntologyPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
     lineageEdges: [],
     narrative: []
   });
+  const ontologySections = [
+    { id: "object360", label: "Object 360", helper: "对象实例、风险、证据、事件", badge: objects.data.length },
+    { id: "paths", label: "关系解释", helper: "出入向关系、标签、维度、指标", badge: path.data.metrics.length },
+    { id: "tables", label: "本体台账", helper: "对象类型与关系表格", badge: links.data.length }
+  ];
   return (
     <section className="panel">
       <ModuleHeader module={module} />
+      <WorkbenchSectionNav
+        sections={ontologySections}
+        active={activeOntologySection}
+        onChange={setActiveOntologySection}
+        ariaLabel="对象本体工作台分区"
+      />
+      <div className={sectionPaneClass(activeOntologySection, "object360")}>
       <Object360Panel onOpenAsset={onOpenAsset} />
+      </div>
+      <div className={sectionPaneClass(activeOntologySection, "paths")}>
       <div className="ontologyPathPanel">
         <div className="surfaceHead">
           <div>
@@ -3462,8 +3542,10 @@ function OntologyPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
           </div>
         </div>
       </div>
+      </div>
+      <div className={sectionPaneClass(activeOntologySection, "tables")}>
       <div className="split">
-        <div className="surface">
+        <div className="surface objectTable">
           <div className="surfaceHead">
             <h3>对象类型</h3>
             <Badge>{objects.data.length} rows</Badge>
@@ -3474,7 +3556,7 @@ function OntologyPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
             onSelectRow={(row) => onOpenAsset(makeAsset("ontology_object", row, ["name", "id"], ["object_type", "owner"], true))}
           />
         </div>
-        <div className="surface">
+        <div className="surface linkTable">
           <div className="surfaceHead">
             <h3>对象关系</h3>
             <Badge>{links.data.length} links</Badge>
@@ -3485,6 +3567,7 @@ function OntologyPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
             onSelectRow={(row) => onOpenAsset(makeAsset("ontology_link", row, ["link_type", "id"], ["source_object_id", "target_object_id"], true))}
           />
         </div>
+      </div>
       </div>
     </section>
   );
@@ -4397,6 +4480,7 @@ function safeJsonList(value: unknown) {
 function ChatBiPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset: (asset: AssetRef) => void }) {
   const [refresh, setRefresh] = useState(0);
   const [filters, setFilters] = useState({ status: "", answerPolicy: "", q: "" });
+  const [activeChatbiSection, setActiveChatbiSection] = useState("scorecard");
   const query = [
     "limit=160",
     `refresh=${refresh}`,
@@ -4516,6 +4600,11 @@ function ChatBiPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenA
 
   const pendingContexts = contexts.data.filter((item) => ["draft", "review_pending", "reviewed"].includes(String(item.status)));
   const certifiedContexts = contexts.data.filter((item) => String(item.status) === "certified");
+  const chatbiSections = [
+    { id: "scorecard", label: "评分运营", helper: "可回答性、弱证据、领域覆盖", badge: scorecard.data.summary.total },
+    { id: "authoring", label: "上下文生成", helper: "创建候选与 Dry-run", badge: metrics.data.length },
+    { id: "contexts", label: "认证队列", helper: "待审、认证、拒答上下文", badge: contexts.data.length }
+  ];
   return (
     <section className="panel">
       <ModuleHeader module={module} />
@@ -4541,6 +4630,13 @@ function ChatBiPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenA
           <small>保留证据，不进入正式回答</small>
         </div>
       </div>
+      <WorkbenchSectionNav
+        sections={chatbiSections}
+        active={activeChatbiSection}
+        onChange={setActiveChatbiSection}
+        ariaLabel="ChatBI 语义治理台分区"
+      />
+      <div className={sectionPaneClass(activeChatbiSection, "scorecard")}>
       <div className="chatbiAnswerabilityPanel">
         <div>
           <p className="eyebrow">Answerability governance</p>
@@ -4632,7 +4728,9 @@ function ChatBiPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenA
           </div>
         </div>
       </div>
+      </div>
       {note ? <div className="kbNotice">{note}</div> : null}
+      <div className={sectionPaneClass(activeChatbiSection, "authoring")}>
       <div className="chatbiWorkbench">
         <form className="chatbiForm" onSubmit={createContext}>
           <div className="surfaceHead">
@@ -4684,6 +4782,8 @@ function ChatBiPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenA
           ) : null}
         </div>
       </div>
+      </div>
+      <div className={sectionPaneClass(activeChatbiSection, "contexts")}>
       <div className="surface chatbiFilters">
         <label>
           状态
@@ -4746,6 +4846,7 @@ function ChatBiPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenA
           />
         </div>
       </div>
+      </div>
     </section>
   );
 }
@@ -4780,6 +4881,7 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
   const [refresh, setRefresh] = useState(0);
   const [reindexing, setReindexing] = useState(false);
   const [reindexResult, setReindexResult] = useState<string>("");
+  const [activeKbSection, setActiveKbSection] = useState("cards");
   const domainPath = `/api/kb/domains?refresh=${refresh}`;
   const cardPath = `/api/kb/cards?limit=80${selectedDomain ? `&domainId=${encodeURIComponent(selectedDomain)}` : ""}${query ? `&q=${encodeURIComponent(query)}` : ""}&refresh=${refresh}`;
   const qualityPath = `/api/kb/quality-summary${selectedDomain ? `?domainId=${encodeURIComponent(selectedDomain)}&` : "?"}refresh=${refresh}`;
@@ -4959,6 +5061,13 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
     }
   }
 
+  const kbSections = [
+    { id: "cards", label: "证据卡片", helper: "主题域、知识卡、规则候选", badge: cards.data.length },
+    { id: "sources", label: "知识源", helper: "来源台账与主题域质量", badge: sources.data.length },
+    { id: "diagnostics", label: "诊断映射", helper: "复核发现与指标 crosswalk", badge: staleFindings.data.length },
+    { id: "rules", label: "规则治理", helper: "知识规则候选、认证、建议卡", badge: ruleSummary.data.total }
+  ];
+
   return (
     <section className="panel">
       <ModuleHeader module={module} />
@@ -5008,20 +5117,93 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
           <small>{ruleSummary.data.draft} draft / {ruleSummary.data.conflicts} conflicts</small>
         </article>
       </div>
-      <div className="domainGrid">
-        <button className={!selectedDomain ? "active" : ""} onClick={() => setSelectedDomain("")}>
-          <strong>全部主题域</strong>
-          <span>{domains.data.reduce((sum, domain) => sum + Number(domain.card_count || 0), 0)} cards</span>
-        </button>
-        {domains.data.map((domain) => (
-          <button className={selectedDomain === domain.id ? "active" : ""} key={domain.id} onClick={() => setSelectedDomain(domain.id)}>
-            <strong>{domain.name}</strong>
-            <span>{domain.card_count} cards / {domain.source_count} sources</span>
-            <small>{domain.description}</small>
+      <WorkbenchSectionNav
+        sections={kbSections}
+        active={activeKbSection}
+        onChange={setActiveKbSection}
+        ariaLabel="AI 知识库页面分区"
+      />
+      <div className={sectionPaneClass(activeKbSection, "cards")}>
+        <div className="domainGrid">
+          <button className={!selectedDomain ? "active" : ""} onClick={() => setSelectedDomain("")}>
+            <strong>全部主题域</strong>
+            <span>{domains.data.reduce((sum, domain) => sum + Number(domain.card_count || 0), 0)} cards</span>
           </button>
-        ))}
+          {domains.data.map((domain) => (
+            <button className={selectedDomain === domain.id ? "active" : ""} key={domain.id} onClick={() => setSelectedDomain(domain.id)}>
+              <strong>{domain.name}</strong>
+              <span>{domain.card_count} cards / {domain.source_count} sources</span>
+              <small>{domain.description}</small>
+            </button>
+          ))}
+        </div>
+        <div className="kbResultHeader">
+          <div>
+            <p className="eyebrow">Local evidence</p>
+            <h3>知识卡与证据片段</h3>
+          </div>
+          <Badge tone={cards.data.length ? "blue" : "warn"}>
+            {cards.data.length ? `${cardPager.startIndex + 1}-${cardPager.endIndex} / ${cards.data.length} cards` : "0 / 0 cards"}
+          </Badge>
+        </div>
+        {!cards.data.length ? (
+          <div className="empty">暂无知识卡。可点击“重建本地索引”从三大知识库生成本地索引。</div>
+        ) : (
+          <div className="kbCards">
+            {cardPager.pageItems.map((card, index) => {
+              const terms = parseTerms(card.business_terms);
+              return (
+                <article className="kbCard" key={card.id}>
+                  <div className="kbCardHead">
+                    <div className="kbCardDomain">
+                      <span className="cardSerial">#{cardPager.startIndex + index + 1}</span>
+                      <Badge tone="blue">{card.domain_name}</Badge>
+                    </div>
+                    <div className="badgeCluster">
+                      <Badge tone={toneFromKbQuality(card.quality_status)}>{card.quality_score || 0}</Badge>
+                      <Badge tone={toneFromKbStale(card.stale_status)}>{card.stale_status || "fresh"}</Badge>
+                    </div>
+                  </div>
+                  <div className="kbCardTitleBlock">
+                    <h3>{card.title}</h3>
+                    <p>{card.summary}</p>
+                  </div>
+                  <div className="kbScoreGrid">
+                    <span>完整性 <strong>{card.completeness_score || 0}</strong></span>
+                    <span>证据 <strong>{card.evidence_score || 0}</strong></span>
+                    <span>时效 <strong>{card.freshness_score || 0}</strong></span>
+                    <span>关联 <strong>{card.usage_score || 0}</strong></span>
+                  </div>
+                  <div className="termRow">
+                    {terms.slice(0, 6).map((term) => <span key={term}>{term}</span>)}
+                  </div>
+                  <div className="kbMeta">
+                    <span>{card.source_path}</span>
+                    <span>{card.evidence_level} / {card.chunk_count} chunks / {card.crosswalk_count} links</span>
+                    {card.stale_reason ? <span>{card.stale_reason}</span> : null}
+                  </div>
+                  {card.evidence_chunks?.length ? (
+                    <div className="evidenceSnippets">
+                      {card.evidence_chunks.slice(0, 1).map((chunk) => (
+                        <blockquote key={chunk.id}>{chunk.chunk_text.slice(0, 180)}{chunk.chunk_text.length > 180 ? "..." : ""}</blockquote>
+                      ))}
+                    </div>
+                  ) : null}
+                  <div className="qualityActions">
+                    <button className="textButton" onClick={() => openCard(card)}>打开上下文</button>
+                    <button className="textButton createKnowledgeRuleButton" onClick={() => createRuleFromCard(card)} disabled={activeRuleId === card.id}>
+                      {activeRuleId === card.id ? "生成中..." : "生成规则候选"}
+                    </button>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        )}
+        <PaginationBar pager={cardPager} label="知识卡片" />
       </div>
-      <div className="kbOpsGrid">
+      <div className={sectionPaneClass(activeKbSection, "sources")}>
+        <div className="kbOpsGrid">
         <div className="surface sourceRegisterTable">
           <div className="surfaceHead">
             <div>
@@ -5052,7 +5234,9 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
           />
         </div>
       </div>
-      <div className="kbDiagnosticsGrid">
+      </div>
+      <div className={sectionPaneClass(activeKbSection, "diagnostics")}>
+        <div className="kbDiagnosticsGrid">
         <div className="surface staleFindingsPanel">
           <div className="surfaceHead">
             <div>
@@ -5094,7 +5278,9 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
           <PaginationBar pager={crosswalkPager} label="映射矩阵" />
         </div>
       </div>
-      <div className="surface knowledgeRulesWorkbench">
+      </div>
+      <div className={sectionPaneClass(activeKbSection, "rules")}>
+        <div className="surface knowledgeRulesWorkbench">
         <div className="surfaceHead">
           <div>
             <p className="eyebrow">Rule governance</p>
@@ -5154,70 +5340,7 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
         </div>
         <PaginationBar pager={rulePager} label="知识规则" />
       </div>
-      <div className="kbResultHeader">
-        <div>
-          <p className="eyebrow">Local evidence</p>
-          <h3>知识卡与证据片段</h3>
-        </div>
-        <Badge tone={cards.data.length ? "blue" : "warn"}>
-          {cards.data.length ? `${cardPager.startIndex + 1}-${cardPager.endIndex} / ${cards.data.length} cards` : "0 / 0 cards"}
-        </Badge>
       </div>
-      {!cards.data.length ? (
-        <div className="empty">暂无知识卡。可点击“重建本地索引”从三大知识库生成本地索引。</div>
-      ) : (
-        <div className="kbCards">
-          {cardPager.pageItems.map((card, index) => {
-            const terms = parseTerms(card.business_terms);
-            return (
-              <article className="kbCard" key={card.id}>
-                <div className="kbCardHead">
-                  <div className="kbCardDomain">
-                    <span className="cardSerial">#{cardPager.startIndex + index + 1}</span>
-                    <Badge tone="blue">{card.domain_name}</Badge>
-                  </div>
-                  <div className="badgeCluster">
-                    <Badge tone={toneFromKbQuality(card.quality_status)}>{card.quality_score || 0}</Badge>
-                    <Badge tone={toneFromKbStale(card.stale_status)}>{card.stale_status || "fresh"}</Badge>
-                  </div>
-                </div>
-                <div className="kbCardTitleBlock">
-                  <h3>{card.title}</h3>
-                  <p>{card.summary}</p>
-                </div>
-                <div className="kbScoreGrid">
-                  <span>完整性 <strong>{card.completeness_score || 0}</strong></span>
-                  <span>证据 <strong>{card.evidence_score || 0}</strong></span>
-                  <span>时效 <strong>{card.freshness_score || 0}</strong></span>
-                  <span>关联 <strong>{card.usage_score || 0}</strong></span>
-                </div>
-                <div className="termRow">
-                  {terms.slice(0, 6).map((term) => <span key={term}>{term}</span>)}
-                </div>
-                <div className="kbMeta">
-                  <span>{card.source_path}</span>
-                  <span>{card.evidence_level} / {card.chunk_count} chunks / {card.crosswalk_count} links</span>
-                  {card.stale_reason ? <span>{card.stale_reason}</span> : null}
-                </div>
-                {card.evidence_chunks?.length ? (
-                  <div className="evidenceSnippets">
-                    {card.evidence_chunks.slice(0, 1).map((chunk) => (
-                      <blockquote key={chunk.id}>{chunk.chunk_text.slice(0, 180)}{chunk.chunk_text.length > 180 ? "..." : ""}</blockquote>
-                    ))}
-                  </div>
-                ) : null}
-                <div className="qualityActions">
-                  <button className="textButton" onClick={() => openCard(card)}>打开上下文</button>
-                  <button className="textButton createKnowledgeRuleButton" onClick={() => createRuleFromCard(card)} disabled={activeRuleId === card.id}>
-                    {activeRuleId === card.id ? "生成中..." : "生成规则候选"}
-                  </button>
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      )}
-      <PaginationBar pager={cardPager} label="知识卡片" />
     </section>
   );
 }

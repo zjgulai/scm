@@ -84,6 +84,40 @@ def fetch_api(path):
             "count": payload_count(payload),
         }
 
+def check_workbench_sections(section_specs, nav_selector=".workbenchSectionNav"):
+    tab_count = js(f"(() => document.querySelectorAll({json.dumps(nav_selector + ' button')}).length)()")
+    states = []
+    for section in section_specs:
+        label_json = json.dumps(section["label"], ensure_ascii=False)
+        clicked = js(f"""
+        (() => {{
+          const button = Array.from(document.querySelectorAll({json.dumps(nav_selector + ' button')})).find((el) => el.textContent.includes({label_json}));
+          if (!button) return {{ clicked: false, label: {label_json}, reason: 'section button not found' }};
+          button.click();
+          return {{ clicked: true, label: {label_json} }};
+        }})()
+        """)
+        sleep(0.2)
+        selectors = json.dumps(section["selectors"], ensure_ascii=False)
+        state = js(f"""
+        (() => {{
+          const visible = (selector) => {{
+            const node = document.querySelector(selector);
+            if (!node) return false;
+            const style = getComputedStyle(node);
+            return style.display !== 'none' && style.visibility !== 'hidden' && node.getClientRects().length > 0;
+          }};
+          const selectors = {selectors};
+          return {{
+            label: {label_json},
+            active: Array.from(document.querySelectorAll({json.dumps(nav_selector + ' button')})).some((button) => button.textContent.includes({label_json}) && button.classList.contains('active')),
+            visibleOk: selectors.every(visible)
+          }};
+        }})()
+        """)
+        states.append({**clicked, **state})
+    return {"tabCount": tab_count, "states": states}
+
 new_tab(base_url)
 wait_for_load()
 
@@ -431,6 +465,14 @@ for label in expected:
             or not object360["qualityEvidence"]
         ):
           raise SystemExit(f"AIP Object 360 feature check failed: {object360}")
+        ontology_sections = check_workbench_sections([
+            {"label": "Object 360", "selectors": [".object360Panel"]},
+            {"label": "关系解释", "selectors": [".ontologyPathPanel"]},
+            {"label": "本体台账", "selectors": [".objectTable", ".linkTable"]},
+        ])
+        if ontology_sections["tabCount"] < 3 or any((not item["clicked"] or not item["active"] or not item["visibleOk"]) for item in ontology_sections["states"]):
+          raise SystemExit(f"Ontology section navigation check failed: {ontology_sections}")
+        object360["sectionNavigation"] = ontology_sections
         feature_checks.append({"aipObject360": object360})
     if label == "角色工作台":
         for _ in range(30):
@@ -636,6 +678,14 @@ for label in expected:
         """)
         if chatbi["summaryCards"] < 4 or not chatbi["answerabilityPanel"] or chatbi["answerabilityCards"] < 2 or not chatbi["scorecardPanel"] or chatbi["scorecardCards"] < 4 or not chatbi["domainGrid"] or not chatbi["weakQueue"] or not chatbi["form"] or not chatbi["filters"] or not chatbi["dryRun"]:
           raise SystemExit(f"ChatBI certification feature check failed: {chatbi}")
+        chatbi_sections = check_workbench_sections([
+            {"label": "评分运营", "selectors": [".chatbiAnswerabilityPanel", ".chatbiScorecardPanel"]},
+            {"label": "上下文生成", "selectors": [".chatbiWorkbench"]},
+            {"label": "认证队列", "selectors": [".chatbiFilters", ".contextCards"]},
+        ])
+        if chatbi_sections["tabCount"] < 3 or any((not item["clicked"] or not item["active"] or not item["visibleOk"]) for item in chatbi_sections["states"]):
+          raise SystemExit(f"ChatBI section navigation check failed: {chatbi_sections}")
+        chatbi["sectionNavigation"] = chatbi_sections
         feature_checks.append({"chatbiCertification": chatbi})
     if label == "审计日志工作台":
         audit = js("""
@@ -718,6 +768,22 @@ for label in expected:
             or kb_layout["minCardWidth"] < 300
         ):
           raise SystemExit(f"KB pagination/layout check failed: {kb_layout}")
+        kb_sections = check_workbench_sections([
+            {"label": "证据卡片", "selectors": [".domainGrid", ".kbResultHeader", ".kbCards"]},
+            {"label": "知识源", "selectors": [".sourceRegisterTable", ".kbDomainQualityTable"]},
+            {"label": "诊断映射", "selectors": [".staleFindingsPanel", ".crosswalkMatrixTable"]},
+            {"label": "规则治理", "selectors": [".knowledgeRulesWorkbench"]},
+        ])
+        if require_kb_governance and (kb_sections["tabCount"] < 4 or any((not item["clicked"] or not item["active"] or not item["visibleOk"]) for item in kb_sections["states"])):
+          raise SystemExit(f"KB section navigation check failed: {kb_sections}")
+        js("""
+        (() => {
+          const first = Array.from(document.querySelectorAll('.workbenchSectionNav button')).find((el) => el.textContent.includes('证据卡片'));
+          if (first) first.click();
+          return true;
+        })()
+        """)
+        kb["sectionNavigation"] = kb_sections
         feature_checks.append({"kbPaginationLayout": kb_layout})
         feature_checks.append({"kbGovernance": kb})
     if label == "工作流编排台":
@@ -761,6 +827,15 @@ for label in expected:
 	            or orchestration["paginationBars"] < 2
 	        ):
           raise SystemExit(f"Workflow orchestration feature check failed: {orchestration}")
+        workflow_sections = check_workbench_sections([
+            {"label": "模板门禁", "selectors": [".workflowTemplatePanel"]},
+            {"label": "阶段画布", "selectors": [".orchestrationLaneCanvas"]},
+            {"label": "协作契约", "selectors": [".orchestrationDetailGrid"]},
+            {"label": "任务板", "selectors": [".workflowFilters", ".bulkActionBar"]},
+        ])
+        if workflow_sections["tabCount"] < 4 or any((not item["clicked"] or not item["active"] or not item["visibleOk"]) for item in workflow_sections["states"]):
+          raise SystemExit(f"Workflow section navigation check failed: {workflow_sections}")
+        orchestration["sectionNavigation"] = workflow_sections
         feature_checks.append({"workflowOrchestration": orchestration})
     if label == "AI 对话":
         ai = js("""

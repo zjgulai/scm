@@ -3717,6 +3717,9 @@ function createRoleActionDraft(roleId, body) {
     ? body.targetAssetIds || body.target_asset_ids
     : [normalizeText(body.targetAssetId || body.target_asset_id || detail.objects[0]?.id)].filter(Boolean);
   const evidenceRefs = body.evidenceRefs || body.evidence_refs || detail.events.slice(0, 3).map((event) => `object_event:${event.id}`);
+  const batchMode = normalizeText(body.batchMode || body.batch_mode, targetIds.length > 1 ? "bulk" : "single");
+  const slaStatus = normalizeText(body.slaStatus || body.sla_status);
+  const shiftCadence = normalizeText(body.shiftCadence || body.shift_cadence || role.decision_cadence);
   const title = normalizeText(body.operationTitle || body.title, `${role.role_name} 行动草稿`);
   const summary = normalizeText(
     body.operationSummary || body.summary,
@@ -3735,6 +3738,10 @@ function createRoleActionDraft(roleId, body) {
       source: "role_workbench",
       evidenceRefs,
       playbookId: normalizeText(body.playbookId || body.playbook_id),
+      batchMode,
+      selectedTargetCount: targetIds.length,
+      slaStatus,
+      shiftCadence,
       providerCalls: false,
       erpWriteback: false,
       actionTier: "L1"
@@ -3748,6 +3755,10 @@ function createRoleActionDraft(roleId, body) {
     operationId: operation.id,
     targetIds,
     evidenceRefs,
+    batchMode,
+    selectedTargetCount: targetIds.length,
+    slaStatus,
+    shiftCadence,
     providerCalls: false,
     erpWriteback: false
   }, normalizeText(body.createdBy || body.actor, "local_user"));

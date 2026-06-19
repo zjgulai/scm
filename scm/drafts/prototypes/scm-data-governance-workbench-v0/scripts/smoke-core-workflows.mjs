@@ -846,6 +846,32 @@ assert(roleActionDraft.operation?.id, "Role action draft did not create workbenc
 assert(roleActionDraft.operation?.module_id === "role-workbench", "Role action draft module mismatch", roleActionDraft.operation);
 assert(roleActionDraft.boundary?.providerCalls === false && roleActionDraft.boundary?.erpWriteback === false, "Role action draft boundary changed", roleActionDraft.boundary);
 
+const roleBulkActionDraft = await request("/api/roles/workbenches/role_inventory/action-draft", {
+  method: "POST",
+  body: JSON.stringify({
+    operationTitle: `Role bulk smoke action ${stamp}`,
+    operationSummary: "Smoke creates a bulk role action draft for multiple object/event/recommendation targets in local ledger only.",
+    targetAssetIds: ["obj_batch_fba_negative_available", "evt_negative_available_inventory", roleActionDraft.operation.id],
+    evidenceRefs: ["object_event:evt_negative_available_inventory", `workbench_operation:${roleActionDraft.operation.id}`],
+    playbookId: "pb_inventory_negative",
+    batchMode: "bulk",
+    slaStatus: "critical",
+    shiftCadence: "daily control tower",
+    owner: "p0_role_smoke",
+    priority: "P0",
+    createdBy: "p0_role_smoke"
+  })
+});
+assert(roleBulkActionDraft.operation?.id, "Role bulk action draft did not create workbench operation", roleBulkActionDraft);
+const roleBulkTargets = JSON.parse(roleBulkActionDraft.operation.target_asset_ids || "[]");
+const roleBulkPayload = JSON.parse(roleBulkActionDraft.operation.operation_payload || "{}");
+assert(roleBulkTargets.length >= 3, "Role bulk action draft did not retain multiple targets", roleBulkActionDraft.operation);
+assert(roleBulkPayload.batchMode === "bulk", "Role bulk action payload missing batchMode", roleBulkPayload);
+assert(roleBulkPayload.selectedTargetCount >= 3, "Role bulk action payload missing selected target count", roleBulkPayload);
+assert(roleBulkPayload.slaStatus === "critical", "Role bulk action payload missing SLA status", roleBulkPayload);
+assert(roleBulkPayload.shiftCadence === "daily control tower", "Role bulk action payload missing shift cadence", roleBulkPayload);
+assert(roleBulkActionDraft.boundary?.providerCalls === false && roleBulkActionDraft.boundary?.erpWriteback === false, "Role bulk action boundary changed", roleBulkActionDraft.boundary);
+
 const providerPolicies = await request("/api/provider-gateway/policies");
 assert(Array.isArray(providerPolicies) && providerPolicies.length >= 2, "Provider policies missing", providerPolicies);
 assert(providerPolicies.every((policy) => policy.status === "disabled" && policy.evidence_required === true), "Provider policies should remain disabled and evidence-gated", providerPolicies);
@@ -1037,6 +1063,7 @@ console.log(
         "roleWorkbenches.read",
         "roleWorkbench.inventoryDetail",
         "roleWorkbench.actionDraft",
+        "roleWorkbench.bulkActionDraft",
         "providerGatewayPolicies.readDisabled",
         "providerGatewaySummary.read",
         "providerDecisionRecords.read",

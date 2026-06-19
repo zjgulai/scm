@@ -5154,6 +5154,7 @@ function roleWorkbenchAsset(role: RoleWorkbench): AssetRef {
 
 function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset: (asset: AssetRef) => void }) {
   const [selectedRoleId, setSelectedRoleId] = useState("role_inventory");
+  const [selectedRoleTargetIds, setSelectedRoleTargetIds] = useState<string[]>([]);
   const [refresh, setRefresh] = useState(0);
   const [actionNote, setActionNote] = useState("");
   const [drafting, setDrafting] = useState(false);
@@ -5165,6 +5166,49 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
   const activeRole = detail.data.role;
   const firstObject = detail.data.objects[0];
   const firstEvent = detail.data.events[0];
+  const openEvents = detail.data.events.filter((event) => event.status !== "closed");
+  const criticalEvents = openEvents.filter((event) => ["critical", "high"].includes(event.severity));
+  const activeRecommendations = detail.data.recommendations.filter((recommendation) => !["done", "replayed", "rejected"].includes(recommendation.approval_status));
+  const roleSlaStatus = criticalEvents.length ? "critical" : activeRecommendations.length ? "due_soon" : openEvents.length ? "watch" : "on_track";
+  const roleSlaNote = criticalEvents.length
+    ? `${criticalEvents.length} high/critical events need same-day owner review`
+    : activeRecommendations.length
+      ? `${activeRecommendations.length} recommendation cards are waiting for approval or execution`
+      : openEvents.length
+        ? `${openEvents.length} open events should stay in the role queue`
+        : "No open event pressure in the current role queue";
+  const shiftCadence = activeRole.decision_cadence || "daily review";
+  const shiftLabel = /daily|day|日/.test(shiftCadence)
+    ? "Daily control tower"
+    : /weekly|week|周/.test(shiftCadence)
+      ? "Weekly owner review"
+      : /monthly|month|月/.test(shiftCadence)
+        ? "Monthly governance review"
+        : "Event-driven review";
+  const roleBatchTargets = [
+    ...detail.data.objects.slice(0, 5).map((object) => ({
+      id: object.id,
+      type: "object",
+      title: object.display_name,
+      subtitle: `${object.object_type} / ${object.risk_level}`,
+      tone: object.risk_level
+    })),
+    ...detail.data.events.slice(0, 5).map((event) => ({
+      id: event.id,
+      type: "event",
+      title: event.event_title,
+      subtitle: `${event.event_type} / ${event.severity}`,
+      tone: event.severity
+    })),
+    ...detail.data.recommendations.slice(0, 5).map((recommendation) => ({
+      id: recommendation.id,
+      type: "recommendation",
+      title: recommendation.recommendation_title,
+      subtitle: `${recommendation.scenario_type} / ${recommendation.approval_status}`,
+      tone: recommendation.approval_status
+    }))
+  ];
+  const selectedBatchTargets = roleBatchTargets.filter((target) => selectedRoleTargetIds.includes(target.id));
 
   useEffect(() => {
     if (!roles.data.length) return;
@@ -5173,19 +5217,39 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
     }
   }, [roles.data, selectedRoleId]);
 
-  async function createActionDraft() {
+  useEffect(() => {
+    setSelectedRoleTargetIds([]);
+  }, [activeRole.id]);
+
+  function toggleRoleTarget(id: string) {
+    setSelectedRoleTargetIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  }
+
+  async function createActionDraft(mode: "single" | "bulk" = "single") {
     if (!activeRole.id) return;
     setDrafting(true);
     setActionNote("");
     try {
+      const bulkTargets = selectedBatchTargets.length ? selectedBatchTargets : roleBatchTargets.slice(0, 6);
+      const targetAssetIds = mode === "bulk"
+        ? bulkTargets.map((target) => target.id)
+        : [firstObject?.id, firstEvent?.id].filter(Boolean);
+      const evidenceRefs = mode === "bulk"
+        ? bulkTargets.filter((target) => target.type === "event").map((target) => `object_event:${target.id}`)
+        : firstEvent ? [`object_event:${firstEvent.id}`] : [];
       const payload = await api<{ ok: boolean; operation: WorkbenchOperation }>(`/api/roles/workbenches/${encodeURIComponent(activeRole.id)}/action-draft`, {
         method: "POST",
         body: JSON.stringify({
-          operationTitle: `${activeRole.role_name} L1 行动草稿`,
-          operationSummary: `${activeRole.role_name} 基于对象队列、事件和 playbook 生成本地行动草稿；进入 Owner 审核，不调用 provider，不写回 ERP/Jijia。`,
-          targetAssetIds: [firstObject?.id, firstEvent?.id].filter(Boolean),
-          evidenceRefs: firstEvent ? [`object_event:${firstEvent.id}`] : [],
+          operationTitle: mode === "bulk" ? `${activeRole.role_name} 批量行动草稿` : `${activeRole.role_name} L1 行动草稿`,
+          operationSummary: mode === "bulk"
+            ? `${activeRole.role_name} 汇总 ${targetAssetIds.length} 个对象/事件/建议卡，形成本地批量治理行动草稿；进入 Owner 审核，不调用 provider，不写回 ERP/Jijia。`
+            : `${activeRole.role_name} 基于对象队列、事件和 playbook 生成本地行动草稿；进入 Owner 审核，不调用 provider，不写回 ERP/Jijia。`,
+          targetAssetIds,
+          evidenceRefs,
           playbookId: detail.data.playbooks[0]?.id,
+          batchMode: mode,
+          slaStatus: roleSlaStatus,
+          shiftCadence,
           owner: activeRole.owner,
           priority: firstEvent?.severity === "critical" ? "P0" : "P1",
           createdBy: "local_user"
@@ -5295,6 +5359,30 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
               {activeRole.primary_object_types.map((item) => <span key={item}>{item}</span>)}
               {activeRole.metric_refs.map((item) => <span key={item} className="metricChip">{item}</span>)}
             </div>
+            <div className="roleSlaShiftGrid">
+              <section className="roleSlaPanel">
+                <div className="sectionLabel">
+                  <span>SLA</span>
+                  <strong>角色 SLA 摘要</strong>
+                </div>
+                <div className="roleSlaScore">
+                  <Badge tone={toneFromStatus(roleSlaStatus)}>{roleSlaStatus}</Badge>
+                  <strong>{criticalEvents.length + activeRecommendations.length}</strong>
+                  <small>{roleSlaNote}</small>
+                </div>
+              </section>
+              <section className="roleShiftPanel">
+                <div className="sectionLabel">
+                  <span>Shift</span>
+                  <strong>班次/节奏</strong>
+                </div>
+                <div className="roleShiftMeta">
+                  <strong>{shiftLabel}</strong>
+                  <span>{shiftCadence}</span>
+                  <small>本阶段只形成角色工作流节奏提示，不启用排班系统。</small>
+                </div>
+              </section>
+            </div>
             <div className="roleQueueGrid">
               <article>
                 <div className="surfaceHead">
@@ -5357,9 +5445,39 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
                 <h3>本地行动草稿</h3>
                 <p>将当前角色的首个对象、事件和 playbook 组合为 L1 行动草稿，进入工作台操作审核流。</p>
               </div>
-              <button className="roleActionDraftButton" disabled={drafting || !activeRole.id} onClick={createActionDraft}>
+              <button className="roleActionDraftButton" disabled={drafting || !activeRole.id} onClick={() => createActionDraft("single")}>
                 {drafting ? "创建中..." : "创建行动草稿"}
               </button>
+            </div>
+            <div className="roleBatchActionPanel">
+              <div className="surfaceHead">
+                <div>
+                  <p className="eyebrow">Batch action</p>
+                  <h3>批量治理动作</h3>
+                  <p className="muted">选择对象、事件或建议卡，生成一个批量行动草稿并进入 Owner 审核；不触发业务系统写回。</p>
+                </div>
+                <Badge tone="blue">{selectedBatchTargets.length || Math.min(roleBatchTargets.length, 6)} selected</Badge>
+              </div>
+              <div className="roleBatchSelector">
+                {roleBatchTargets.map((target) => (
+                  <label key={target.id} className={selectedRoleTargetIds.includes(target.id) ? "selected" : ""}>
+                    <input type="checkbox" checked={selectedRoleTargetIds.includes(target.id)} onChange={() => toggleRoleTarget(target.id)} />
+                    <span>
+                      <strong>{target.title}</strong>
+                      <small>{target.type} / {target.subtitle}</small>
+                    </span>
+                    <Badge tone={toneFromStatus(target.tone)}>{target.tone}</Badge>
+                  </label>
+                ))}
+                {!roleBatchTargets.length ? <div className="empty compact">当前角色暂无可批量处理的对象。</div> : null}
+              </div>
+              <div className="roleBatchActions">
+                <button className="textButton" onClick={() => setSelectedRoleTargetIds(roleBatchTargets.map((target) => target.id))}>全选</button>
+                <button className="textButton" onClick={() => setSelectedRoleTargetIds([])}>清空</button>
+                <button className="roleBatchActionButton" disabled={drafting || !activeRole.id || !roleBatchTargets.length} onClick={() => createActionDraft("bulk")}>
+                  {drafting ? "创建中..." : "创建批量行动草稿"}
+                </button>
+              </div>
             </div>
             {actionNote ? <div className="kbNotice">{actionNote}</div> : null}
             <div className="roleSupportingGrid">

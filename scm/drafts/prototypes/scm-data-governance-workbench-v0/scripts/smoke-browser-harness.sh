@@ -235,6 +235,11 @@ for label in expected:
           providerDryRunButton: !!document.querySelector('.providerDryRunButton'),
           evalCasePanel: !!document.querySelector('.evalCasePanel'),
           actionButton: !!document.querySelector('.roleActionDraftButton'),
+          slaPanel: !!document.querySelector('.roleSlaPanel'),
+          shiftPanel: !!document.querySelector('.roleShiftPanel'),
+          batchPanel: !!document.querySelector('.roleBatchActionPanel'),
+          batchTargets: document.querySelectorAll('.roleBatchSelector label').length,
+          batchActionButton: !!document.querySelector('.roleBatchActionButton'),
           exports: document.querySelectorAll('.exportActions a').length,
           flow: !!document.querySelector('.workbenchFlowStrip'),
           providerOffText: document.body.innerText.includes('provider off') || document.body.innerText.includes('default off')
@@ -254,6 +259,11 @@ for label in expected:
             or not role["providerDryRunButton"]
             or not role["evalCasePanel"]
             or not role["actionButton"]
+            or not role["slaPanel"]
+            or not role["shiftPanel"]
+            or not role["batchPanel"]
+            or role["batchTargets"] < 3
+            or not role["batchActionButton"]
             or role["exports"] < 2
             or not role["flow"]
             or not role["providerOffText"]

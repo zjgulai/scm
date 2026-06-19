@@ -188,6 +188,42 @@ for label in expected:
         if not cockpit["cockpit"] or not cockpit["aiSearch"] or cockpit["moduleCards"] < 4 or cockpit["assetProgress"] < 4 or not cockpit["taskCenter"] or not cockpit["releaseStatus"] or cockpit["releaseFields"] < 4 or not cockpit["releaseBoundary"] or cockpit["heroRadius"] != "8px" or cockpit["cardBackground"] != "rgb(255, 255, 255)" or not cockpit["cardBorderProfessional"] or not cockpit["flow"] or cockpit["exports"] < 2:
           raise SystemExit(f"Overview cockpit feature check failed: {cockpit}")
         feature_checks.append({"overviewCockpit": cockpit})
+        scenario_readability = js("""
+        (() => {
+          const hero = document.querySelector('.missionHero');
+          const scenario = document.querySelector('.missionHero > .scenarioSelector');
+          const grid = document.querySelector('.scenarioGrid');
+          const cards = Array.from(document.querySelectorAll('.scenarioGrid .aipScenarioCard'));
+          const signals = Array.from(document.querySelectorAll('.scenarioSignals > div'));
+          const signalLabels = Array.from(document.querySelectorAll('.scenarioSignals span'));
+          const rect = (el) => el ? el.getBoundingClientRect() : { width: 0, height: 0 };
+          const widths = cards.map((card) => rect(card).width);
+          const signalWidths = signals.map((node) => rect(node).width);
+          const labelHeights = signalLabels.map((node) => rect(node).height);
+          const gridColumns = grid ? getComputedStyle(grid).gridTemplateColumns.split(' ').filter(Boolean).length : 0;
+          return {
+            heroWidth: rect(hero).width,
+            scenarioWidth: rect(scenario).width,
+            scenarioCount: cards.length,
+            gridColumns,
+            minCardWidth: widths.length ? Math.min(...widths) : 0,
+            minSignalWidth: signalWidths.length ? Math.min(...signalWidths) : 0,
+            maxSignalLabelHeight: labelHeights.length ? Math.max(...labelHeights) : 0,
+            ratio: hero ? rect(scenario).width / rect(hero).width : 0,
+            viewport: document.documentElement.clientWidth
+          };
+        })()
+        """)
+        if (
+            scenario_readability["scenarioCount"] < 3
+            or scenario_readability["ratio"] < 0.88
+            or scenario_readability["minCardWidth"] < 270
+            or scenario_readability["minSignalWidth"] < 96
+            or scenario_readability["maxSignalLabelHeight"] > 28
+            or (scenario_readability["viewport"] >= 1280 and scenario_readability["gridColumns"] < 3)
+        ):
+          raise SystemExit(f"Overview scenario readability check failed: {scenario_readability}")
+        feature_checks.append({"overviewScenarioReadability": scenario_readability})
         workflow = js("""
         (() => ({
           filters: !!document.querySelector('.workflowFilters'),

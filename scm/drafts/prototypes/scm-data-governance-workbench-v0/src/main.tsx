@@ -2318,7 +2318,6 @@ function MissionHero({
             </div>
           </div>
         </div>
-        <AipScenarioBoard onOpenAsset={onOpenAsset} />
       </div>
       <div className="cockpitSide">
         <div className="assetProgressPanel">
@@ -2396,6 +2395,7 @@ function MissionHero({
           ))}
         </div>
       </div>
+      <AipScenarioBoard onOpenAsset={onOpenAsset} />
     </section>
   );
 }

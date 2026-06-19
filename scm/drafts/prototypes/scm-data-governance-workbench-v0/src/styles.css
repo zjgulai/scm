@@ -6127,3 +6127,276 @@ button,
     padding-inline: 16px;
   }
 }
+
+/* Readability pass: prevent narrow KPI cells and cards from forcing vertical text. */
+:root {
+  --content-max: 1840px;
+  --readable-card-min: 276px;
+  --readable-stat-min: 112px;
+}
+
+.missionHero {
+  grid-template-columns: minmax(0, 1.65fr) minmax(320px, 0.75fr);
+  align-items: start;
+}
+
+.missionHero > .scenarioSelector {
+  grid-column: 1 / -1;
+}
+
+.scenarioGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--readable-card-min)), 1fr));
+  align-items: stretch;
+}
+
+.aipScenarioCard {
+  align-content: start;
+  gap: 14px;
+  min-height: auto;
+  padding: 18px;
+}
+
+.scenarioCardHead {
+  gap: 12px;
+}
+
+.scenarioCardHead > div,
+.aipQueueCard > span,
+.recommendationCardMini > span,
+.moduleLaunchGrid button,
+.assetProgressItem,
+.releaseMetaItem {
+  min-width: 0;
+}
+
+nav button strong,
+.moduleLaunchGrid strong,
+.moduleLaunchGrid small,
+.scenarioCardHead h4,
+.aipScenarioCard p,
+.scenarioRule span,
+.releaseBoundaryLine span,
+.aipQueueCard strong,
+.aipQueueCard small,
+.recommendationCardMini p {
+  overflow-wrap: break-word;
+  word-break: normal;
+}
+
+.badge,
+.statusPill,
+.metricChip,
+.scenarioPath span,
+.textButton,
+.exportActions a,
+.cockpitSearchActions button,
+.scenarioActions button,
+.aipBoundaryLine span,
+.releaseBoundaryLine span {
+  white-space: nowrap;
+}
+
+.scenarioPath {
+  gap: 8px;
+}
+
+.scenarioSignals,
+.objectSignalGrid,
+.workflowSummaryGrid,
+.qualitySummaryGrid,
+.chatbiSummaryGrid,
+.auditSummaryGrid,
+.decisionSummaryGrid,
+.knowledgeRuleSummaryGrid,
+.providerReadinessStats,
+.platformReadinessStats,
+.roleSummaryGrid,
+.roleQueueGrid,
+.roleSlaShiftGrid,
+.roleSupportingGrid,
+.kbScoreGrid,
+.answerabilityMiniGrid,
+.kpiInspectorStats,
+.aiGovernanceGrid,
+.moduleContractStats {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, var(--readable-stat-min)), 1fr));
+}
+
+.scenarioSignals > div,
+.objectSignalGrid > div,
+.workflowSummaryGrid > div,
+.qualitySummaryGrid > div,
+.chatbiSummaryGrid > div,
+.auditSummaryGrid > div,
+.decisionSummaryGrid > div,
+.knowledgeRuleSummaryGrid > div,
+.providerReadinessStats div,
+.platformReadinessStats div,
+.roleSummaryGrid > div,
+.roleQueueGrid > div,
+.roleSlaShiftGrid > div,
+.roleSupportingGrid > div,
+.kbScoreGrid > div,
+.answerabilityMiniGrid > div,
+.kpiInspectorStats span,
+.moduleContractStats span {
+  min-width: 0;
+  min-height: 68px;
+}
+
+.scenarioSignals span,
+.scenarioSignals strong,
+.objectSignalGrid span,
+.objectSignalGrid strong,
+.workflowSummaryGrid span,
+.workflowSummaryGrid strong,
+.qualitySummaryGrid span,
+.qualitySummaryGrid strong,
+.chatbiSummaryGrid span,
+.chatbiSummaryGrid strong,
+.auditSummaryGrid span,
+.auditSummaryGrid strong,
+.decisionSummaryGrid span,
+.decisionSummaryGrid strong,
+.knowledgeRuleSummaryGrid span,
+.knowledgeRuleSummaryGrid strong,
+.providerReadinessStats span,
+.providerReadinessStats strong,
+.platformReadinessStats span,
+.platformReadinessStats strong,
+.roleSummaryGrid span,
+.roleSummaryGrid strong,
+.kbScoreGrid span,
+.kbScoreGrid strong,
+.answerabilityMiniGrid span,
+.answerabilityMiniGrid strong {
+  white-space: nowrap;
+  word-break: keep-all;
+}
+
+.scenarioSignals strong,
+.objectSignalGrid strong,
+.workflowSummaryGrid strong,
+.qualitySummaryGrid strong,
+.chatbiSummaryGrid strong,
+.auditSummaryGrid strong,
+.decisionSummaryGrid strong,
+.knowledgeRuleSummaryGrid strong,
+.providerReadinessStats strong,
+.platformReadinessStats strong,
+.roleSummaryGrid strong,
+.kbScoreGrid strong,
+.answerabilityMiniGrid strong {
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: normal;
+}
+
+.surfaceHead,
+.flowSectionHead,
+.sectionHeader,
+.moduleTop,
+.topMeta {
+  flex-wrap: wrap;
+}
+
+.surfaceHead > div,
+.flowSectionHead > div,
+.sectionHeader > div,
+.moduleTop > div {
+  min-width: min(100%, 280px);
+}
+
+.moduleLaunchGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+}
+
+.moduleLaunchGrid button {
+  min-height: 84px;
+  align-content: start;
+}
+
+.moduleLaunchGrid small {
+  line-height: 1.45;
+}
+
+.releaseMetaGrid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+}
+
+.releaseMetaItem strong {
+  overflow-wrap: break-word;
+  word-break: normal;
+  line-height: 1.35;
+}
+
+.cockpitLead,
+.cockpitSide {
+  align-content: start;
+}
+
+@media (max-width: 1420px) {
+  .missionHero {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .missionHero > .scenarioSelector {
+    grid-column: auto;
+  }
+}
+
+@media (max-width: 720px) {
+  :root {
+    --readable-card-min: 280px;
+    --readable-stat-min: 104px;
+  }
+
+  .aipScenarioCard {
+    padding: 16px;
+  }
+
+  .scenarioSignals,
+  .objectSignalGrid,
+  .workflowSummaryGrid,
+  .qualitySummaryGrid,
+  .chatbiSummaryGrid,
+  .auditSummaryGrid,
+  .decisionSummaryGrid,
+  .knowledgeRuleSummaryGrid,
+  .providerReadinessStats,
+  .platformReadinessStats,
+  .roleSummaryGrid,
+  .roleQueueGrid,
+  .roleSlaShiftGrid,
+  .roleSupportingGrid,
+  .kbScoreGrid,
+  .answerabilityMiniGrid,
+  .kpiInspectorStats,
+  .aiGovernanceGrid,
+  .moduleContractStats {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 430px) {
+  .scenarioSignals,
+  .objectSignalGrid,
+  .workflowSummaryGrid,
+  .qualitySummaryGrid,
+  .chatbiSummaryGrid,
+  .auditSummaryGrid,
+  .decisionSummaryGrid,
+  .knowledgeRuleSummaryGrid,
+  .providerReadinessStats,
+  .platformReadinessStats,
+  .roleSummaryGrid,
+  .roleQueueGrid,
+  .roleSlaShiftGrid,
+  .roleSupportingGrid,
+  .kbScoreGrid,
+  .answerabilityMiniGrid,
+  .kpiInspectorStats,
+  .aiGovernanceGrid,
+  .moduleContractStats {
+    grid-template-columns: 1fr;
+  }
+}

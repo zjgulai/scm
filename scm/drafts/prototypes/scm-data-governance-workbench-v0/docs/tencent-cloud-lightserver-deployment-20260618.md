@@ -23,10 +23,10 @@ source: human+ai
 ## 当前发布快照
 
 - 线上地址：`https://scm.lute-tlz-dddd.top/`
-- 当前部署追溯 SHA：`ef23b59`，分支 `codex/scm-ledger-workbench`
-- 当前 P2 release：`/opt/scm-governance-workbench/releases/scm-workbench-p2-kb-ef23b59-20260619123548`
-- 当前 P2 部署备份：`/opt/scm-governance-workbench/backups/20260619123548-before-p2-kb/governance_workbench.sqlite`
-- 当前 P2 release 来自远端仓库 `zjgulai/scm` 的 `codex/scm-ledger-workbench` 分支 `ef23b59` 提交。
+- 当前部署追溯 SHA：`75494ae`，分支 `codex/scm-ledger-workbench`
+- 当前 P2 release：`/opt/scm-governance-workbench/releases/scm-workbench-p2-ai-75494ae-20260619133036`
+- 当前 P2 部署备份：`/opt/scm-governance-workbench/backups/20260619133036-before-p2-ai/governance_workbench.sqlite`
+- 当前 P2 release 来自远端仓库 `zjgulai/scm` 的 `codex/scm-ledger-workbench` 分支 `75494ae` 提交。
 - 容器名：`scm-governance-workbench`
 - 内部端口：`127.0.0.1:5174`
 - 模块数量：13 个工作台模块
@@ -142,6 +142,8 @@ server {
 - P1 工作台操作闭环只读 API 检查通过：`/api/workbench/operations/summary` 返回 `total=0`；`/api/chatbi/summary` 仍返回 `total=8`、`certified=8`；`/api/deploy/health` 仍返回 `productionWrites=false`、`providerCalls=false`、`erpWriteback=false`。
 - P2 AI 知识库治理 release 公开站点强校验通过：`REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser` 返回 13 个模块导航通过，并确认 `.kbGovernanceGrid > article = 4`、`.sourceRegisterTable=true`、`.kbDomainQualityTable=true`、`.staleFindingsPanel=true`、`.crosswalkMatrixTable=true`、`.kbScoreGrid = 80`。
 - P2 AI 知识库治理只读 API 检查通过：`/api/kb/quality-summary` 返回 `sources=295`、`cards=295`、`chunks=945`、`crosswalks=1918`、`average_quality_score=82`、`stale_findings=22`、`uncrosswalked=22`；`/api/kb/crosswalk-matrix` 返回 `mapped_metrics=88`、`total_l3_metrics=139`、`metric_coverage_rate=0.6331`；`/api/deploy/health` 仍返回 `productionWrites=false`、`providerCalls=false`、`erpWriteback=false`。
+- P2 AI 问法样本与反馈闭环 release 公开站点强校验通过：`REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser` 返回 13 个模块导航通过，并确认 `.aiGovernanceGrid > article = 3`、`.questionSampleLibrary=true`、`.aiFeedbackQueue=true`。
+- P2 AI 问法样本与反馈闭环只读 API 检查通过：`/api/ai-chat/governance-summary` 返回 `questionSamples.total=0`、`feedback.total=0`、`providerCalls=false`、`writeBackPolicy=semantic_governance_ledger_only`；`/api/deploy/health` 显示 `questionSamples=0`、`feedback=0`、`openFeedback=0`，且仍为 `productionWrites=false`、`providerCalls=false`、`erpWriteback=false`。
 
 P0 验收命令：
 

@@ -1,6 +1,6 @@
 ---
 title: "P2 AI 问法样本库与反馈闭环实施说明"
-status: "implemented_local"
+status: "deployed"
 created_at: "2026-06-19"
 updated_at: "2026-06-19"
 scope: "AI question sample governance, answer feedback workflow, and local evidence answer loop"

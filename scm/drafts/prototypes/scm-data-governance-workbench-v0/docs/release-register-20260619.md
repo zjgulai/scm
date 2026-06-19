@@ -15,7 +15,7 @@ This register is the release source of truth for the AIP-SCM data workbench prot
 
 ## 2. Current Verified Snapshot
 
-Verified at: `2026-06-19T22:11:43+0800`
+Verified at: `2026-06-19T22:31:31+0800`
 
 | Field | Value | Evidence |
 |---|---|---|
@@ -26,8 +26,8 @@ Verified at: `2026-06-19T22:11:43+0800`
 | Static build | `true` | live `/api/deploy/health` |
 | Live DB path | `/app/data/governance_workbench.sqlite` | live `/api/deploy/health` |
 | Live DB persistence | Docker external named volume `scm_governance_workbench_scm-governance-data` mounted at `/app/data` | `docker inspect scm-governance-workbench --format '{{range .Mounts}}...'` |
-| Deployment release id | `scm-workbench-saas-layout-b10c384-20260619220852` | live `/api/deploy/health` |
-| Deployment git SHA | `b10c384` | live `/api/deploy/health` |
+| Deployment release id | `scm-workbench-readability-layout-70a09b6-20260619222845` | live `/api/deploy/health` |
+| Deployment git SHA | `70a09b6` | live `/api/deploy/health` |
 | Ontology objects | `14` | live `/api/deploy/health` |
 | Metrics | `178` | live `/api/deploy/health` |
 | Lineage edges | `278` | live `/api/deploy/health` |
@@ -46,21 +46,22 @@ Verified at: `2026-06-19T22:11:43+0800`
 | ChatBI answerability scorecard | `total=8`, `domainScorecards=5`, `weakContexts=8`, `providerCalls=false`, `erpWriteback=false` | live `/api/chatbi/answerability-scorecard` |
 | AI evidence export registry | `rows=0` | live `/api/ai-chat/evidence-exports`; expected empty state because production read-only smoke did not create AI chat messages |
 | Professional SaaS layout refinement | Module header, workflow contract strip, transparent page container, section surfaces, calmer borders, table/control rhythm | commit `b10c384`; live Browser Harness layout checks |
-| Public Browser Harness | Passed 15-module navigation, professional border check, ChatBI scorecard DOM, AI evidence registry empty state, and 1350/1024/768/390 responsive checks | `SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ REQUIRE_AI_FEEDBACK=1 npm run smoke:browser` |
-| Active deployed commit | `b10c384` | live `/api/deploy/health` and release package |
-| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-saas-layout-b10c384-20260619220852` | SSH deploy output |
-| Active deployment backups | `20260619220914-before-scm-workbench-saas-layout-b10c384-20260619220852.sqlite`, `20260619221002-after-scm-workbench-saas-layout-b10c384-20260619220852.sqlite` | pre/post `docker cp` SQLite snapshots |
+| Readability layout refinement | Scenario board full-row layout, adaptive card grid, readable KPI/stat minimum widths, non-vertical signal labels | commit `70a09b6`; live Browser Harness `overviewScenarioReadability` |
+| Public Browser Harness | Passed 15-module navigation, professional border check, scenario readability check, AIP scenario check, ChatBI scorecard DOM, AI evidence registry empty state, and 1350/1024/768/390 responsive checks | `REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser` |
+| Active deployed commit | `70a09b6` | live `/api/deploy/health` and release package |
+| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-readability-layout-70a09b6-20260619222845` | SSH deploy output |
+| Active deployment backups | `20260619222912-before-scm-workbench-readability-layout-70a09b6-20260619222845.sqlite`, `20260619222931-after-scm-workbench-readability-layout-70a09b6-20260619222845.sqlite` | pre/post `docker cp` SQLite snapshots |
 
 ## 3. Local Workspace Snapshot
 
-Verified at: `2026-06-19T22:11:43+0800`
+Verified at: `2026-06-19T22:31:31+0800`
 
 | Field | Value |
 |---|---|
 | Git root | `/Users/pray/project/ecom_ana_overview` |
 | Working subdirectory | `/Users/pray/project/ecom_ana_overview/scm` |
 | Branch | `codex/scm-ledger-workbench` |
-| Local application HEAD | `b10c384` before this release-register update |
+| Local application HEAD | `70a09b6` before this release-register update |
 | Parent remote | `origin=https://github.com/zjgulai/data_analysis_expert.git` |
 | Scoped SCM remote | `scm=https://github.com/zjgulai/scm.git` |
 | Prototype path | `drafts/prototypes/scm-data-governance-workbench-v0` |
@@ -176,6 +177,41 @@ Boundary confirmed by local smoke:
 - `providerCalls=false`
 - `erpWriteback=false`
 - `SCM_SKIP_PUBLIC_BROWSER_SMOKE=1`, so no public production assertion is made for this batch.
+
+## 36. Readability Layout Public Deployment Status
+
+Verified publicly at: `2026-06-19T22:31:31+0800`
+
+| Item | Status | Evidence |
+|---|---|---|
+| Git commit | `pushed` | `70a09b6` pushed to `scm/codex/scm-ledger-workbench` |
+| Release package | `deployed` | `/opt/scm-governance-workbench/releases/scm-workbench-readability-layout-70a09b6-20260619222845` |
+| Current symlink | `updated` | `/opt/scm-governance-workbench/current -> /opt/scm-governance-workbench/releases/scm-workbench-readability-layout-70a09b6-20260619222845` |
+| Pre-deploy backup | `created` | `/opt/scm-governance-workbench/backups/20260619222912-before-scm-workbench-readability-layout-70a09b6-20260619222845.sqlite` |
+| Post-deploy backup | `created` | `/opt/scm-governance-workbench/backups/20260619222931-after-scm-workbench-readability-layout-70a09b6-20260619222845.sqlite` |
+| Container | `healthy` | `docker inspect` health became `healthy`; local server health returned `ok=true` |
+| Public health | `passed_public` | `/api/deploy/health.deployment.releaseId = scm-workbench-readability-layout-70a09b6-20260619222845`; `gitSha=70a09b6` |
+| Scenario readability gate | `passed_public` | Browser Harness `gridColumns=4`, `minCardWidth=421.77`, `minSignalWidth=123.48`, `maxSignalLabelHeight=22.92`, `ratio=0.932` |
+| Public Browser Harness | `passed_public_read_only` | 15 modules, AIP scenarios, ChatBI, AI KB governance, role workbench, decision loop, audit log and `1350/1024/768/390` responsive checks passed |
+
+Verification commands:
+
+```bash
+npm run check
+bash -n scripts/smoke-browser-harness.sh
+SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm run smoke:p0
+curl -fsS https://scm.lute-tlz-dddd.top/api/deploy/health
+REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser
+```
+
+Boundary:
+
+- this release changes front-end layout and Browser Harness assertions only;
+- public Browser Harness is read-only;
+- local P0 smoke writes only to temporary SQLite;
+- no provider call;
+- no ERP/Jijia/WMS/TMS writeback;
+- live `/api/deploy/health` keeps `productionWrites=false`, `providerCalls=false`, `erpWriteback=false`.
 
 ## 15. Platform Readiness Public Deployment And Acceptance
 

@@ -594,7 +594,17 @@ if require_aip_scenarios:
     """)
     if not clicked.get("ok"):
       raise SystemExit({"scenarioNavigation": clicked})
-    sleep(0.2)
+    for _ in range(30):
+        scenario_ready = js("""
+        (() => ({
+          header: document.querySelector('header h1')?.textContent?.trim() || '',
+          scenarioCards: document.querySelectorAll('.scenarioCard, .aipScenarioCard').length,
+          runButtons: document.querySelectorAll('.scenarioRunButton').length
+        }))()
+        """)
+        if "治理链路总览" in scenario_ready["header"] and scenario_ready["scenarioCards"] >= 3 and scenario_ready["runButtons"] >= 3:
+            break
+        sleep(0.25)
     scenario = js("""
     (() => ({
       negativeInventory: document.body.innerText.includes('FBA 可用库存为负') || !!document.querySelector('[data-scenario="negative_available_inventory"]'),

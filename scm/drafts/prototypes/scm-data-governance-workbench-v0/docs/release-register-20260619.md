@@ -15,7 +15,7 @@ This register is the release source of truth for the SCM governance workbench pr
 
 ## 2. Current Verified Snapshot
 
-Verified at: `2026-06-19T18:48:44+0800`
+Verified at: `2026-06-19T19:11:07+0800`
 
 | Field | Value | Evidence |
 |---|---|---|
@@ -26,6 +26,8 @@ Verified at: `2026-06-19T18:48:44+0800`
 | Static build | `true` | live `/api/deploy/health` |
 | Live DB path | `/app/data/governance_workbench.sqlite` | live `/api/deploy/health` |
 | Live DB persistence | Docker external named volume `scm_governance_workbench_scm-governance-data` mounted at `/app/data` | `docker inspect scm-governance-workbench --format '{{range .Mounts}}...'` |
+| Deployment release id | `scm-workbench-health-metadata-db8bee1-20260619190939` | live `/api/deploy/health` |
+| Deployment git SHA | `db8bee1` | live `/api/deploy/health` |
 | Ontology objects | `14` | live `/api/deploy/health` |
 | Metrics | `178` | live `/api/deploy/health` |
 | Lineage edges | `278` | live `/api/deploy/health` |
@@ -41,25 +43,25 @@ Verified at: `2026-06-19T18:48:44+0800`
 | Provider calls | `false` | live `/api/deploy/health` |
 | ERP writeback | `false` | live `/api/deploy/health` |
 | ChatBI policy | `certified_metric_only` | live `/api/deploy/health` |
-| Active deployed commit | `b949151` | release package and `scm/codex/scm-ledger-workbench` push |
-| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-sqlite-volume-b949151-20260619184726` | SSH deploy output |
-| Active deployment backup | `/opt/scm-governance-workbench/backups/20260619184726-before-sqlite-volume-external` | SSH deploy output |
+| Active deployed commit | `db8bee1` | live `/api/deploy/health` and release package |
+| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-health-metadata-db8bee1-20260619190939` | SSH deploy output |
+| Active deployment backup | `/opt/scm-governance-workbench/backups/20260619190939-before-health-metadata-smoke-wait` | SSH deploy output |
 
 ## 3. Local Workspace Snapshot
 
-Verified at: `2026-06-19T18:48:44+0800`
+Verified at: `2026-06-19T19:11:07+0800`
 
 | Field | Value |
 |---|---|
 | Git root | `/Users/pray/project/ecom_ana_overview` |
 | Working subdirectory | `/Users/pray/project/ecom_ana_overview/scm` |
 | Branch | `codex/scm-ledger-workbench` |
-| Local application HEAD | `b949151` before this docs-only release-register update |
+| Local application HEAD | `db8bee1` before this docs-only release-register update |
 | Parent remote | `origin=https://github.com/zjgulai/data_analysis_expert.git` |
 | Scoped SCM remote | `scm=https://github.com/zjgulai/scm.git` |
 | Prototype path | `drafts/prototypes/scm-data-governance-workbench-v0` |
 
-Important boundary: the local HEAD above is a local workspace fact. It is not currently proven to be the live deployed SHA because `/api/deploy/health` does not expose a git SHA.
+Important boundary: the local HEAD above is a local workspace fact; the live deployed SHA is now separately verified through `/api/deploy/health.deployment.gitSha`.
 
 ## 4. Historical Deployment Notes
 
@@ -335,6 +337,36 @@ Public boundary:
 
 - SQLite persistence moved from image-layer `/app/data` to Docker external named volume;
 - no canonical ontology or metric dictionary overwrite;
+- no provider call;
+- no ERP/Jijia/WMS/TMS writeback;
+- public Browser Harness was read-only.
+
+## 17. Batch 5 Deploy Health Metadata Public Deployment Status
+
+Verified publicly at: `2026-06-19T19:11:07+0800`
+
+| Item | Status | Evidence |
+|---|---|---|
+| Git commits | `pushed` | `b88c83c` adds deployment metadata; `db8bee1` stabilizes Browser Harness async waits |
+| Active release package | `deployed` | `/opt/scm-governance-workbench/releases/scm-workbench-health-metadata-db8bee1-20260619190939` |
+| Active release SHA256 | `verified` | `c1ae737e73906e1249f9031aed61fca603ae85146eb0742a47a7641af378c19c` |
+| Backup directory | `created` | `/opt/scm-governance-workbench/backups/20260619190939-before-health-metadata-smoke-wait` |
+| Health release id | `passed_public` | `/api/deploy/health.deployment.releaseId = scm-workbench-health-metadata-db8bee1-20260619190939` |
+| Health git SHA | `passed_public` | `/api/deploy/health.deployment.gitSha = db8bee1` |
+| Health data mount | `passed_public` | `/api/deploy/health.deployment.dataMountType = docker_external_volume`; `dataVolumeName = scm_governance_workbench_scm-governance-data` |
+| Volume mount | `verified` | `docker inspect`: `volume scm_governance_workbench_scm-governance-data /app/data` |
+| Container | `healthy` | `docker compose ... ps`: `Up ... (healthy)` |
+| Public Browser Harness | `passed_public_read_only` | 14 modules checked; KB governance, decision loop, role provider readiness and responsive checks passed at 4 viewports |
+
+Public verification command:
+
+```bash
+REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser
+```
+
+Public boundary:
+
+- `/api/deploy/health` can now self-report release id, git SHA and data mount state;
 - no provider call;
 - no ERP/Jijia/WMS/TMS writeback;
 - public Browser Harness was read-only.

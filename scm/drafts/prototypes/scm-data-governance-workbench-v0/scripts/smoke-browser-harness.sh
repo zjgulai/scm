@@ -211,6 +211,16 @@ for label in expected:
           raise SystemExit(f"AIP Command Center feature check failed: {aip_command}")
         feature_checks.append({"aipCommandCenter": aip_command})
     if label == "指标体系编排台":
+        for _ in range(30):
+            kpi_ready = js("""
+            (() => ({
+              mindNodes: document.querySelectorAll('.kpiMindMapPanel .mindNode').length,
+              inspector: !!document.querySelector('.kpiInspector')
+            }))()
+            """)
+            if kpi_ready["mindNodes"] >= 1 and kpi_ready["inspector"]:
+                break
+            sleep(0.25)
         kpi = js("""
         (() => ({
           mindmapButton: !!Array.from(document.querySelectorAll('.canvasControls button')).find((button) => button.textContent.includes('思维导图')),
@@ -259,6 +269,25 @@ for label in expected:
           raise SystemExit(f"AIP Object 360 feature check failed: {object360}")
         feature_checks.append({"aipObject360": object360})
     if label == "角色工作台":
+        for _ in range(30):
+            role_ready = js("""
+            (() => ({
+              roleButtons: document.querySelectorAll('.roleRail button').length,
+              roleWorkstreams: document.querySelectorAll('.roleWorkstreamGrid > article').length,
+              rbacPolicyCards: document.querySelectorAll('.rbacPolicyList article').length,
+              postgresTriggerCards: document.querySelectorAll('.postgresTriggerList article').length,
+              batchTargets: document.querySelectorAll('.roleBatchSelector label').length
+            }))()
+            """)
+            if (
+                role_ready["roleButtons"] >= 5
+                and role_ready["roleWorkstreams"] >= 4
+                and role_ready["rbacPolicyCards"] >= 3
+                and role_ready["postgresTriggerCards"] >= 5
+                and role_ready["batchTargets"] >= 3
+            ):
+                break
+            sleep(0.25)
         role = js("""
         (() => ({
           roleWorkbench: !!document.querySelector('.roleWorkbench'),

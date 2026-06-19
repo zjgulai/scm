@@ -15,7 +15,7 @@ This register is the release source of truth for the AIP-SCM data workbench prot
 
 ## 2. Current Verified Snapshot
 
-Verified at: `2026-06-19T21:47:34+0800`
+Verified at: `2026-06-19T22:11:43+0800`
 
 | Field | Value | Evidence |
 |---|---|---|
@@ -26,8 +26,8 @@ Verified at: `2026-06-19T21:47:34+0800`
 | Static build | `true` | live `/api/deploy/health` |
 | Live DB path | `/app/data/governance_workbench.sqlite` | live `/api/deploy/health` |
 | Live DB persistence | Docker external named volume `scm_governance_workbench_scm-governance-data` mounted at `/app/data` | `docker inspect scm-governance-workbench --format '{{range .Mounts}}...'` |
-| Deployment release id | `scm-workbench-semantic-ops-37e968b-20260619214557` | live `/api/deploy/health` |
-| Deployment git SHA | `37e968b` | live `/api/deploy/health` |
+| Deployment release id | `scm-workbench-saas-layout-b10c384-20260619220852` | live `/api/deploy/health` |
+| Deployment git SHA | `b10c384` | live `/api/deploy/health` |
 | Ontology objects | `14` | live `/api/deploy/health` |
 | Metrics | `178` | live `/api/deploy/health` |
 | Lineage edges | `278` | live `/api/deploy/health` |
@@ -45,21 +45,22 @@ Verified at: `2026-06-19T21:47:34+0800`
 | ChatBI policy | `certified_metric_only` | live `/api/deploy/health` |
 | ChatBI answerability scorecard | `total=8`, `domainScorecards=5`, `weakContexts=8`, `providerCalls=false`, `erpWriteback=false` | live `/api/chatbi/answerability-scorecard` |
 | AI evidence export registry | `rows=0` | live `/api/ai-chat/evidence-exports`; expected empty state because production read-only smoke did not create AI chat messages |
-| Public Browser Harness | Passed 15-module navigation, ChatBI scorecard DOM, AI evidence registry empty state, and 1350/1024/768/390 responsive checks | `SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ REQUIRE_AI_FEEDBACK=1 npm run smoke:browser` |
-| Active deployed commit | `37e968b` | live `/api/deploy/health` and release package |
-| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-semantic-ops-37e968b-20260619214557` | SSH deploy output |
-| Active deployment backups | `20260619214611-before-scm-workbench-semantic-ops-37e968b-20260619214557.sqlite`, `20260619214658-after-scm-workbench-semantic-ops-37e968b-20260619214557.sqlite` | pre/post `docker cp` SQLite snapshots |
+| Professional SaaS layout refinement | Module header, workflow contract strip, transparent page container, section surfaces, calmer borders, table/control rhythm | commit `b10c384`; live Browser Harness layout checks |
+| Public Browser Harness | Passed 15-module navigation, professional border check, ChatBI scorecard DOM, AI evidence registry empty state, and 1350/1024/768/390 responsive checks | `SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ REQUIRE_AI_FEEDBACK=1 npm run smoke:browser` |
+| Active deployed commit | `b10c384` | live `/api/deploy/health` and release package |
+| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-saas-layout-b10c384-20260619220852` | SSH deploy output |
+| Active deployment backups | `20260619220914-before-scm-workbench-saas-layout-b10c384-20260619220852.sqlite`, `20260619221002-after-scm-workbench-saas-layout-b10c384-20260619220852.sqlite` | pre/post `docker cp` SQLite snapshots |
 
 ## 3. Local Workspace Snapshot
 
-Verified at: `2026-06-19T21:47:34+0800`
+Verified at: `2026-06-19T22:11:43+0800`
 
 | Field | Value |
 |---|---|
 | Git root | `/Users/pray/project/ecom_ana_overview` |
 | Working subdirectory | `/Users/pray/project/ecom_ana_overview/scm` |
 | Branch | `codex/scm-ledger-workbench` |
-| Local application HEAD | `37e968b` before this release-register update |
+| Local application HEAD | `b10c384` before this release-register update |
 | Parent remote | `origin=https://github.com/zjgulai/data_analysis_expert.git` |
 | Scoped SCM remote | `scm=https://github.com/zjgulai/scm.git` |
 | Prototype path | `drafts/prototypes/scm-data-governance-workbench-v0` |

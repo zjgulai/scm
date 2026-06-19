@@ -3206,6 +3206,18 @@ function getWorkbenchModules() {
       apiPath: "/api/governance/overview"
     },
     {
+      id: "ai-chat",
+      code: "AI",
+      title: "AI 对话",
+      focus: "基于本地知识库索引进行证据问答、回答分级和拒答，不调用外部模型。",
+      stage: "Serve",
+      status: "draft",
+      score: getAiChatSummary().messages ? 62 : 36,
+      primaryMetric: `${getAiChatSummary().sessions} sessions`,
+      secondaryMetric: "local evidence",
+      apiPath: "/api/workbench/ai-chat"
+    },
+    {
       id: "ontology",
       code: "01",
       title: "对象本体工作台",
@@ -3314,18 +3326,6 @@ function getWorkbenchModules() {
       apiPath: "/api/workbench/ai-knowledge"
     },
     {
-      id: "ai-chat",
-      code: "10",
-      title: "AI 对话",
-      focus: "基于本地知识库索引进行证据问答、回答分级和拒答，不调用外部模型。",
-      stage: "Serve",
-      status: "draft",
-      score: getAiChatSummary().messages ? 62 : 36,
-      primaryMetric: `${getAiChatSummary().sessions} sessions`,
-      secondaryMetric: "local evidence",
-      apiPath: "/api/workbench/ai-chat"
-    },
-    {
       id: "decision-loop",
       code: "11",
       title: "决策闭环工作台",
@@ -3391,6 +3391,127 @@ function getWorkbenchModule(id) {
     })
   };
   return { ...meta, payload: payloads[id]() };
+}
+
+function safeExportName(value) {
+  return normalizeText(value, "scm-workbench-export")
+    .replace(/[^\w\u4e00-\u9fa5-]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 80) || "scm-workbench-export";
+}
+
+function sendDownload(res, body, contentType, filename) {
+  res.writeHead(200, {
+    "Content-Type": contentType,
+    "Content-Disposition": `attachment; filename="${filename}"`,
+    "Content-Length": Buffer.byteLength(body)
+  });
+  res.end(body);
+}
+
+function escapeHtml(value) {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function collectTableSections(value, title, sections, depth = 0) {
+  if (depth > 4 || value === null || value === undefined) return;
+  if (Array.isArray(value)) {
+    const rows = value.filter((item) => item && typeof item === "object" && !Array.isArray(item));
+    if (rows.length) sections.push({ title, rows });
+    return;
+  }
+  if (typeof value === "object") {
+    Object.entries(value).forEach(([key, child]) => collectTableSections(child, title ? `${title}.${key}` : key, sections, depth + 1));
+  }
+}
+
+function renderExcelHtml(moduleExport) {
+  const sections = [];
+  collectTableSections(moduleExport.payload, moduleExport.module.id, sections);
+  const metadataRows = [
+    { key: "module_id", value: moduleExport.module.id },
+    { key: "module_title", value: moduleExport.module.title },
+    { key: "exported_at", value: moduleExport.exportedAt },
+    { key: "format", value: "excel_compatible_html_xls" },
+    { key: "boundary", value: JSON.stringify(moduleExport.boundary) }
+  ];
+  const allSections = [{ title: "metadata", rows: metadataRows }, ...sections];
+  const tables = allSections.map((section) => {
+    const columns = Array.from(new Set(section.rows.flatMap((row) => Object.keys(row))));
+    const header = columns.map((column) => `<th>${escapeHtml(column)}</th>`).join("");
+    const body = section.rows.map((row) => (
+      `<tr>${columns.map((column) => {
+        const cell = row[column];
+        const text = cell && typeof cell === "object" ? JSON.stringify(cell) : cell;
+        return `<td>${escapeHtml(text)}</td>`;
+      }).join("")}</tr>`
+    )).join("");
+    return `<h2>${escapeHtml(section.title)}</h2><table><thead><tr>${header}</tr></thead><tbody>${body}</tbody></table>`;
+  }).join("\n");
+  return `<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { font-family: Arial, "Noto Sans SC", sans-serif; color: #17202a; }
+    h1 { font-size: 18px; }
+    h2 { margin-top: 24px; font-size: 14px; color: #214f80; }
+    table { border-collapse: collapse; width: 100%; margin-bottom: 18px; }
+    th, td { border: 1px solid #c7d0da; padding: 6px 8px; font-size: 12px; vertical-align: top; }
+    th { background: #edf4fb; text-align: left; }
+  </style>
+</head>
+<body>
+  <h1>${escapeHtml(moduleExport.module.title)} - SCM Governance Export</h1>
+  ${tables}
+</body>
+</html>`;
+}
+
+function exportWorkbenchModule(res, id, url) {
+  const modulePayload = getWorkbenchModule(id);
+  if (!modulePayload) return json(res, { error: "Workbench module not found" }, 404);
+  const format = normalizeText(url.searchParams.get("format"), "json").toLowerCase();
+  const moduleExport = {
+    module: {
+      id: modulePayload.id,
+      code: modulePayload.code,
+      title: modulePayload.title,
+      focus: modulePayload.focus,
+      stage: modulePayload.stage,
+      status: modulePayload.status,
+      score: modulePayload.score
+    },
+    exportedAt: nowIso(),
+    boundary: {
+      mode: "read_only_export",
+      importAllowed: false,
+      productionWrites: false,
+      providerCalls: false,
+      erpWriteback: false
+    },
+    payload: modulePayload.payload
+  };
+  const baseName = `${safeExportName(modulePayload.id)}-${new Date().toISOString().slice(0, 10)}`;
+  if (format === "excel" || format === "xls") {
+    return sendDownload(
+      res,
+      renderExcelHtml(moduleExport),
+      "application/vnd.ms-excel; charset=utf-8",
+      `${baseName}.xls`
+    );
+  }
+  return sendDownload(
+    res,
+    JSON.stringify(moduleExport, null, 2),
+    "application/json; charset=utf-8",
+    `${baseName}.json`
+  );
 }
 
 function getDeployHealth() {
@@ -4067,6 +4188,8 @@ const server = createServer(async (req, res) => {
         const operation = reviewWorkbenchOperation(operationReview[1], body);
         return operation ? json(res, { ok: true, operation }) : json(res, { error: "Workbench operation not found" }, 404);
       }
+      const exportRoute = url.pathname.match(/^\/api\/export\/([^/]+)$/);
+      if (req.method === "GET" && exportRoute) return exportWorkbenchModule(res, exportRoute[1], url);
       const workbenchModule = url.pathname.match(/^\/api\/workbench\/([^/]+)$/);
       if (req.method === "GET" && workbenchModule) {
         const payload = getWorkbenchModule(workbenchModule[1]);

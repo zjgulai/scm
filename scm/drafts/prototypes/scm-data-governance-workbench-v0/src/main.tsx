@@ -393,6 +393,7 @@ type LedgerState = {
 
 const fallbackModules: WorkbenchModule[] = [
   { id: "overview", code: "00", title: "治理链路总览", focus: "九层治理链路总控。", stage: "Operate", status: "active", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/governance/overview" },
+  { id: "ai-chat", code: "AI", title: "AI 对话", focus: "本地知识库证据问答和拒答机制。", stage: "Serve", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/ai-chat" },
   { id: "ontology", code: "01", title: "对象本体工作台", focus: "对象与关系图谱。", stage: "Model", status: "mapped", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/ontology" },
   { id: "tags", code: "02", title: "标签工程工作台", focus: "标签规则与生命周期。", stage: "Model", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/tags" },
   { id: "dimensions", code: "03", title: "维度工程工作台", focus: "一致性维度与分析维度。", stage: "Model", status: "mapped", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/dimensions" },
@@ -402,7 +403,6 @@ const fallbackModules: WorkbenchModule[] = [
   { id: "lineage-quality", code: "07", title: "血缘与质量工作台", focus: "血缘、DQ 与影响分析。", stage: "Control", status: "reviewed", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/lineage-quality" },
   { id: "chatbi", code: "08", title: "ChatBI 语义治理台", focus: "可回答性与证据链。", stage: "Serve", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/chatbi" },
   { id: "ai-knowledge", code: "09", title: "AI 知识库", focus: "三大知识库主题域、本地检索和证据片段。", stage: "Serve", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/ai-knowledge" },
-  { id: "ai-chat", code: "10", title: "AI 对话", focus: "本地知识库证据问答和拒答机制。", stage: "Serve", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/ai-chat" },
   { id: "decision-loop", code: "11", title: "决策闭环工作台", focus: "洞察到审批复盘。", stage: "Act", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/decision-loop" },
   { id: "audit-log", code: "12", title: "审计日志工作台", focus: "治理操作审计、筛选和证据回看。", stage: "Control", status: "active", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/audit-log" }
 ];
@@ -563,10 +563,10 @@ function useApi<T>(path: string, fallback: T) {
 }
 
 function toneFromStatus(status = "") {
-  if (["active", "certified", "已签字", "done", "approved", "completed", "on_track"].includes(status)) return "good";
-  if (["mapped", "reviewed", "in_progress", "closed"].includes(status)) return "blue";
-  if (["draft", "review_pending", "pending_approval", "recommended", "due_soon", "no_due"].includes(status)) return "warn";
-  if (["deprecated", "blocked", "rejected", "overdue", "invalid_due"].includes(status)) return "bad";
+  if (["active", "certified", "已签字", "done", "approved", "completed", "on_track", "supported", "resolved"].includes(status)) return "good";
+  if (["mapped", "reviewed", "in_progress", "closed", "partial"].includes(status)) return "blue";
+  if (["draft", "review_pending", "pending_approval", "recommended", "due_soon", "no_due", "insufficient"].includes(status)) return "warn";
+  if (["deprecated", "blocked", "rejected", "overdue", "invalid_due", "conflict"].includes(status)) return "bad";
   return "neutral";
 }
 
@@ -756,6 +756,213 @@ function defaultOperationTemplate(moduleId: string) {
     }
   };
   return templates[moduleId] || templates.overview;
+}
+
+function workbenchFlowSpec(moduleId: string) {
+  const specs: Record<string, { input: string; output: string; collaborators: string; guardrail: string; steps: Array<{ label: string; detail: string }> }> = {
+    overview: {
+      input: "治理资产状态、P0/P1 任务、知识库证据和模块健康度。",
+      output: "管理驾驶舱、风险下钻任务、JSON/Excel 资产盘点快照。",
+      collaborators: "管理层、数据治理 Owner、供应链域负责人。",
+      guardrail: "只读总控，不直接改 canonical 资产。",
+      steps: [
+        { label: "盘点", detail: "汇总资产与任务进度" },
+        { label: "搜索", detail: "AI 证据检索定位问题" },
+        { label: "下钻", detail: "进入模块或任务中心" },
+        { label: "复盘", detail: "导出管理快照" }
+      ]
+    },
+    "ai-chat": {
+      input: "三大供应链知识库、本地检索索引、已认证语义上下文。",
+      output: "带证据链的回答、拒答原因、问法样本和反馈治理任务。",
+      collaborators: "业务分析师、ChatBI Owner、知识库维护人。",
+      guardrail: "local evidence only，不调用外部模型，不做自由 NL2SQL。",
+      steps: [
+        { label: "提问", detail: "选择知识域与对象上下文" },
+        { label: "取证", detail: "返回证据片段和可答性" },
+        { label: "沉淀", detail: "生成问法样本或反馈" },
+        { label: "审核", detail: "语义 Owner 认证" }
+      ]
+    },
+    ontology: {
+      input: "SKU、Listing、Supplier、PO、Warehouse 等对象与关系。",
+      output: "Palantir 风格对象图谱、对象路径、注解和修订建议。",
+      collaborators: "数据架构、供应链流程 Owner、指标 Owner。",
+      guardrail: "本体只读，只允许注解、评论、修订建议。",
+      steps: [
+        { label: "浏览", detail: "按对象类型查看实例" },
+        { label: "追踪", detail: "查看上下游关系路径" },
+        { label: "注解", detail: "补充业务语义" },
+        { label: "提案", detail: "提交本体修订建议" }
+      ]
+    },
+    tags: {
+      input: "规则标签、统计标签、模型标签候选与适用对象。",
+      output: "标签规则审核任务、适用对象矩阵和导出清单。",
+      collaborators: "运营策略、数据治理、对象 Owner。",
+      guardrail: "标签先入候选台账，发布前必须 owner 审核。",
+      steps: [
+        { label: "定义", detail: "维护标签语义" },
+        { label: "适配", detail: "绑定对象和维度" },
+        { label: "审核", detail: "校验规则与阈值" },
+        { label: "发布", detail: "进入认证状态" }
+      ]
+    },
+    dimensions: {
+      input: "一致性维度、分析维度、维度层级和主数据映射。",
+      output: "维度适配矩阵、冲突清单、指标可用维度范围。",
+      collaborators: "主数据 Owner、指标 Owner、BI 开发。",
+      guardrail: "维度变更必须先评估指标影响。",
+      steps: [
+        { label: "建模", detail: "定义维度与层级" },
+        { label: "映射", detail: "绑定对象主键" },
+        { label: "适配", detail: "校验可用指标" },
+        { label: "导出", detail: "输出维度清单" }
+      ]
+    },
+    "metric-engineering": {
+      input: "原子/派生/复合指标、公式、粒度、字段映射和质量规则。",
+      output: "指标工程台账、字段血缘审核、异常处理说明。",
+      collaborators: "指标 Owner、数仓开发、BI 分析师。",
+      guardrail: "P0 指标发布前必须具备字段映射和质量规则。",
+      steps: [
+        { label: "建模", detail: "维护公式与粒度" },
+        { label: "映射", detail: "绑定物理字段" },
+        { label: "质检", detail: "配置异常规则" },
+        { label: "认证", detail: "Owner 签字发布" }
+      ]
+    },
+    "metric-dictionary": {
+      input: "指标字典 2.0、口径、owner、同义词和常见问法。",
+      output: "只读指标字典、修订建议、ChatBI 认证上下文。",
+      collaborators: "指标 Owner、业务分析师、语义治理 Owner。",
+      guardrail: "指标字典 2.0 保持不变，变更进入修订建议。",
+      steps: [
+        { label: "检索", detail: "查口径与 owner" },
+        { label: "比对", detail: "识别同义或冲突" },
+        { label: "建议", detail: "提交修订提案" },
+        { label: "复用", detail: "供 ChatBI 引用" }
+      ]
+    },
+    "kpi-system": {
+      input: "MECE V2 L0-L3 指标、归因路径、权重和钻取关系。",
+      output: "思维导图、Palantir 对象图谱、节点注解和 MECE 冲突任务。",
+      collaborators: "管理层、指标体系 Owner、数据产品经理。",
+      guardrail: "画布调整只改布局/注解，指标体系结构变更需审核。",
+      steps: [
+        { label: "理解", detail: "思维导图看 L0-L3" },
+        { label: "工程", detail: "对象图谱看关系" },
+        { label: "注解", detail: "点击节点补说明" },
+        { label: "审计", detail: "MECE 冲突检查" }
+      ]
+    },
+    "lineage-quality": {
+      input: "字段血缘、指标血缘、DQ 规则、质量问题和影响范围。",
+      output: "质量运行结果、问题单、影响分析和关闭证据。",
+      collaborators: "数仓开发、质量 Owner、指标 Owner。",
+      guardrail: "规则运行进入台账，不自动修复生产数据。",
+      steps: [
+        { label: "定义", detail: "维护质量规则" },
+        { label: "执行", detail: "生成质量问题" },
+        { label: "归因", detail: "查看血缘影响" },
+        { label: "关闭", detail: "记录修复复盘" }
+      ]
+    },
+    chatbi: {
+      input: "认证指标、可用维度、问法样本和证据链。",
+      output: "可回答性判断、认证上下文、拒答原因和 dry-run 结果。",
+      collaborators: "ChatBI Owner、指标 Owner、AI 治理人员。",
+      guardrail: "只允许 certified 语义资产进入正式回答。",
+      steps: [
+        { label: "编排", detail: "维护上下文" },
+        { label: "试问", detail: "dry-run 可答性" },
+        { label: "认证", detail: "审核通过" },
+        { label: "服务", detail: "供 AI 对话使用" }
+      ]
+    },
+    "ai-knowledge": {
+      input: "SCM 主知识库、备货规则知识库、业务知识库。",
+      output: "主题域知识卡、证据质量评分、指标 crosswalk。",
+      collaborators: "知识库维护人、供应链专家、指标 Owner。",
+      guardrail: "知识卡可检索，正式口径仍以认证指标和 owner 为准。",
+      steps: [
+        { label: "整理", detail: "按主题域归档" },
+        { label: "评分", detail: "检查证据质量" },
+        { label: "映射", detail: "关联指标/对象" },
+        { label: "导出", detail: "输出知识快照" }
+      ]
+    },
+    "decision-loop": {
+      input: "洞察、建议、审批、任务、执行结果和复盘。",
+      output: "行动任务、状态流转、复盘证据和决策日志。",
+      collaborators: "管理层、业务负责人、执行 Owner。",
+      guardrail: "建议 + 审批 + 复盘，不默认自动写回业务系统。",
+      steps: [
+        { label: "洞察", detail: "记录问题与建议" },
+        { label: "审批", detail: "确认动作边界" },
+        { label: "执行", detail: "跟踪任务状态" },
+        { label: "复盘", detail: "回写结果证据" }
+      ]
+    },
+    "audit-log": {
+      input: "所有 create/update/review/approve 审计事件。",
+      output: "审计筛选结果、证据导出、责任链回看。",
+      collaborators: "数据治理、审计、系统 Owner。",
+      guardrail: "append-only 审计，不允许前端删除历史。",
+      steps: [
+        { label: "筛选", detail: "按事件和资产过滤" },
+        { label: "回看", detail: "查看 payload" },
+        { label: "导出", detail: "输出证据包" },
+        { label: "复盘", detail: "支撑追责与改进" }
+      ]
+    }
+  };
+  return specs[moduleId] || specs.overview;
+}
+
+function ExportActions({ module }: { module: WorkbenchModule }) {
+  const base = `/api/export/${encodeURIComponent(module.id)}`;
+  return (
+    <div className="exportActions" aria-label={`${module.title} export actions`}>
+      <a href={`${base}?format=json`} className="textButton" target="_blank" rel="noreferrer">导出 JSON</a>
+      <a href={`${base}?format=excel`} className="textButton" target="_blank" rel="noreferrer">导出 Excel</a>
+    </div>
+  );
+}
+
+function WorkbenchFlowStrip({ module }: { module: WorkbenchModule }) {
+  const spec = workbenchFlowSpec(module.id);
+  return (
+    <div className="workbenchFlowStrip">
+      <div className="flowMeta">
+        <div>
+          <span>输入</span>
+          <strong>{spec.input}</strong>
+        </div>
+        <div>
+          <span>输出</span>
+          <strong>{spec.output}</strong>
+        </div>
+        <div>
+          <span>协作</span>
+          <strong>{spec.collaborators}</strong>
+        </div>
+        <div>
+          <span>边界</span>
+          <strong>{spec.guardrail}</strong>
+        </div>
+      </div>
+      <div className="flowSteps">
+        {spec.steps.map((step, index) => (
+          <div key={`${step.label}-${index}`} className="flowStep">
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            <strong>{step.label}</strong>
+            <small>{step.detail}</small>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 function WorkbenchOperationDock({ module }: { module: WorkbenchModule }) {
@@ -982,37 +1189,135 @@ function ModuleHeader({ module, eyebrow }: { module: WorkbenchModule; eyebrow?: 
           <Badge tone={toneFromStatus(module.status)}>{module.status}</Badge>
           <strong>{module.primaryMetric}</strong>
           <span>{module.secondaryMetric}</span>
+          <ExportActions module={module} />
         </div>
       </div>
+      <WorkbenchFlowStrip module={module} />
       <WorkbenchOperationDock module={module} />
     </div>
   );
 }
 
-function MissionHero({ overview, modules }: { overview: Overview; modules: WorkbenchModule[] }) {
+function MissionHero({
+  overview,
+  modules,
+  onSelect
+}: {
+  overview: Overview;
+  modules: WorkbenchModule[];
+  onSelect: (id: string) => void;
+}) {
   const certified = modules.find((module) => module.id === "metric-engineering")?.secondaryMetric || "--";
   const l3 = overview.levels.find((item) => item.level === "L3")?.count || 0;
+  const taskTotal = overview.tasks.reduce((sum, item) => sum + Number(item.count || 0), 0);
+  const taskDone = overview.tasks
+    .filter((item) => ["已签字", "certified", "done", "approved", "closed"].includes(item.status))
+    .reduce((sum, item) => sum + Number(item.count || 0), 0);
+  const taskProgress = taskTotal ? Math.round((taskDone / taskTotal) * 100) : 0;
+  const coreModules = modules.filter((module) => !["overview", "ai-chat"].includes(module.id)).slice(0, 6);
+  const [question, setQuestion] = useState("请评估当前供应链指标治理最需要优先处理的风险。");
+  const [result, setResult] = useState<AiChatResult | null>(null);
+  const [running, setRunning] = useState(false);
+  const [error, setError] = useState("");
+
+  async function askFromCockpit(event: React.FormEvent) {
+    event.preventDefault();
+    if (!question.trim()) return;
+    setRunning(true);
+    setError("");
+    try {
+      const payload = await api<{ ok: boolean; result: AiChatResult }>("/api/ai-chat/local", {
+        method: "POST",
+        body: JSON.stringify({ question, domainIds: [], limit: 5 })
+      });
+      setResult(payload.result);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setRunning(false);
+    }
+  }
+
+  const inventoryItems = [
+    { label: "对象本体", value: overview.counts.ontologyObjects || 0, total: Math.max(1, (overview.counts.ontologyObjects || 0) + (overview.counts.ontologyLinks || 0)), note: `${overview.counts.ontologyLinks || 0} links` },
+    { label: "指标资产", value: overview.counts.metrics || 0, total: Math.max(overview.counts.metrics || 0, 178), note: `${l3} L3 / ${certified}` },
+    { label: "知识证据", value: overview.counts.kbCards || 0, total: Math.max(overview.counts.kbCards || 0, 295), note: `${overview.counts.kbSources || 0} sources` },
+    { label: "治理任务", value: taskDone, total: Math.max(1, taskTotal), note: `${taskProgress}% closed` }
+  ];
+
   return (
     <section className="missionHero">
-      <div className="heroCopy">
-        <p className="eyebrow">Ontology-first governance</p>
-        <h1>供应链数据开发治理工作台</h1>
-        <p>
-          以对象本体为骨架，把标签、维度、指标、指标体系、血缘质量、ChatBI 和决策闭环串成一条可认证、可追溯、可复盘的治理链路。
-        </p>
+      <div className="cockpitLead">
+        <div className="heroCopy">
+          <p className="eyebrow">Management cockpit</p>
+          <h1>供应链数据开发治理驾驶舱</h1>
+          <p>
+            第一屏聚合 AI 证据搜索、资产盘点、治理任务中心和模块入口；所有动作遵循认证语义层与 ledger 审核边界。
+          </p>
+        </div>
+        <form className="cockpitSearch" onSubmit={askFromCockpit}>
+          <div className="surfaceHead">
+            <h3>AI 搜索对话</h3>
+            <Badge tone="blue">local evidence only</Badge>
+          </div>
+          <textarea value={question} onChange={(event) => setQuestion(event.target.value)} />
+          <div className="cockpitSearchActions">
+            <button type="submit" disabled={running}>{running ? "检索中..." : "搜索知识库"}</button>
+            <button type="button" className="secondaryButton" onClick={() => onSelect("ai-chat")}>进入 AI 对话</button>
+          </div>
+          {error ? <div className="error">{error}</div> : null}
+          {result ? (
+            <div className="cockpitAnswer">
+              <div>
+                <Badge tone={toneFromStatus(result.answerability)}>{result.answerability}</Badge>
+                <span>{Math.round(result.answerabilityScore)} / 100</span>
+                <span>{result.evidence.length} evidence</span>
+              </div>
+              <p>{result.answer}</p>
+            </div>
+          ) : null}
+        </form>
       </div>
-      <div className="heroStats" aria-label="governance summary">
-        <div>
-          <span>指标资产</span>
-          <strong>{overview.counts.metrics || 0}</strong>
+      <div className="cockpitSide">
+        <div className="assetProgressPanel">
+          <div className="sectionLabel">
+            <span>Inventory</span>
+            <strong>资产状态与盘点进度</strong>
+          </div>
+          {inventoryItems.map((item) => (
+            <div className="assetProgressItem" key={item.label}>
+              <div>
+                <strong>{item.label}</strong>
+                <span>{item.value} / {item.total}</span>
+              </div>
+              <ScoreLine score={Math.min(100, Math.round((item.value / item.total) * 100))} />
+              <small>{item.note}</small>
+            </div>
+          ))}
         </div>
-        <div>
-          <span>L3 指标</span>
-          <strong>{l3}</strong>
+        <div className="taskCenterPanel">
+          <div className="sectionLabel">
+            <span>Tasks</span>
+            <strong>治理任务中心</strong>
+          </div>
+          <div className="taskStatusList">
+            {overview.tasks.slice(0, 5).map((task) => (
+              <div key={task.status}>
+                <span>{task.status}</span>
+                <strong>{task.count}</strong>
+              </div>
+            ))}
+            {!overview.tasks.length ? <div><span>暂无任务</span><strong>0</strong></div> : null}
+          </div>
         </div>
-        <div>
-          <span>ChatBI 范围</span>
-          <strong>{certified}</strong>
+        <div className="moduleLaunchGrid">
+          {coreModules.map((module) => (
+            <button key={module.id} onClick={() => onSelect(module.id)}>
+              <span>{module.code}</span>
+              <strong>{module.title}</strong>
+              <small>{module.primaryMetric}</small>
+            </button>
+          ))}
         </div>
       </div>
     </section>
@@ -1074,7 +1379,16 @@ function OverviewPanel({
   const overviewModule = modules.find((module) => module.id === "overview") || fallbackModules[0];
   return (
     <div className="stack">
-      <MissionHero overview={overview} modules={modules} />
+      <MissionHero overview={overview} modules={modules} onSelect={onSelect} />
+      <div className="overviewControlBar">
+        <WorkbenchFlowStrip module={overviewModule} />
+        <div className="overviewExportCard">
+          <p className="eyebrow">Export</p>
+          <h3>只读导出</h3>
+          <p className="muted">不允许导入；支持管理驾驶舱当前模块的 JSON 和 Excel 快照。</p>
+          <ExportActions module={overviewModule} />
+        </div>
+      </div>
       <WorkbenchOperationDock module={overviewModule} />
       <ArchitectureRail layers={overview.architectureLayers || []} />
       <section className="panel">
@@ -1649,6 +1963,9 @@ function KpiTreePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
   const [canvasRefresh, setCanvasRefresh] = useState(0);
   const [selectedDomain, setSelectedDomain] = useState("");
   const [scope, setScope] = useState<"core" | "all">("core");
+  const [viewMode, setViewMode] = useState<"mindmap" | "object-graph">("mindmap");
+  const [kpiSearch, setKpiSearch] = useState("");
+  const [zoom, setZoom] = useState(1);
   const [selectedNodeId, setSelectedNodeId] = useState("");
   const [draftPositions, setDraftPositions] = useState<Record<string, { x: number; y: number }>>({});
   const suppressNextClickRef = useRef(false);
@@ -1750,6 +2067,24 @@ function KpiTreePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
       })
       .filter(Boolean) as Array<{ source: AnyRow; target: AnyRow }>;
   }, [visibleNodes, nodeByMetricId, visibleNodeIds]);
+  const mindTree = useMemo(() => {
+    const term = kpiSearch.trim().toLowerCase();
+    function matches(node: any) {
+      return [node.name, node.code, node.level, node.l1_domain, node.l2_group]
+        .some((value) => String(value || "").toLowerCase().includes(term));
+    }
+    function filterNodes(nodes: any[]): any[] {
+      return nodes
+        .map((node) => ({ ...node, children: filterNodes(node.children || []) }))
+        .filter((node) => {
+          const domainOk = !selectedDomain || node.level === "L0" || node.l1_domain === selectedDomain || node.children.length;
+          const scopeOk = scope === "all" || node.level !== "L3" || node.children.length;
+          const searchOk = !term || matches(node) || node.children.length;
+          return domainOk && scopeOk && searchOk;
+        });
+    }
+    return filterNodes(tree.data);
+  }, [tree.data, selectedDomain, scope, kpiSearch]);
   const canvasHeight = Math.min(
     scope === "all" ? 3200 : 1800,
     Math.max(460, ...visibleNodes.map((node) => Number(draftPositions[String(node.id)]?.y ?? node.y ?? 0) + Number(node.height || 88) + 96))
@@ -1834,6 +2169,35 @@ function KpiTreePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
 
   const selectedNode = selectedNodeId ? nodeById[selectedNodeId] : null;
 
+  function openMindNode(node: any) {
+    const canvasNode = nodeByMetricId[String(node.id)];
+    if (canvasNode) {
+      openCanvasNode(canvasNode);
+      return;
+    }
+    onOpenAsset(makeAsset("metric", node, ["name", "code", "id"], ["level", "l1_domain"], true));
+  }
+
+  function renderMindNode(node: any, depth = 0): React.ReactNode {
+    const canvasNode = nodeByMetricId[String(node.id)];
+    const nodeId = canvasNode ? String(canvasNode.id) : String(node.id);
+    const selected = selectedNodeId === nodeId;
+    return (
+      <div className={`mindNodeWrap depth-${Math.min(depth, 3)}`} key={String(node.id)}>
+        <button className={`mindNode level-${String(node.level).toLowerCase()} ${selected ? "selected" : ""}`} onClick={() => openMindNode(node)}>
+          <span>{cellValue(node.level)}</span>
+          <strong>{cellValue(node.name)}</strong>
+          <small>{cellValue(node.code)}{node.l1_domain ? ` / ${cellValue(node.l1_domain)}` : ""}</small>
+        </button>
+        {node.children?.length ? (
+          <div className="mindChildren">
+            {node.children.map((child: any) => renderMindNode(child, depth + 1))}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
     <section className="panel">
       <ModuleHeader module={module} />
@@ -1843,70 +2207,110 @@ function KpiTreePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
           <h3>MECE V2 L0-L3 指标体系画布</h3>
         </div>
         <div className="canvasControls">
+          <button className={viewMode === "mindmap" ? "active" : ""} onClick={() => setViewMode("mindmap")}>思维导图</button>
+          <button className={viewMode === "object-graph" ? "active" : ""} onClick={() => setViewMode("object-graph")}>Palantir 对象图谱</button>
           <button className={scope === "core" ? "active" : ""} onClick={() => setScope("core")}>L0-L2</button>
           <button className={scope === "all" ? "active" : ""} onClick={() => setScope("all")}>含 L3</button>
+          <button onClick={() => setZoom((value) => Math.max(0.7, Number((value - 0.1).toFixed(1))))}>-</button>
+          <button onClick={() => setZoom(1)}>{Math.round(zoom * 100)}%</button>
+          <button onClick={() => setZoom((value) => Math.min(1.4, Number((value + 0.1).toFixed(1))))}>+</button>
           <select value={selectedDomain} onChange={(event) => setSelectedDomain(event.target.value)}>
             <option value="">全部 L1 域</option>
             {domains.map((domain) => <option key={domain} value={domain}>{domain}</option>)}
           </select>
+          <input value={kpiSearch} onChange={(event) => setKpiSearch(event.target.value)} placeholder="搜索指标 / 编码" />
         </div>
       </div>
-      <div className="kpiCanvasWrap">
-        <div className="kpiCanvas" style={{ height: canvasHeight, width: canvasWidth }}>
-          <svg className="kpiEdges" width={canvasWidth} height={canvasHeight} aria-hidden="true">
-            {canvasEdges.map((edge) => {
-              const source = nodePosition(edge.source);
-              const target = nodePosition(edge.target);
-              const active = highlighted.has(String(edge.source.id)) && highlighted.has(String(edge.target.id));
-              const x1 = source.x + source.width;
-              const y1 = source.y + source.height / 2;
-              const x2 = target.x;
-              const y2 = target.y + target.height / 2;
-              const mid = Math.max(x1 + 28, x1 + (x2 - x1) / 2);
-              return (
-                <path
-                  key={`${edge.source.id}-${edge.target.id}`}
-                  className={active ? "active" : ""}
-                  d={`M ${x1} ${y1} C ${mid} ${y1}, ${mid} ${y2}, ${x2} ${y2}`}
-                />
-              );
-            })}
-          </svg>
-          {visibleNodes.map((node) => (
-            <div
-              key={String(node.id)}
-              className={`kpiNode level-${String(node.level).toLowerCase()} ${Number(node.collapsed || 0) ? "collapsed" : ""} ${highlighted.has(String(node.id)) ? "pathActive" : ""} ${selectedNodeId === String(node.id) ? "selected" : ""}`}
-              style={{
-                left: nodePosition(node).x,
-                top: nodePosition(node).y,
-                width: Number(node.width || 220),
-                height: Number(node.height || 88)
-              }}
-              role="button"
-              tabIndex={0}
-              onPointerDown={(event) => startDrag(event, node)}
-              onPointerMove={moveDrag}
-              onPointerUp={(event) => endDrag(event, node)}
-              onClick={() => {
-                if (suppressNextClickRef.current) {
-                  suppressNextClickRef.current = false;
-                  return;
-                }
-                openCanvasNode(node);
-              }}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") {
-                  openCanvasNode(node);
-                }
-              }}
-            >
-              <span>{cellValue(node.level)}</span>
-              <strong>{cellValue(node.name)}</strong>
-              <small>{cellValue(node.code)}</small>
-              <em>{Number(node.collapsed || 0) ? "collapsed" : "expanded"}</em>
+      <div className="kpiWorkbench">
+        <div className="kpiMainCanvas">
+          {viewMode === "mindmap" ? (
+            <div className="kpiMindMapPanel">
+              {mindTree.length ? mindTree.map((node) => renderMindNode(node)) : <div className="empty compact">没有匹配的指标节点。</div>}
             </div>
-          ))}
+          ) : (
+            <div className="kpiCanvasWrap">
+              <div className="kpiCanvasSpacer" style={{ height: canvasHeight * zoom, width: canvasWidth * zoom }}>
+                <div className="kpiCanvas" style={{ height: canvasHeight, width: canvasWidth, transform: `scale(${zoom})` }}>
+                  <svg className="kpiEdges" width={canvasWidth} height={canvasHeight} aria-hidden="true">
+                    {canvasEdges.map((edge) => {
+                      const source = nodePosition(edge.source);
+                      const target = nodePosition(edge.target);
+                      const active = highlighted.has(String(edge.source.id)) && highlighted.has(String(edge.target.id));
+                      const x1 = source.x + source.width;
+                      const y1 = source.y + source.height / 2;
+                      const x2 = target.x;
+                      const y2 = target.y + target.height / 2;
+                      const mid = Math.max(x1 + 28, x1 + (x2 - x1) / 2);
+                      return (
+                        <path
+                          key={`${edge.source.id}-${edge.target.id}`}
+                          className={active ? "active" : ""}
+                          d={`M ${x1} ${y1} C ${mid} ${y1}, ${mid} ${y2}, ${x2} ${y2}`}
+                        />
+                      );
+                    })}
+                  </svg>
+                  {visibleNodes.map((node) => (
+                    <div
+                      key={String(node.id)}
+                      className={`kpiNode level-${String(node.level).toLowerCase()} ${Number(node.collapsed || 0) ? "collapsed" : ""} ${highlighted.has(String(node.id)) ? "pathActive" : ""} ${selectedNodeId === String(node.id) ? "selected" : ""}`}
+                      style={{
+                        left: nodePosition(node).x,
+                        top: nodePosition(node).y,
+                        width: Number(node.width || 220),
+                        height: Number(node.height || 88)
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      onPointerDown={(event) => startDrag(event, node)}
+                      onPointerMove={moveDrag}
+                      onPointerUp={(event) => endDrag(event, node)}
+                      onClick={() => {
+                        if (suppressNextClickRef.current) {
+                          suppressNextClickRef.current = false;
+                          return;
+                        }
+                        openCanvasNode(node);
+                      }}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          openCanvasNode(node);
+                        }
+                      }}
+                    >
+                      <span>{cellValue(node.level)}</span>
+                      <strong>{cellValue(node.name)}</strong>
+                      <small>{cellValue(node.code)}</small>
+                      <em>{Number(node.collapsed || 0) ? "collapsed" : "expanded"}</em>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
+        <aside className="kpiInspector">
+          <div className="sectionLabel">
+            <span>Inspector</span>
+            <strong>节点注解</strong>
+          </div>
+          {selectedNode ? (
+            <>
+              <Badge tone={toneFromStatus(String(selectedNode.status || "active"))}>{cellValue(selectedNode.level)}</Badge>
+              <h3>{cellValue(selectedNode.name)}</h3>
+              <p>{cellValue(selectedNode.code)} / {cellValue(selectedNode.l1_domain || "全域")}</p>
+              <div className="kpiInspectorStats">
+                <span>{childMap[String(selectedNode.id)]?.length || 0} 下级</span>
+                <span>{parentMap[String(selectedNode.id)] ? "有上级" : "根节点"}</span>
+                <span>{Number(selectedNode.collapsed || 0) ? "已折叠" : "已展开"}</span>
+              </div>
+              <button className="textButton" onClick={() => toggleNode(selectedNode)}>折叠/展开</button>
+              <button className="textButton" onClick={() => onOpenAsset(makeAsset("kpi_canvas_node", selectedNode, ["name", "code", "id"], ["level", "l1_domain"]))}>打开注解抽屉</button>
+            </>
+          ) : (
+            <p className="muted">点击任一指标节点后，可在这里查看层级、上级/下级、状态，并进入注解、评论和修订建议。</p>
+          )}
+        </aside>
       </div>
       <div className="canvasHint">
         <span>{visibleNodes.length} nodes visible / {canvas.data.length} total / {canvasEdges.length} links</span>
@@ -3668,6 +4072,14 @@ function LedgerList<T>({ items, render, empty }: { items: T[]; render: (item: T)
 }
 
 function Sidebar({ modules, active, onSelect }: { modules: WorkbenchModule[]; active: string; onSelect: (id: string) => void }) {
+  const groups = [
+    { title: "入口", ids: ["overview", "ai-chat"] },
+    { title: "对象与模型", ids: ["ontology", "tags", "dimensions"] },
+    { title: "指标治理", ids: ["metric-engineering", "metric-dictionary", "kpi-system"] },
+    { title: "控制与语义", ids: ["lineage-quality", "chatbi", "ai-knowledge"] },
+    { title: "闭环与审计", ids: ["decision-loop", "audit-log"] }
+  ];
+  const moduleById = Object.fromEntries(modules.map((module) => [module.id, module]));
   return (
     <aside className="sidebar">
       <div className="brand">
@@ -3678,12 +4090,17 @@ function Sidebar({ modules, active, onSelect }: { modules: WorkbenchModule[]; ac
         </div>
       </div>
       <nav>
-        {modules.map((module) => (
-          <button className={active === module.id ? "active" : ""} key={module.id} onClick={() => onSelect(module.id)}>
-            <span>{module.code}</span>
-            <strong>{module.title}</strong>
-            <small>{module.primaryMetric}</small>
-          </button>
+        {groups.map((group) => (
+          <div className="navGroup" key={group.title}>
+            <p>{group.title}</p>
+            {group.ids.map((id) => moduleById[id]).filter(Boolean).map((module) => (
+              <button className={active === module.id ? "active" : ""} key={module.id} onClick={() => onSelect(module.id)}>
+                <span>{module.code}</span>
+                <strong>{module.title}</strong>
+                <small>{module.primaryMetric}</small>
+              </button>
+            ))}
+          </div>
         ))}
       </nav>
     </aside>

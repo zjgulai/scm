@@ -36,6 +36,7 @@ require_ai_feedback = (
 )
 expected = [
     "治理链路总览",
+    "AI 对话",
     "对象本体工作台",
     "标签工程工作台",
     "维度工程工作台",
@@ -45,7 +46,6 @@ expected = [
     "血缘与质量工作台",
     "ChatBI 语义治理台",
     "AI 知识库",
-    "AI 对话",
     "决策闭环工作台",
     "审计日志工作台",
 ]
@@ -65,6 +65,11 @@ summary = js("""
 missing = [label for label in expected if not any(label in text for text in summary["labels"])]
 if missing:
     raise SystemExit(f"Missing navigation labels: {missing}; labels={summary['labels']}")
+positions = []
+for label in expected:
+    positions.append(next(index for index, text in enumerate(summary["labels"]) if label in text))
+if positions != sorted(positions):
+    raise SystemExit(f"Navigation order mismatch: expected={expected}; labels={summary['labels']}")
 
 results = []
 feature_checks = []
@@ -100,9 +105,32 @@ for label in expected:
     """)
     if require_operation_dock and (not operation_dock["panel"] or not operation_dock["summary"] or not operation_dock["toggle"]):
         raise SystemExit(f"Workbench operation dock missing after opening {label}: {operation_dock}")
+    workflow_shell = js("""
+    (() => ({
+      flow: !!document.querySelector('.workbenchFlowStrip'),
+      exports: document.querySelectorAll('.exportActions a').length,
+      importTextVisible: document.body.innerText.includes('导入')
+    }))()
+    """)
+    if require_operation_dock and (not workflow_shell["flow"] or workflow_shell["exports"] < 2):
+        raise SystemExit(f"Workbench workflow/export shell missing after opening {label}: {workflow_shell}")
     if require_operation_dock and label == "治理链路总览":
         feature_checks.append({"workbenchOperations": operation_dock})
     if label == "治理链路总览":
+        cockpit = js("""
+        (() => ({
+          cockpit: !!document.querySelector('.missionHero'),
+          aiSearch: !!document.querySelector('.cockpitSearch textarea'),
+          moduleCards: document.querySelectorAll('.moduleLaunchGrid button').length,
+          assetProgress: document.querySelectorAll('.assetProgressPanel .assetProgressItem').length,
+          taskCenter: !!document.querySelector('.taskCenterPanel'),
+          flow: !!document.querySelector('.workbenchFlowStrip'),
+          exports: document.querySelectorAll('.exportActions a').length
+        }))()
+        """)
+        if not cockpit["cockpit"] or not cockpit["aiSearch"] or cockpit["moduleCards"] < 4 or cockpit["assetProgress"] < 4 or not cockpit["taskCenter"] or not cockpit["flow"] or cockpit["exports"] < 2:
+          raise SystemExit(f"Overview cockpit feature check failed: {cockpit}")
+        feature_checks.append({"overviewCockpit": cockpit})
         workflow = js("""
         (() => ({
           filters: !!document.querySelector('.workflowFilters'),
@@ -113,6 +141,20 @@ for label in expected:
         if not workflow["filters"] or not workflow["bulk"] or workflow["summaryCards"] < 4:
           raise SystemExit(f"Workflow board feature check failed: {workflow}")
         feature_checks.append({"workflowBoard": workflow})
+    if label == "指标体系编排台":
+        kpi = js("""
+        (() => ({
+          mindmapButton: !!Array.from(document.querySelectorAll('.canvasControls button')).find((button) => button.textContent.includes('思维导图')),
+          objectGraphButton: !!Array.from(document.querySelectorAll('.canvasControls button')).find((button) => button.textContent.includes('Palantir')),
+          mindNodes: document.querySelectorAll('.kpiMindMapPanel .mindNode').length,
+          inspector: !!document.querySelector('.kpiInspector'),
+          exports: document.querySelectorAll('.exportActions a').length,
+          flow: !!document.querySelector('.workbenchFlowStrip')
+        }))()
+        """)
+        if not kpi["mindmapButton"] or not kpi["objectGraphButton"] or kpi["mindNodes"] < 1 or not kpi["inspector"] or kpi["exports"] < 2 or not kpi["flow"]:
+          raise SystemExit(f"KPI canvas feature check failed: {kpi}")
+        feature_checks.append({"kpiDualCanvas": kpi})
     if label == "对象本体工作台":
         ontology = js("""
         (() => ({

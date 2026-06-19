@@ -27,6 +27,15 @@ async function request(path, init = {}) {
   return payload;
 }
 
+async function requestRaw(path, init = {}) {
+  const response = await fetch(`${baseUrl}${path}`, init);
+  const text = await response.text();
+  if (!response.ok) {
+    throw new Error(`${init.method || "GET"} ${path} failed: ${response.status} ${text.slice(0, 200)}`);
+  }
+  return { response, text };
+}
+
 function assert(condition, message, detail) {
   if (!condition) {
     const suffix = detail ? ` ${JSON.stringify(detail)}` : "";
@@ -42,6 +51,20 @@ assert(health.boundary?.erpWriteback === false, "ERP writeback boundary changed"
 const modules = await request("/api/workbench/modules");
 assert(Array.isArray(modules) && modules.length === 13, "expected 13 workbench modules", { count: modules.length });
 assert(modules.some((module) => module.id === "audit-log"), "audit log workbench module missing", modules);
+assert(modules[0]?.id === "overview" && modules[1]?.id === "ai-chat", "AI chat should be directly below overview", modules.slice(0, 4));
+
+const overviewExport = await request("/api/export/overview?format=json");
+assert(overviewExport.boundary?.mode === "read_only_export", "JSON export is not read-only", overviewExport.boundary);
+assert(overviewExport.boundary?.importAllowed === false, "JSON export unexpectedly allows import", overviewExport.boundary);
+assert(overviewExport.payload?.overview?.counts?.metrics >= 1, "JSON export missing overview metrics", overviewExport.payload);
+
+const excelExport = await requestRaw("/api/export/kpi-system?format=excel");
+assert(
+  excelExport.response.headers.get("content-type")?.includes("application/vnd.ms-excel"),
+  "Excel export content type is wrong",
+  { contentType: excelExport.response.headers.get("content-type") }
+);
+assert(excelExport.text.includes("<table") && excelExport.text.includes("SCM Governance Export"), "Excel export missing table markup");
 
 const canvasNodes = await request("/api/kpi-canvas/nodes?limit=20");
 assert(Array.isArray(canvasNodes) && canvasNodes.length > 0, "KPI canvas nodes are not available");

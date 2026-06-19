@@ -96,14 +96,22 @@ node -e "const { DatabaseSync } = require('node:sqlite'); const db = new Databas
 
 ## 6. 恢复
 
-恢复前必须停容器或确保无写入：
+生产部署使用 Docker named volume 保存 SQLite 台账，默认 volume 名为：
+
+```text
+scm_governance_workbench_scm-governance-data
+```
+
+恢复前必须停容器或确保无写入。推荐通过 volume 准备脚本恢复：
 
 ```bash
 docker compose -p scm_governance_workbench -f docker-compose.yml -f docker-compose.tencent.yml stop scm-governance-workbench
-cp data/backups/governance_workbench-YYYYMMDDTHHMMSSZ.sqlite data/governance_workbench.sqlite
+SCM_FORCE_VOLUME_SEED=1 SCM_SOURCE_DB=data/backups/governance_workbench-YYYYMMDDTHHMMSSZ.sqlite ./deploy/prepare-sqlite-volume.sh
 docker compose -p scm_governance_workbench -f docker-compose.yml -f docker-compose.tencent.yml start scm-governance-workbench
 curl -fsS http://127.0.0.1:5174/api/deploy/health
 ```
+
+本地非 Docker 开发仍可直接替换 `data/governance_workbench.sqlite`，但不要把这种方式用于腾讯云生产容器。
 
 ## 7. 当前 P0 迁移内容
 

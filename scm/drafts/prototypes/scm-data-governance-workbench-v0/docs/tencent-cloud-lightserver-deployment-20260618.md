@@ -62,6 +62,8 @@ source: human+ai
 
 ```bash
 cd /opt/scm-governance-workbench/current
+chmod +x deploy/prepare-sqlite-volume.sh
+./deploy/prepare-sqlite-volume.sh
 docker compose -p scm_governance_workbench -f docker-compose.yml -f docker-compose.tencent.yml up -d --build
 ```
 
@@ -89,7 +91,28 @@ docker compose -p scm_governance_workbench -f docker-compose.yml -f docker-compo
 
 ## SQLite 备份与迁移
 
-部署前建议先备份 SQLite 台账：
+SQLite 台账通过 Docker named volume 持久化，默认 volume 名称为：
+
+```text
+scm_governance_workbench_scm-governance-data
+```
+
+首次切换到 volume 或部署前建议先执行 volume 准备脚本。脚本会优先从正在运行的 `scm-governance-workbench` 容器复制 `/app/data/governance_workbench.sqlite`，如果 volume 已有数据库则默认不覆盖：
+
+```bash
+cd /opt/scm-governance-workbench/current
+chmod +x deploy/prepare-sqlite-volume.sh
+./deploy/prepare-sqlite-volume.sh
+docker volume inspect scm_governance_workbench_scm-governance-data
+```
+
+需要从指定备份恢复到 volume 时，显式设置来源和 force：
+
+```bash
+SCM_FORCE_VOLUME_SEED=1 SCM_SOURCE_DB=/path/to/governance_workbench.sqlite ./deploy/prepare-sqlite-volume.sh
+```
+
+运行容器内备份 SQLite 台账：
 
 ```bash
 docker exec scm-governance-workbench npm run backup:sqlite

@@ -308,6 +308,17 @@ for label in expected:
           raise SystemExit(f"Audit log feature check failed: {audit}")
         feature_checks.append({"auditLog": audit})
     if label == "AI 知识库":
+        if require_kb_governance:
+            for _ in range(30):
+                kb_ready = js("""
+                (() => ({
+                  createRuleButtons: document.querySelectorAll('.createKnowledgeRuleButton').length,
+                  emptyCards: document.body.innerText.includes('暂无知识卡')
+                }))()
+                """)
+                if kb_ready["createRuleButtons"] > 0 or kb_ready["emptyCards"]:
+                    break
+                sleep(0.25)
         kb = js("""
         (() => ({
           governanceCards: document.querySelectorAll('.kbGovernanceGrid > article').length,

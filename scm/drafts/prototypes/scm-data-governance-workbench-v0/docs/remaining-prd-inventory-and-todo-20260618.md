@@ -12,8 +12,8 @@ source_of_truth:
   - "drafts/prototypes/scm-data-governance-workbench-v0/docs/second-iteration-ui-information-architecture-20260618.md"
 current_deploy:
   url: "https://scm.lute-tlz-dddd.top/"
-  deployed_branch_sha: "75494ae"
-  release: "/opt/scm-governance-workbench/releases/scm-workbench-p2-ai-75494ae-20260619133036"
+  deployed_branch_sha: "37e968b"
+  release: "/opt/scm-governance-workbench/releases/scm-workbench-semantic-ops-37e968b-20260619214557"
 ---
 
 # 供应链数据开发治理工作台剩余 PRD 盘点与 TODO
@@ -189,8 +189,8 @@ current_deploy:
 | SCM-PRD-P2-007 | 已部署 | 新增 `GET /api/kb/crosswalk-matrix` 与 `.crosswalkMatrixTable`；线上返回 `mapped_metrics=88/139`、`metric_coverage_rate=0.6331` | 仅展示当前 `kb_crosswalks` 覆盖，不自动补写正本资产 |
 | SCM-PRD-P2-004 | 已部署 | 新增 `ai_question_samples`、`GET/POST /api/ai-chat/question-samples`、样本审核接口和 `AI 对话`页 `.questionSampleLibrary`；`smoke:p0` 覆盖 `aiQuestionSample.create/certify`；线上 `REQUIRE_AI_FEEDBACK=1` Browser Harness 强校验通过 | 只写 SQLite 语义治理台账；不改写知识库源文件 |
 | SCM-PRD-P2-005 | 已部署 | 新增 `ai_answer_feedback`、`GET/POST /api/ai-chat/feedback`、反馈审核接口和 `AI 对话`页 `.aiFeedbackQueue`；`smoke:p0` 覆盖 `aiFeedback.create/close`；线上 `REQUIRE_AI_FEEDBACK=1` Browser Harness 强校验通过 | 反馈关闭表示治理处理完成，不代表业务问题已自动修复 |
-| SCM-PRD-P2-006 | 本地实现，待部署验收 | `GET /api/chatbi/answerability-scorecard`、`.chatbiScorecardPanel` | 已补 ChatBI 可回答性运营 scorecard、L1 领域覆盖、弱证据队列和 no-provider/no-writeback 边界 |
-| SCM-PRD-P2-008 | 本地实现，待部署验收 | `GET /api/ai-chat/evidence-exports`、`.aiEvidenceExportRegistry`、`/api/ai-chat/messages/:id/evidence-export` | 已补跨消息证据导出台账，单条证据包继续支持 JSON/Markdown |
+| SCM-PRD-P2-006 | 已部署 | `GET /api/chatbi/answerability-scorecard`、`.chatbiScorecardPanel`；公开站点返回 `total=8`、`domainScorecards=5`、`providerCalls=false`、`erpWriteback=false` | 已补 ChatBI 可回答性运营 scorecard、L1 领域覆盖、弱证据队列和 no-provider/no-writeback 边界 |
+| SCM-PRD-P2-008 | 已部署 | `GET /api/ai-chat/evidence-exports`、`.aiEvidenceExportRegistry`、`/api/ai-chat/messages/:id/evidence-export`；公开站点当前 `rows=0` 并展示空态 | 已补跨消息证据导出台账；生产公开站点未写入 AI 对话样本，单条证据包在生成回答后支持 JSON/Markdown |
 
 ### 4.4 P3 TODO：外部模型、权限和高级能力
 

@@ -187,8 +187,8 @@ current_deploy:
 | SCM-PRD-P2-002 | 已部署 | `GET /api/kb/cards` 返回 `quality_score`、四项分数、质量状态和复核状态；`smoke:p0` 覆盖 `kbCardQuality.score`；线上 `.kbScoreGrid = 80` | 质量分是治理排序信号，不替代 owner 认证 |
 | SCM-PRD-P2-003 | 已部署 | 新增 `GET /api/kb/stale-findings` 与 `.staleFindingsPanel`；线上 `/api/kb/quality-summary` 返回 `stale_findings=22` | stale 表示需要复核，不代表源规则错误 |
 | SCM-PRD-P2-007 | 已部署 | 新增 `GET /api/kb/crosswalk-matrix` 与 `.crosswalkMatrixTable`；线上返回 `mapped_metrics=88/139`、`metric_coverage_rate=0.6331` | 仅展示当前 `kb_crosswalks` 覆盖，不自动补写正本资产 |
-| SCM-PRD-P2-004 | 未开始 | 无 | 后续需建立问法样本、同义问法、拒答样本和冲突样本 |
-| SCM-PRD-P2-005 | 未开始 | 无 | 后续需将 AI 对话反馈转治理任务 |
+| SCM-PRD-P2-004 | 本地完成，待线上强验收 | 新增 `ai_question_samples`、`GET/POST /api/ai-chat/question-samples`、样本审核接口和 `AI 对话`页 `.questionSampleLibrary`；`smoke:p0` 覆盖 `aiQuestionSample.create/certify` | 只写 SQLite 语义治理台账；不改写知识库源文件 |
+| SCM-PRD-P2-005 | 本地完成，待线上强验收 | 新增 `ai_answer_feedback`、`GET/POST /api/ai-chat/feedback`、反馈审核接口和 `AI 对话`页 `.aiFeedbackQueue`；`smoke:p0` 覆盖 `aiFeedback.create/close` | 反馈关闭表示治理处理完成，不代表业务问题已自动修复 |
 | SCM-PRD-P2-006 | 未开始 | 无 | 后续需从 ChatBI/AI chat 聚合可回答性覆盖 |
 | SCM-PRD-P2-008 | 未开始 | 无 | 后续需提供 Markdown/JSON 导出 |
 

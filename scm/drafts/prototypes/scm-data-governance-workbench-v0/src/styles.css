@@ -1775,6 +1775,36 @@ textarea {
   gap: 16px;
 }
 
+.aiGovernanceGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.aiGovernanceGrid article {
+  display: grid;
+  gap: 6px;
+  min-height: 106px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fff, #f7fafc);
+}
+
+.aiGovernanceGrid span,
+.aiGovernanceGrid small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.aiGovernanceGrid strong {
+  font-size: 26px;
+  letter-spacing: 0;
+}
+
 .aiChatScope {
   display: grid;
   align-content: start;
@@ -1970,6 +2000,32 @@ textarea {
   gap: 8px;
 }
 
+.aiFeedbackActions {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) repeat(3, auto);
+  gap: 10px;
+  align-items: end;
+  padding: 12px;
+  border: 1px solid rgba(0, 94, 184, 0.16);
+  border-radius: 8px;
+  background: var(--blue-soft);
+}
+
+.aiFeedbackActions strong,
+.aiFeedbackActions span {
+  display: block;
+}
+
+.aiFeedbackActions span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.aiFeedbackActions label {
+  grid-column: 1 / -1;
+}
+
 .answerText {
   margin: 0;
   padding: 14px;
@@ -2020,6 +2076,38 @@ textarea {
 .evidencePanel {
   display: grid;
   gap: 10px;
+}
+
+.aiGovernanceWorkbench {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.sampleList {
+  display: grid;
+  gap: 10px;
+  max-height: 430px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.sampleList article {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.sampleList p,
+.sampleList small {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
 .evidenceList {
@@ -2456,6 +2544,9 @@ tbody tr:hover td {
 	  .kbGovernanceGrid,
 	  .kbOpsGrid,
 	  .kbDiagnosticsGrid,
+	  .aiGovernanceGrid,
+	  .aiFeedbackActions,
+	  .aiGovernanceWorkbench,
 	  .decisionSummaryGrid,
 	  .qualitySummaryGrid,
 	  .qualityWorkbench,

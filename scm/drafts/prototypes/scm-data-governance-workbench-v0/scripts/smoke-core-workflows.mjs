@@ -473,6 +473,65 @@ const kbCrosswalkMatrix = await request("/api/kb/crosswalk-matrix");
 assert(kbCrosswalkMatrix.summary?.crosswalks >= 1, "KB crosswalk summary missing links", kbCrosswalkMatrix);
 assert(Array.isArray(kbCrosswalkMatrix.rows), "KB crosswalk matrix rows missing", kbCrosswalkMatrix);
 
+const questionSample = await request("/api/ai-chat/question-samples", {
+  method: "POST",
+  body: JSON.stringify({
+    questionText: `P2 smoke standard question sample ${stamp}`,
+    sampleType: "standard",
+    targetAssetType: "chatbi_context",
+    targetAssetId: aiSupported.result?.chatbiContextId || "",
+    domainIds: ["stocking-rules"],
+    expectedAnswerability: aiSupported.result?.answerability || "partial",
+    sourceMessageId: aiSupported.result?.messageId || "",
+    evidenceRefs: (aiSupported.result?.evidence || []).slice(0, 3).map((item) => `kb:${item.domainId}/${item.cardId}/${item.chunkId}`),
+    createdBy: "p2_ai_smoke"
+  })
+});
+assert(questionSample.sample?.id, "AI question sample was not created", questionSample);
+assert(questionSample.sample?.workflow_id, "AI question sample workflow was not created", questionSample);
+
+const certifiedQuestionSample = await request(`/api/ai-chat/question-samples/${questionSample.sample.id}/review`, {
+  method: "POST",
+  body: JSON.stringify({
+    status: "certified",
+    reviewer: "p2_ai_smoke",
+    reviewNote: "Smoke certifies reusable question sample for governance only."
+  })
+});
+assert(certifiedQuestionSample.sample?.status === "certified", "AI question sample review failed", certifiedQuestionSample);
+
+const aiFeedback = await request("/api/ai-chat/feedback", {
+  method: "POST",
+  body: JSON.stringify({
+    sessionId: aiSupported.result?.sessionId,
+    messageId: aiSupported.result?.messageId,
+    questionText: "备货业务库存和计划库存有什么关系？",
+    rating: "insufficient",
+    feedbackText: "P2 smoke records feedback and routes it into semantic governance.",
+    answerability: aiSupported.result?.answerability,
+    answerabilityScore: aiSupported.result?.answerabilityScore,
+    evidenceCount: aiSupported.result?.evidence?.length || 0,
+    createdBy: "p2_ai_smoke"
+  })
+});
+assert(aiFeedback.feedback?.id, "AI answer feedback was not created", aiFeedback);
+assert(aiFeedback.feedback?.workflow_id, "AI answer feedback workflow was not created", aiFeedback);
+
+const closedAiFeedback = await request(`/api/ai-chat/feedback/${aiFeedback.feedback.id}/review`, {
+  method: "POST",
+  body: JSON.stringify({
+    status: "closed",
+    reviewer: "p2_ai_smoke",
+    reviewNote: "Smoke closes feedback after governance routing validation."
+  })
+});
+assert(closedAiFeedback.feedback?.status === "closed", "AI answer feedback review failed", closedAiFeedback);
+
+const aiGovernanceSummary = await request("/api/ai-chat/governance-summary");
+assert(aiGovernanceSummary.questionSamples?.total >= 1, "AI governance summary missing question samples", aiGovernanceSummary);
+assert(aiGovernanceSummary.feedback?.total >= 1, "AI governance summary missing feedback", aiGovernanceSummary);
+assert(aiGovernanceSummary.boundary?.providerCalls === false, "AI governance provider boundary changed", aiGovernanceSummary);
+
 const actionTask = await request("/api/decision/action-task", {
   method: "POST",
   body: JSON.stringify({
@@ -573,6 +632,11 @@ console.log(
         "kbCardQuality.score",
         "kbStaleFindings.read",
         "kbCrosswalkMatrix.read",
+        "aiQuestionSample.create",
+        "aiQuestionSample.certify",
+        "aiFeedback.create",
+        "aiFeedback.close",
+        "aiGovernanceSummary.read",
         "decisionAction.create",
         "decisionAction.transitionPendingApproval",
         "decisionAction.transitionApproved",

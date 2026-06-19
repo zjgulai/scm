@@ -29,6 +29,11 @@ require_kb_governance = (
     or base_url.startswith("http://127.0.0.1")
     or base_url.startswith("http://localhost")
 )
+require_ai_feedback = (
+    os.environ.get("REQUIRE_AI_FEEDBACK") == "1"
+    or base_url.startswith("http://127.0.0.1")
+    or base_url.startswith("http://localhost")
+)
 expected = [
     "治理链路总览",
     "对象本体工作台",
@@ -174,6 +179,23 @@ for label in expected:
         ):
           raise SystemExit(f"KB governance feature check failed: {kb}")
         feature_checks.append({"kbGovernance": kb})
+    if label == "AI 对话":
+        ai = js("""
+        (() => ({
+          governanceCards: document.querySelectorAll('.aiGovernanceGrid > article').length,
+          questionLibrary: !!document.querySelector('.questionSampleLibrary'),
+          feedbackQueue: !!document.querySelector('.aiFeedbackQueue'),
+          feedbackActions: !!document.querySelector('.aiFeedbackActions'),
+          policyText: document.querySelector('.aiPolicy')?.textContent || ''
+        }))()
+        """)
+        if require_ai_feedback and (
+            ai["governanceCards"] < 3
+            or not ai["questionLibrary"]
+            or not ai["feedbackQueue"]
+        ):
+          raise SystemExit(f"AI feedback governance feature check failed: {ai}")
+        feature_checks.append({"aiFeedbackGovernance": ai})
     results.append({"label": label, "header": state["h1"]})
 
 print({

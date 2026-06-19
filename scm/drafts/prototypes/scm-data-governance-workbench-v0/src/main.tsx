@@ -202,6 +202,25 @@ type AiChatResult = {
   evidence: AiEvidence[];
 };
 
+type AiGovernanceSummary = {
+  questionSamples: {
+    total: number;
+    avgQuality: number;
+    byStatus: AnyRow[];
+    byType: AnyRow[];
+  };
+  feedback: {
+    total: number;
+    open: number;
+    byStatus: AnyRow[];
+    byRating: AnyRow[];
+  };
+  boundary: {
+    providerCalls: boolean;
+    writeBackPolicy: string;
+  };
+};
+
 type AssetRef = {
   type: string;
   id: string;
@@ -476,6 +495,13 @@ const columnLabels: Record<string, string> = {
   evidence_refs: "证据引用",
   workflow_id: "Workflow",
   question_sample: "问法样本",
+  question_text: "问题",
+  sample_type: "样本类型",
+  expected_answerability: "预期可答性",
+  domain_ids: "主题域",
+  source_message_id: "来源消息",
+  rating: "反馈评级",
+  feedback_text: "反馈说明",
   allowed_dimensions: "可用维度",
   evidence_chain: "证据链",
   answerability: "可回答性",
@@ -2688,9 +2714,18 @@ function AiChatPanel({
   const [result, setResult] = useState<AiChatResult | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
+  const [feedbackNote, setFeedbackNote] = useState("");
+  const [feedbackText, setFeedbackText] = useState("");
   const [refresh, setRefresh] = useState(0);
   const domains = useApi<KbDomain[]>(`/api/kb/domains?refresh=${refresh}`, []);
   const sessions = useApi<AnyRow[]>(`/api/ai-chat/sessions?limit=12&refresh=${refresh}`, []);
+  const governance = useApi<AiGovernanceSummary>(`/api/ai-chat/governance-summary?refresh=${refresh}`, {
+    questionSamples: { total: 0, avgQuality: 0, byStatus: [], byType: [] },
+    feedback: { total: 0, open: 0, byStatus: [], byRating: [] },
+    boundary: { providerCalls: false, writeBackPolicy: "semantic_governance_ledger_only" }
+  });
+  const questionSamples = useApi<AnyRow[]>(`/api/ai-chat/question-samples?limit=24&refresh=${refresh}`, []);
+  const feedbackItems = useApi<AnyRow[]>(`/api/ai-chat/feedback?limit=24&refresh=${refresh}`, []);
 
   useEffect(() => {
     if (!sourceAsset) return;
@@ -2749,9 +2784,106 @@ function AiChatPanel({
     });
   }
 
+  async function createQuestionSample(sampleType: "standard" | "synonym" | "reject" | "conflict") {
+    if (!result) return;
+    const payload = await api<{ ok: boolean; sample: AnyRow }>("/api/ai-chat/question-samples", {
+      method: "POST",
+      body: JSON.stringify({
+        questionText: question,
+        sampleType,
+        domainIds: selectedDomains,
+        expectedAnswerability: result.answerability,
+        sourceMessageId: result.messageId,
+        targetAssetType: sourceAsset?.type || (result.chatbiContextId ? "chatbi_context" : ""),
+        targetAssetId: sourceAsset?.id || result.chatbiContextId || "",
+        sourceContext: toChatSourceContext(sourceAsset),
+        evidenceRefs: result.evidence.slice(0, 5).map((item) => `kb:${item.domainId}/${item.cardId}/${item.chunkId}`),
+        createdBy: "local_user"
+      })
+    });
+    setFeedbackNote(`已沉淀问法样本 ${cellValue(payload.sample.id)}，等待语义审核。`);
+    setRefresh((value) => value + 1);
+    onWorkbenchRefresh();
+  }
+
+  async function createFeedback(rating: "useful" | "not_useful" | "insufficient" | "wrong_evidence") {
+    if (!result) return;
+    const payload = await api<{ ok: boolean; feedback: AnyRow }>("/api/ai-chat/feedback", {
+      method: "POST",
+      body: JSON.stringify({
+        sessionId: result.sessionId,
+        messageId: result.messageId,
+        questionText: question,
+        rating,
+        feedbackText,
+        answerability: result.answerability,
+        answerabilityScore: result.answerabilityScore,
+        evidenceCount: result.evidence.length,
+        sourceContext: toChatSourceContext(sourceAsset),
+        createdBy: "local_user"
+      })
+    });
+    setFeedbackText("");
+    setFeedbackNote(`已记录反馈 ${cellValue(payload.feedback.id)}，并生成语义治理 review workflow。`);
+    setRefresh((value) => value + 1);
+    onWorkbenchRefresh();
+  }
+
+  async function reviewQuestionSample(row: AnyRow, status: "certified" | "reviewed" | "rejected") {
+    const payload = await api<{ ok: boolean; sample: AnyRow }>(`/api/ai-chat/question-samples/${encodeURIComponent(String(row.id))}/review`, {
+      method: "POST",
+      body: JSON.stringify({
+        status,
+        reviewer: "local_user",
+        reviewNote: status === "certified"
+          ? "UI review: question sample is reusable for answerability governance."
+          : status === "rejected"
+            ? "UI review: sample rejected, evidence retained for audit."
+            : "UI review: sample checked, pending certification."
+      })
+    });
+    setFeedbackNote(`问法样本 ${cellValue(payload.sample.id)} 已更新为 ${cellValue(payload.sample.status)}。`);
+    setRefresh((value) => value + 1);
+  }
+
+  async function reviewFeedback(row: AnyRow, status: "resolved" | "closed" | "rejected") {
+    const payload = await api<{ ok: boolean; feedback: AnyRow }>(`/api/ai-chat/feedback/${encodeURIComponent(String(row.id))}/review`, {
+      method: "POST",
+      body: JSON.stringify({
+        status,
+        reviewer: "local_user",
+        reviewNote: status === "resolved"
+          ? "UI review: feedback translated into semantic governance action."
+          : status === "closed"
+            ? "UI review: feedback reviewed and closed."
+            : "UI review: feedback rejected as not actionable."
+      })
+    });
+    setFeedbackNote(`反馈 ${cellValue(payload.feedback.id)} 已更新为 ${cellValue(payload.feedback.status)}。`);
+    setRefresh((value) => value + 1);
+  }
+
   return (
     <section className="panel">
       <ModuleHeader module={module} />
+      <div className="aiGovernanceGrid">
+        <article>
+          <span>问法样本</span>
+          <strong>{governance.data.questionSamples.total}</strong>
+          <small>avg quality {governance.data.questionSamples.avgQuality || 0}</small>
+        </article>
+        <article>
+          <span>反馈总量</span>
+          <strong>{governance.data.feedback.total}</strong>
+          <small>{governance.data.feedback.open} open</small>
+        </article>
+        <article>
+          <span>语义边界</span>
+          <strong>{governance.data.boundary.providerCalls ? "ON" : "OFF"}</strong>
+          <small>{governance.data.boundary.writeBackPolicy}</small>
+        </article>
+      </div>
+      {feedbackNote ? <div className="kbNotice">{feedbackNote}</div> : null}
       <div className="aiChatLayout">
         <aside className="aiChatScope">
           <div className="surfaceHead">
@@ -2818,11 +2950,27 @@ function AiChatPanel({
                 <div className="answerBadges">
 	                  <Badge tone={answerabilityTone(result.answerability)}>{result.answerability}</Badge>
 	                  <Badge tone={answerabilityTone(result.answerability)}>{result.answerabilityScore}/100</Badge>
-	                  <Badge>{result.policy}</Badge>
+                  <Badge>{result.policy}</Badge>
 	                  <Badge tone={result.providerCalls ? "bad" : "good"}>{result.providerCalls ? "provider call" : "no provider call"}</Badge>
 	                  {result.chatbiContextId ? <Badge tone="blue">draft context</Badge> : null}
 	                </div>
 	              </div>
+              <div className="aiFeedbackActions">
+                <div>
+                  <strong>样本沉淀</strong>
+                  <span>把当前问法写入语义治理样本库，等待人工审核。</span>
+                </div>
+                <button className="textButton" onClick={() => createQuestionSample("standard")}>标准问法</button>
+                <button className="textButton" onClick={() => createQuestionSample("synonym")}>同义问法</button>
+                <button className="textButton" onClick={() => createQuestionSample(result.answerability === "conflict" ? "conflict" : "reject")}>拒答/冲突样本</button>
+                <label>
+                  反馈说明
+                  <input value={feedbackText} onChange={(event) => setFeedbackText(event.target.value)} placeholder="补充证据不足、证据错误或回答可用原因" />
+                </label>
+                <button className="textButton" onClick={() => createFeedback("useful")}>有用</button>
+                <button className="textButton" onClick={() => createFeedback("insufficient")}>证据不足</button>
+                <button className="textButton" onClick={() => createFeedback("wrong_evidence")}>证据错误</button>
+              </div>
               <div className="scoreExplain">
                 {[
                   ["证据覆盖", result.answerabilityDetails.evidenceCoverage],
@@ -2878,6 +3026,62 @@ function AiChatPanel({
           ) : (
             <div className="empty">输入问题后，将基于本地知识库索引返回证据、回答分级和拒答原因。</div>
           )}
+        </div>
+      </div>
+      <div className="aiGovernanceWorkbench">
+        <div className="surface questionSampleLibrary">
+          <div className="surfaceHead">
+            <div>
+              <p className="eyebrow">Question samples</p>
+              <h3>问法样本库</h3>
+            </div>
+            <Badge>{questionSamples.data.length} visible</Badge>
+          </div>
+          <div className="sampleList">
+            {questionSamples.data.length ? questionSamples.data.slice(0, 8).map((sample) => (
+              <article key={String(sample.id)}>
+                <div className="ledgerItemHead">
+                  <strong>{cellValue(sample.question_text)}</strong>
+                  <Badge tone={toneFromStatus(String(sample.status))}>{cellValue(sample.status)}</Badge>
+                </div>
+                <p>{cellValue(sample.sample_type)} / {cellValue(sample.expected_answerability)} / quality {cellValue(sample.quality_score)}</p>
+                <small>{cellValue(sample.target_asset_type)} {cellValue(sample.target_asset_id)}</small>
+                <div className="qualityActions">
+                  <button className="textButton" onClick={() => onOpenAsset(makeAsset("ai_question_sample", sample, ["question_text"], ["sample_type", "status"], true))}>详情</button>
+                  <button className="textButton" onClick={() => reviewQuestionSample(sample, "reviewed")}>标记已审</button>
+                  <button className="textButton" onClick={() => reviewQuestionSample(sample, "certified")}>认证样本</button>
+                  <button className="textButton" onClick={() => reviewQuestionSample(sample, "rejected")}>拒绝</button>
+                </div>
+              </article>
+            )) : <div className="empty compact">暂无问法样本。先运行一次本地证据回答，再沉淀样本。</div>}
+          </div>
+        </div>
+        <div className="surface aiFeedbackQueue">
+          <div className="surfaceHead">
+            <div>
+              <p className="eyebrow">Feedback loop</p>
+              <h3>AI 回答反馈队列</h3>
+            </div>
+            <Badge tone={governance.data.feedback.open ? "warn" : "good"}>{governance.data.feedback.open} open</Badge>
+          </div>
+          <div className="sampleList">
+            {feedbackItems.data.length ? feedbackItems.data.slice(0, 8).map((feedback) => (
+              <article key={String(feedback.id)}>
+                <div className="ledgerItemHead">
+                  <strong>{cellValue(feedback.question_text)}</strong>
+                  <Badge tone={toneFromStatus(String(feedback.status))}>{cellValue(feedback.rating)}</Badge>
+                </div>
+                <p>{cellValue(feedback.feedback_text) || "无补充说明"}</p>
+                <small>{cellValue(feedback.answerability)} / score {cellValue(feedback.answerability_score)} / evidence {cellValue(feedback.evidence_count)}</small>
+                <div className="qualityActions">
+                  <button className="textButton" onClick={() => onOpenAsset(makeAsset("ai_answer_feedback", feedback, ["question_text"], ["rating", "status"], true))}>详情</button>
+                  <button className="textButton" onClick={() => reviewFeedback(feedback, "resolved")}>转治理动作</button>
+                  <button className="textButton" onClick={() => reviewFeedback(feedback, "closed")}>关闭</button>
+                  <button className="textButton" onClick={() => reviewFeedback(feedback, "rejected")}>拒绝</button>
+                </div>
+              </article>
+            )) : <div className="empty compact">暂无反馈。回答后可以标记有用、证据不足或证据错误。</div>}
+          </div>
         </div>
       </div>
     </section>

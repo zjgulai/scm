@@ -46,6 +46,7 @@ ensureAiChatSchema();
 ensureP0GovernanceSchema();
 ensureP1WorkflowSchema();
 ensureP1WorkbenchOperationSchema();
+ensureP2QuestionFeedbackSchema();
 
 function json(res, payload, status = 200) {
   const body = JSON.stringify(payload);
@@ -422,6 +423,57 @@ function ensureAiChatSchema() {
     CREATE INDEX IF NOT EXISTS idx_chatbi_contexts_policy ON chatbi_contexts(answer_policy, status);
     CREATE INDEX IF NOT EXISTS idx_chatbi_contexts_source_message ON chatbi_contexts(source_message_id);
     CREATE INDEX IF NOT EXISTS idx_chatbi_contexts_status ON chatbi_contexts(status, metric_id, answer_policy);
+  `);
+}
+
+function ensureP2QuestionFeedbackSchema() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS ai_question_samples (
+      id TEXT PRIMARY KEY,
+      question_text TEXT NOT NULL,
+      sample_type TEXT NOT NULL DEFAULT 'standard',
+      target_asset_type TEXT NOT NULL DEFAULT '',
+      target_asset_id TEXT NOT NULL DEFAULT '',
+      domain_ids TEXT NOT NULL DEFAULT '[]',
+      expected_answerability TEXT NOT NULL DEFAULT 'partial',
+      source_message_id TEXT NOT NULL DEFAULT '',
+      source_context TEXT NOT NULL DEFAULT '{}',
+      evidence_refs TEXT NOT NULL DEFAULT '[]',
+      quality_score REAL NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'draft',
+      owner TEXT NOT NULL DEFAULT 'semantic_governance',
+      created_by TEXT NOT NULL DEFAULT 'local_user',
+      reviewer TEXT NOT NULL DEFAULT '',
+      review_note TEXT NOT NULL DEFAULT '',
+      workflow_id TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS ai_answer_feedback (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL DEFAULT '',
+      message_id TEXT NOT NULL DEFAULT '',
+      question_text TEXT NOT NULL,
+      rating TEXT NOT NULL,
+      feedback_text TEXT NOT NULL DEFAULT '',
+      answerability TEXT NOT NULL DEFAULT '',
+      answerability_score REAL NOT NULL DEFAULT 0,
+      evidence_count INTEGER NOT NULL DEFAULT 0,
+      source_context TEXT NOT NULL DEFAULT '{}',
+      workflow_id TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'review_pending',
+      created_by TEXT NOT NULL DEFAULT 'local_user',
+      reviewer TEXT NOT NULL DEFAULT '',
+      review_note TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_ai_question_samples_status ON ai_question_samples(status, sample_type, updated_at);
+    CREATE INDEX IF NOT EXISTS idx_ai_question_samples_target ON ai_question_samples(target_asset_type, target_asset_id);
+    CREATE INDEX IF NOT EXISTS idx_ai_answer_feedback_status ON ai_answer_feedback(status, rating, updated_at);
+    CREATE INDEX IF NOT EXISTS idx_ai_answer_feedback_message ON ai_answer_feedback(message_id);
   `);
 }
 
@@ -2358,6 +2410,9 @@ function getAiChatSummary() {
     sessions: tableCount("ai_chat_sessions"),
     messages: tableCount("ai_chat_messages"),
     evidence: tableCount("ai_retrieval_evidence"),
+    questionSamples: tableCount("ai_question_samples"),
+    feedback: tableCount("ai_answer_feedback"),
+    openFeedback: scalar("SELECT COUNT(*) AS count FROM ai_answer_feedback WHERE status NOT IN ('closed', 'rejected', 'resolved')"),
     chatbiSamples: scalar("SELECT COUNT(*) AS count FROM chatbi_contexts WHERE answer_policy = 'local_kb_evidence_sample'"),
     providerCalls: false,
     answerPolicy: "local_kb_evidence_only"
@@ -2812,6 +2867,296 @@ function getAiChatSession(id) {
     evidence: all("SELECT * FROM ai_retrieval_evidence WHERE message_id = ? ORDER BY score DESC", [message.id])
   }));
   return { ...session, messages };
+}
+
+function scoreQuestionSamplePayload(body) {
+  const question = normalizeText(body.questionText || body.question_text || body.question);
+  const domainIds = normalizeDomainIds(body.domainIds || body.domain_ids);
+  const evidenceRefs = Array.isArray(body.evidenceRefs || body.evidence_refs)
+    ? body.evidenceRefs || body.evidence_refs
+    : safeJsonArray(body.evidenceRefs || body.evidence_refs);
+  const hasTarget = Boolean(normalizeText(body.targetAssetType || body.target_asset_type) && normalizeText(body.targetAssetId || body.target_asset_id));
+  return clampScore(
+    18 +
+    (question.length >= 8 ? 18 : 0) +
+    (question.length >= 18 && question.length <= 120 ? 12 : 0) +
+    (domainIds.length ? 14 : 0) +
+    (hasTarget ? 16 : 0) +
+    (normalizeText(body.expectedAnswerability || body.expected_answerability) ? 10 : 0) +
+    Math.min(evidenceRefs.length * 6, 12)
+  );
+}
+
+function getQuestionSamples(url) {
+  const clauses = [];
+  const params = [];
+  const status = url.searchParams.get("status");
+  const sampleType = url.searchParams.get("sampleType") || url.searchParams.get("type");
+  const targetAssetType = url.searchParams.get("targetAssetType");
+  const q = url.searchParams.get("q");
+  if (status) {
+    clauses.push("status = ?");
+    params.push(status);
+  }
+  if (sampleType) {
+    clauses.push("sample_type = ?");
+    params.push(sampleType);
+  }
+  if (targetAssetType) {
+    clauses.push("target_asset_type = ?");
+    params.push(targetAssetType);
+  }
+  if (q) {
+    clauses.push("(question_text LIKE ? OR target_asset_id LIKE ? OR expected_answerability LIKE ? OR evidence_refs LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 80, 300));
+  return all(`SELECT * FROM ai_question_samples ${where} ORDER BY updated_at DESC, quality_score DESC LIMIT ?`, params);
+}
+
+function createQuestionSample(body) {
+  const question = normalizeText(body.questionText || body.question_text || body.question);
+  if (!question) {
+    const error = new Error("Missing required fields: questionText");
+    error.statusCode = 400;
+    throw error;
+  }
+  const id = makeId("qs");
+  const createdAt = nowIso();
+  const actor = normalizeText(body.createdBy || body.created_by || body.actor, "local_user");
+  const sampleType = normalizeText(body.sampleType || body.sample_type, "standard");
+  const owner = normalizeText(body.owner, "semantic_governance");
+  const status = normalizeText(body.status, "review_pending");
+  const targetAssetType = normalizeText(body.targetAssetType || body.target_asset_type);
+  const targetAssetId = normalizeText(body.targetAssetId || body.target_asset_id);
+  const workflow = createWorkflowInstance({
+    workflowType: "ai_question_sample_review",
+    assetType: "ai_question_sample",
+    assetId: id,
+    title: `AI 问法样本审核: ${question.slice(0, 48)}`,
+    sourceRef: `ai_question_sample:${id}`,
+    moduleId: "ai-chat",
+    priority: normalizeText(body.priority, "P2"),
+    owner,
+    createdBy: actor,
+    steps: [
+      { key: "sample_intake", name: "问法样本接收", status: "completed", note: "Question sample created in semantic governance ledger." },
+      { key: "semantic_review", name: "语义与证据审核", status: "pending", note: "Check target asset, expected answerability and evidence refs." },
+      { key: "certification_decision", name: "样本认证决策", status: "pending", note: "Certified samples can be used for answerability governance." }
+    ]
+  });
+  const record = {
+    id,
+    question_text: question,
+    sample_type: sampleType,
+    target_asset_type: targetAssetType,
+    target_asset_id: targetAssetId,
+    domain_ids: JSON.stringify(normalizeDomainIds(body.domainIds || body.domain_ids)),
+    expected_answerability: normalizeText(body.expectedAnswerability || body.expected_answerability, "partial"),
+    source_message_id: normalizeText(body.sourceMessageId || body.source_message_id),
+    source_context: normalizeJsonText(body.sourceContext || body.source_context, {}),
+    evidence_refs: normalizeJsonText(body.evidenceRefs || body.evidence_refs, []),
+    quality_score: scoreQuestionSamplePayload({ ...body, questionText: question, targetAssetType, targetAssetId }),
+    status,
+    owner,
+    created_by: actor,
+    reviewer: "",
+    review_note: "",
+    workflow_id: workflow.id,
+    created_at: createdAt,
+    updated_at: createdAt
+  };
+  run(
+    `INSERT INTO ai_question_samples
+      (id, question_text, sample_type, target_asset_type, target_asset_id, domain_ids, expected_answerability,
+       source_message_id, source_context, evidence_refs, quality_score, status, owner, created_by, reviewer,
+       review_note, workflow_id, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      record.id,
+      record.question_text,
+      record.sample_type,
+      record.target_asset_type,
+      record.target_asset_id,
+      record.domain_ids,
+      record.expected_answerability,
+      record.source_message_id,
+      record.source_context,
+      record.evidence_refs,
+      record.quality_score,
+      record.status,
+      record.owner,
+      record.created_by,
+      record.reviewer,
+      record.review_note,
+      record.workflow_id,
+      record.created_at,
+      record.updated_at
+    ]
+  );
+  writeAudit("ai_question_sample.created", "ai_question_sample", id, record, actor);
+  return get("SELECT * FROM ai_question_samples WHERE id = ?", [id]);
+}
+
+function reviewQuestionSample(id, body) {
+  const current = get("SELECT * FROM ai_question_samples WHERE id = ?", [id]);
+  if (!current) return null;
+  const status = normalizeText(body.status, "reviewed");
+  const reviewer = normalizeText(body.reviewer || body.actor, "local_user");
+  const reviewNote = normalizeText(body.reviewNote || body.review_note);
+  const updatedAt = nowIso();
+  run(
+    "UPDATE ai_question_samples SET status = ?, reviewer = ?, review_note = ?, updated_at = ? WHERE id = ?",
+    [status, reviewer, reviewNote, updatedAt, id]
+  );
+  if (current.workflow_id) {
+    completeWorkflowStep(current.workflow_id, "semantic_review", ["certified", "rejected"].includes(status) ? "completed" : status, reviewer, reviewNote);
+    completeWorkflowStep(current.workflow_id, "certification_decision", status === "certified" ? "approved" : status === "rejected" ? "rejected" : "pending", reviewer, reviewNote);
+    setWorkflowStatus(current.workflow_id, status === "certified" ? "approved" : status, reviewer, reviewNote);
+  }
+  writeAudit("ai_question_sample.reviewed", "ai_question_sample", id, { id, status, reviewer, reviewNote }, reviewer);
+  return get("SELECT * FROM ai_question_samples WHERE id = ?", [id]);
+}
+
+function getAiFeedback(url) {
+  const clauses = [];
+  const params = [];
+  const status = url.searchParams.get("status");
+  const rating = url.searchParams.get("rating");
+  const q = url.searchParams.get("q");
+  if (status) {
+    clauses.push("status = ?");
+    params.push(status);
+  }
+  if (rating) {
+    clauses.push("rating = ?");
+    params.push(rating);
+  }
+  if (q) {
+    clauses.push("(question_text LIKE ? OR feedback_text LIKE ? OR answerability LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 80, 300));
+  return all(`SELECT * FROM ai_answer_feedback ${where} ORDER BY updated_at DESC, created_at DESC LIMIT ?`, params);
+}
+
+function createAiFeedback(body) {
+  const question = normalizeText(body.questionText || body.question_text || body.question);
+  const rating = normalizeText(body.rating);
+  if (!question || !rating) {
+    const error = new Error("Missing required fields: questionText, rating");
+    error.statusCode = 400;
+    throw error;
+  }
+  const id = makeId("fb");
+  const createdAt = nowIso();
+  const actor = normalizeText(body.createdBy || body.created_by || body.actor, "local_user");
+  const evidenceCount = Number(body.evidenceCount || body.evidence_count || 0);
+  const workflow = createWorkflowInstance({
+    workflowType: "ai_answer_feedback_review",
+    assetType: "ai_answer_feedback",
+    assetId: id,
+    title: `AI 回答反馈审核: ${rating} / ${question.slice(0, 42)}`,
+    sourceRef: `ai_answer_feedback:${id}`,
+    moduleId: "ai-chat",
+    priority: ["wrong_evidence", "insufficient"].includes(rating) ? "P1" : "P2",
+    owner: normalizeText(body.owner, "semantic_governance"),
+    createdBy: actor,
+    steps: [
+      { key: "feedback_intake", name: "反馈接收", status: "completed", note: "User or smoke feedback captured in ledger." },
+      { key: "evidence_review", name: "证据链复核", status: "pending", note: "Review answerability, evidence and missing terms." },
+      { key: "governance_action", name: "治理动作决策", status: "pending", note: "Decide whether to create question sample, KB fix or ChatBI context review." }
+    ]
+  });
+  const record = {
+    id,
+    session_id: normalizeText(body.sessionId || body.session_id),
+    message_id: normalizeText(body.messageId || body.message_id),
+    question_text: question,
+    rating,
+    feedback_text: normalizeText(body.feedbackText || body.feedback_text),
+    answerability: normalizeText(body.answerability),
+    answerability_score: Number(body.answerabilityScore || body.answerability_score || 0),
+    evidence_count: evidenceCount,
+    source_context: normalizeJsonText(body.sourceContext || body.source_context, {}),
+    workflow_id: workflow.id,
+    status: normalizeText(body.status, "review_pending"),
+    created_by: actor,
+    reviewer: "",
+    review_note: "",
+    created_at: createdAt,
+    updated_at: createdAt
+  };
+  run(
+    `INSERT INTO ai_answer_feedback
+      (id, session_id, message_id, question_text, rating, feedback_text, answerability, answerability_score,
+       evidence_count, source_context, workflow_id, status, created_by, reviewer, review_note, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      record.id,
+      record.session_id,
+      record.message_id,
+      record.question_text,
+      record.rating,
+      record.feedback_text,
+      record.answerability,
+      record.answerability_score,
+      record.evidence_count,
+      record.source_context,
+      record.workflow_id,
+      record.status,
+      record.created_by,
+      record.reviewer,
+      record.review_note,
+      record.created_at,
+      record.updated_at
+    ]
+  );
+  writeAudit("ai_answer_feedback.created", "ai_answer_feedback", id, record, actor);
+  return get("SELECT * FROM ai_answer_feedback WHERE id = ?", [id]);
+}
+
+function reviewAiFeedback(id, body) {
+  const current = get("SELECT * FROM ai_answer_feedback WHERE id = ?", [id]);
+  if (!current) return null;
+  const status = normalizeText(body.status, "reviewed");
+  const reviewer = normalizeText(body.reviewer || body.actor, "local_user");
+  const reviewNote = normalizeText(body.reviewNote || body.review_note);
+  const updatedAt = nowIso();
+  run(
+    "UPDATE ai_answer_feedback SET status = ?, reviewer = ?, review_note = ?, updated_at = ? WHERE id = ?",
+    [status, reviewer, reviewNote, updatedAt, id]
+  );
+  if (current.workflow_id) {
+    completeWorkflowStep(current.workflow_id, "evidence_review", ["resolved", "rejected", "closed"].includes(status) ? "completed" : status, reviewer, reviewNote);
+    completeWorkflowStep(current.workflow_id, "governance_action", status === "resolved" || status === "closed" ? "approved" : status === "rejected" ? "rejected" : "pending", reviewer, reviewNote);
+    setWorkflowStatus(current.workflow_id, status, reviewer, reviewNote);
+  }
+  writeAudit("ai_answer_feedback.reviewed", "ai_answer_feedback", id, { id, status, reviewer, reviewNote }, reviewer);
+  return get("SELECT * FROM ai_answer_feedback WHERE id = ?", [id]);
+}
+
+function getAiGovernanceSummary() {
+  return {
+    questionSamples: {
+      total: tableCount("ai_question_samples"),
+      byStatus: all("SELECT status, COUNT(*) AS count FROM ai_question_samples GROUP BY status ORDER BY count DESC"),
+      byType: all("SELECT sample_type, status, COUNT(*) AS count FROM ai_question_samples GROUP BY sample_type, status ORDER BY sample_type, status"),
+      avgQuality: scalar("SELECT ROUND(AVG(quality_score), 0) AS count FROM ai_question_samples")
+    },
+    feedback: {
+      total: tableCount("ai_answer_feedback"),
+      open: scalar("SELECT COUNT(*) AS count FROM ai_answer_feedback WHERE status NOT IN ('closed', 'rejected', 'resolved')"),
+      byStatus: all("SELECT status, COUNT(*) AS count FROM ai_answer_feedback GROUP BY status ORDER BY count DESC"),
+      byRating: all("SELECT rating, COUNT(*) AS count FROM ai_answer_feedback GROUP BY rating ORDER BY count DESC")
+    },
+    boundary: {
+      providerCalls: false,
+      writeBackPolicy: "semantic_governance_ledger_only"
+    }
+  };
 }
 
 function moduleHealth() {
@@ -3672,7 +4017,30 @@ const server = createServer(async (req, res) => {
         return json(res, { ok: true, summary: reindexKnowledgeBase(body.actor || "local_user") }, 201);
       }
       if (req.method === "GET" && url.pathname === "/api/ai-chat/summary") return json(res, getAiChatSummary());
+      if (req.method === "GET" && url.pathname === "/api/ai-chat/governance-summary") return json(res, getAiGovernanceSummary());
       if (req.method === "GET" && url.pathname === "/api/ai-chat/sessions") return json(res, getAiChatSessions(url));
+      if (req.method === "GET" && url.pathname === "/api/ai-chat/question-samples") return json(res, getQuestionSamples(url));
+      if (req.method === "POST" && url.pathname === "/api/ai-chat/question-samples") {
+        const body = await readBody(req);
+        return json(res, { ok: true, sample: createQuestionSample(body) }, 201);
+      }
+      const questionSampleRoute = url.pathname.match(/^\/api\/ai-chat\/question-samples\/([^/]+)\/review$/);
+      if (req.method === "POST" && questionSampleRoute) {
+        const body = await readBody(req);
+        const sample = reviewQuestionSample(questionSampleRoute[1], body);
+        return sample ? json(res, { ok: true, sample }) : json(res, { error: "Question sample not found" }, 404);
+      }
+      if (req.method === "GET" && url.pathname === "/api/ai-chat/feedback") return json(res, getAiFeedback(url));
+      if (req.method === "POST" && url.pathname === "/api/ai-chat/feedback") {
+        const body = await readBody(req);
+        return json(res, { ok: true, feedback: createAiFeedback(body) }, 201);
+      }
+      const feedbackRoute = url.pathname.match(/^\/api\/ai-chat\/feedback\/([^/]+)\/review$/);
+      if (req.method === "POST" && feedbackRoute) {
+        const body = await readBody(req);
+        const feedback = reviewAiFeedback(feedbackRoute[1], body);
+        return feedback ? json(res, { ok: true, feedback }) : json(res, { error: "Feedback not found" }, 404);
+      }
       const aiChatSessionRoute = url.pathname.match(/^\/api\/ai-chat\/sessions\/([^/]+)$/);
       if (req.method === "GET" && aiChatSessionRoute) {
         const session = getAiChatSession(aiChatSessionRoute[1]);

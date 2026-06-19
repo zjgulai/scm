@@ -384,10 +384,13 @@ for label in expected:
                 kb_ready = js("""
                 (() => ({
                   createRuleButtons: document.querySelectorAll('.createKnowledgeRuleButton').length,
+                  scoreBlocks: document.querySelectorAll('.kbScoreGrid').length,
+                  cardsVisible: document.querySelectorAll('.kbCard').length,
+                  sourcesVisible: document.querySelectorAll('.sourceRegisterTable tbody tr').length,
                   emptyCards: document.body.innerText.includes('暂无知识卡')
                 }))()
                 """)
-                if kb_ready["createRuleButtons"] > 0 or kb_ready["emptyCards"]:
+                if kb_ready["createRuleButtons"] > 0 or kb_ready["scoreBlocks"] > 0 or kb_ready["cardsVisible"] > 0 or kb_ready["sourcesVisible"] > 0:
                     break
                 sleep(0.25)
         kb = js("""

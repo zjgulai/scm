@@ -1942,7 +1942,10 @@ function seedAipPhase1Data() {
       [id, tierCode, tierName, description, approvalRequired, writebackAllowed, JSON.stringify(allowedActions), tierCode === "L3" ? "disabled" : "active"]
     );
   });
-  if (tableCount("object_instances") > 0) return;
+  if (tableCount("object_instances") > 0) {
+    seedAipPhase1DemoInteractions(seededAt);
+    return;
+  }
 
   const objects = [
     {
@@ -2185,6 +2188,104 @@ function seedAipPhase1Data() {
     policyTiers: policyTiers.length,
     boundary: "local SQLite governance seed only; no provider call; no ERP writeback"
   }, "system");
+  seedAipPhase1DemoInteractions(seededAt);
+}
+
+function seedAipPhase1DemoInteractions(seededAt = nowIso()) {
+  if (!tableExists("recommendation_cards") || !tableExists("agent_execution_traces")) return;
+  const targetObject = get("SELECT id FROM object_instances WHERE id = 'obj_batch_fba_negative_available'");
+  if (!targetObject) return;
+  let inserted = false;
+  const traceId = "trace_seed_negative_available";
+  if (!get("SELECT id FROM agent_execution_traces WHERE id = ?", [traceId])) {
+    run(
+      `INSERT INTO agent_execution_traces
+        (id, session_id, source_message_id, intent, question, target_object_type, target_object_id,
+         target_metric_id, answerability, answerability_score, status, evidence_refs, created_by, created_at)
+       VALUES (?, '', '', 'negative_available_inventory_demo', ?, 'inventory_batch', ?, 'business_available_qty',
+         'partial', 72, 'completed', ?, 'system', ?)`,
+      [
+        traceId,
+        "FBA 可用库存为负是否合理，应该如何排查？",
+        targetObject.id,
+        JSON.stringify([
+          { type: "object_event", ref: "evt_negative_available_inventory" },
+          { type: "knowledge_domain", ref: "stocking-rules" }
+        ]),
+        seededAt
+      ]
+    );
+    [
+      ["intent_parse", "识别负可用库存场景", "定位到 business_available_qty < 0 的库存批次异常。"],
+      ["object_resolve", "绑定 InventoryBatch 对象", "对象 obj_batch_fba_negative_available 关联 SKU、Warehouse 和库存事件。"],
+      ["evidence_bind", "绑定证据链", "使用 object event、库存规则知识库和指标口径作为演示证据。"],
+      ["action_gate", "进入建议卡边界", "仅生成 L1 建议卡，不自动写回积加/ERP。"]
+    ].forEach(([stepType, title, detail], index) => {
+      run(
+        `INSERT INTO agent_trace_steps
+          (id, trace_id, step_order, step_type, step_title, step_detail, input_refs, output_refs, status, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'completed', ?)`,
+        [
+          `trstep_seed_negative_available_${index + 1}`,
+          traceId,
+          index + 1,
+          stepType,
+          title,
+          detail,
+          JSON.stringify(index === 0 ? ["question"] : [`trstep_seed_negative_available_${index}`]),
+          JSON.stringify(index === 3 ? ["recommendation_card:rec_seed_negative_available"] : [`step:${stepType}`]),
+          seededAt
+        ]
+      );
+    });
+    inserted = true;
+  }
+  const recommendationId = "rec_seed_negative_available";
+  if (!get("SELECT id FROM recommendation_cards WHERE id = ?", [recommendationId])) {
+    run(
+      `INSERT INTO recommendation_cards
+        (id, trace_id, target_object_type, target_object_id, scenario_type, recommendation_title,
+         recommendation_detail, impact_summary, evidence_refs, action_options, action_tier, owner,
+         priority, approval_status, workflow_id, due_date, created_by, reviewer, review_note, created_at, updated_at)
+       VALUES (?, ?, 'inventory_batch', ?, 'negative_available_inventory', ?, ?, ?, ?, ?, 'L1',
+         '库存 Owner', 'P1', 'submitted', '', '', 'system', '', '', ?, ?)`,
+      [
+        recommendationId,
+        traceId,
+        targetObject.id,
+        "Seed 演示：FBA 负可用库存排查行动卡",
+        "先核对平台预占、同步延迟、批次状态和调整流水，再决定是否发起库存修正或补货动作。",
+        "影响 business_available_qty、stockout_risk 和 Listing 可售连续性；当前仅为本地演示建议卡。",
+        JSON.stringify([
+          { type: "trace", ref: traceId },
+          { type: "object_event", ref: "evt_negative_available_inventory" },
+          { type: "boundary", ref: "no_erp_writeback" }
+        ]),
+        JSON.stringify(["核对平台预占", "检查库存同步延迟", "复核批次状态", "生成 Owner 审核任务"]),
+        seededAt,
+        seededAt
+      ]
+    );
+    run(
+      `INSERT OR IGNORE INTO recommendation_transitions
+        (id, recommendation_id, from_status, to_status, actor, note, evidence_refs, created_at)
+       VALUES ('rect_seed_negative_available', ?, 'none', 'submitted', 'system', ?, ?, ?)`,
+      [
+        recommendationId,
+        "Seed recommendation card for read-only public browser acceptance.",
+        JSON.stringify([{ type: "trace", ref: traceId }]),
+        seededAt
+      ]
+    );
+    inserted = true;
+  }
+  if (inserted) {
+    writeAudit("aip_phase1.demo_interactions_seeded", "aip_phase1", "demo_interactions", {
+      traceId,
+      recommendationId,
+      boundary: "seeded demo ledger assets only; no provider call; no ERP writeback"
+    }, "system");
+  }
 }
 
 function getAipObjects(url) {

@@ -181,6 +181,50 @@ Boundary confirmed by local smoke:
 - `erpWriteback=false`
 - `SCM_SKIP_PUBLIC_BROWSER_SMOKE=1`, so no public production assertion is made for this batch.
 
+## 12. Batch 5 Public Page Section Status
+
+Verified publicly at: `2026-06-20T00:51:00+0800`
+
+| Batch 5 item | Status | Evidence |
+|---|---|---|
+| Public release | `deployed_public` | `releaseId=scm-workbench-page-sections-d0fde67-20260620005007`, `gitSha=d0fde67` |
+| Object ontology sections | `passed_public` | Browser Harness clicked `Object 360`, `关系解释`, `本体台账`; all target panes visible |
+| ChatBI sections | `passed_public` | Browser Harness clicked `评分运营`, `上下文生成`, `认证队列`; all target panes visible |
+| AI knowledge sections | `passed_public` | Browser Harness clicked `证据卡片`, `知识源`, `诊断映射`, `规则治理`; all target panes visible |
+| Workflow orchestration sections | `passed_public` | Browser Harness clicked `模板门禁`, `阶段画布`, `协作契约`, `任务板`; all target panes visible |
+| KPI canvas | `passed_public` | `kpiCanvasNodes=178`; Browser Harness verified mind map, Palantir object graph and fullscreen |
+| Knowledge base | `passed_public` | `kbCards=295`; Browser Harness verified card pagination, evidence cards, source register, diagnostics and rule workbench |
+| Responsive gate | `passed_public` | Browser Harness checked all 15 modules at `1350x900`, `1024x900`, `768x900`, `390x900` |
+
+Verification commands:
+
+```bash
+npm run check
+SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm run smoke:p0
+REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser
+```
+
+Public health summary:
+
+```json
+{
+  "ok": true,
+  "releaseId": "scm-workbench-page-sections-d0fde67-20260620005007",
+  "gitSha": "d0fde67",
+  "kpiCanvasNodes": 178,
+  "kbCards": 295,
+  "providerCalls": false,
+  "erpWriteback": false
+}
+```
+
+Boundary confirmed:
+
+- no provider call;
+- no ERP/Jijia writeback;
+- SQLite external volume reused;
+- Browser Harness was read-only against public production.
+
 ## 36. Readability Layout Public Deployment Status
 
 Verified publicly at: `2026-06-19T22:31:31+0800`

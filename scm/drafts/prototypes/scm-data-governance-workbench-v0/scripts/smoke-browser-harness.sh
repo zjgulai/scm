@@ -68,6 +68,10 @@ summary = js("""
   brandTitle: document.querySelector('.brand strong')?.textContent?.trim() || '',
   bodyBackgroundImage: getComputedStyle(document.body).backgroundImage,
   bodyBackgroundColor: getComputedStyle(document.body).backgroundColor,
+  bodyFontFamily: getComputedStyle(document.body).fontFamily,
+  bodyTextColor: getComputedStyle(document.body).color,
+  brandBackground: getComputedStyle(document.querySelector('.brand span')).backgroundColor,
+  navBackground: getComputedStyle(document.querySelector('.sidebar')).backgroundColor,
   visibleText: document.body.innerText.slice(0, 5000)
 }))()
 """)
@@ -76,6 +80,12 @@ if summary["brandMark"] != "SC" or summary["brandTitle"] != "AIP-SCM" or "SCM Go
     raise SystemExit(f"Brand check failed: {summary}")
 if summary["bodyBackgroundImage"] != "none":
     raise SystemExit(f"Body background should not use grid/image background: {summary['bodyBackgroundImage']}")
+if summary["bodyBackgroundColor"] != "rgb(245, 245, 247)":
+    raise SystemExit(f"Body background should use Apple-style #f5f5f7: {summary['bodyBackgroundColor']}")
+if not any(token in summary["bodyFontFamily"] for token in ["SF Pro", "-apple-system", "PingFang"]):
+    raise SystemExit(f"Apple-style font stack missing: {summary['bodyFontFamily']}")
+if summary["bodyTextColor"] != "rgb(29, 29, 31)":
+    raise SystemExit(f"Body text color should use #1d1d1f: {summary['bodyTextColor']}")
 
 missing = [label for label in expected if not any(label in text for text in summary["labels"])]
 if missing:
@@ -166,11 +176,15 @@ for label in expected:
           releaseStatus: !!document.querySelector('.releaseStatusPanel'),
           releaseFields: document.querySelectorAll('.releaseStatusPanel .releaseMetaItem').length,
           releaseBoundary: document.querySelector('.releaseStatusPanel')?.innerText.includes('ERP writeback off') || false,
+          heroBackground: getComputedStyle(document.querySelector('.missionHero')).backgroundImage,
+          heroRadius: getComputedStyle(document.querySelector('.missionHero')).borderRadius,
+          cardBackground: getComputedStyle(document.querySelector('.assetProgressPanel')).backgroundColor,
+          cardBorder: getComputedStyle(document.querySelector('.assetProgressPanel')).borderColor,
           flow: !!document.querySelector('.workbenchFlowStrip'),
           exports: document.querySelectorAll('.exportActions a').length
         }))()
         """)
-        if not cockpit["cockpit"] or not cockpit["aiSearch"] or cockpit["moduleCards"] < 4 or cockpit["assetProgress"] < 4 or not cockpit["taskCenter"] or not cockpit["releaseStatus"] or cockpit["releaseFields"] < 4 or not cockpit["releaseBoundary"] or not cockpit["flow"] or cockpit["exports"] < 2:
+        if not cockpit["cockpit"] or not cockpit["aiSearch"] or cockpit["moduleCards"] < 4 or cockpit["assetProgress"] < 4 or not cockpit["taskCenter"] or not cockpit["releaseStatus"] or cockpit["releaseFields"] < 4 or not cockpit["releaseBoundary"] or cockpit["heroRadius"] != "8px" or cockpit["cardBackground"] != "rgb(255, 255, 255)" or not cockpit["flow"] or cockpit["exports"] < 2:
           raise SystemExit(f"Overview cockpit feature check failed: {cockpit}")
         feature_checks.append({"overviewCockpit": cockpit})
         workflow = js("""

@@ -1,24 +1,31 @@
 :root {
-  --ink: #17202a;
-  --ink-2: #243244;
-  --muted: #6f7a86;
-  --line: #e3e7ec;
-  --line-strong: #c7d0da;
-  --paper: #f8f9f1;
+  --ink: #1d1d1f;
+  --ink-2: #424245;
+  --muted: #6e6e73;
+  --line: #d2d2d7;
+  --line-strong: #b8bcc4;
+  --paper: #f5f5f7;
   --panel: #ffffff;
-  --panel-soft: #fbfcfd;
-  --blue: #214f80;
-  --blue-soft: #edf4fb;
-  --teal: #2f8f98;
-  --teal-soft: #e8f6f6;
-  --green: #3d7b5d;
-  --green-soft: #ebf5ef;
-  --amber: #a56a2a;
-  --amber-soft: #fbf2e7;
-  --rose: #ad4c5b;
-  --rose-soft: #f8edf0;
-  --shadow: 0 18px 44px rgba(30, 42, 56, 0.07);
-  font-family: Inter, "IBM Plex Sans", "Noto Sans SC", "Aptos", sans-serif;
+  --panel-soft: #fbfbfd;
+  --blue: #0071e3;
+  --blue-soft: #eaf3ff;
+  --teal: #00a3b5;
+  --teal-soft: #e7f8fb;
+  --green: #2e7d32;
+  --green-soft: #eef8f1;
+  --amber: #b45f06;
+  --amber-soft: #fff4e5;
+  --rose: #bf2d46;
+  --rose-soft: #fff1f3;
+  --focus: rgba(0, 125, 250, 0.58);
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.04), 0 12px 32px rgba(0, 0, 0, 0.055);
+  --shadow-soft: 0 1px 1px rgba(0, 0, 0, 0.035), 0 6px 18px rgba(0, 0, 0, 0.045);
+  --radius-card: 8px;
+  --radius-control: 10px;
+  --radius-pill: 980px;
+  --font-text: "SF Pro SC", "SF Pro Text", "SF Pro Icons", -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  --font-display: "SF Pro SC", "SF Pro Display", "SF Pro Icons", -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-family: var(--font-text);
 }
 
 * {
@@ -27,6 +34,7 @@
 
 html {
   min-width: 320px;
+  font-family: var(--font-text);
 }
 
 body {
@@ -34,6 +42,12 @@ body {
   color: var(--ink);
   background: var(--paper);
   background-size: auto;
+  font-family: var(--font-text);
+  font-size: 15px;
+  line-height: 1.47059;
+  letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 button,
@@ -55,22 +69,30 @@ p {
 
 h1 {
   margin-bottom: 0;
-  font-size: 30px;
-  line-height: 1.18;
-  font-weight: 760;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(30px, 3vw, 46px);
+  line-height: 1.12;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 h2 {
   margin-bottom: 8px;
-  font-size: 21px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 22px;
   line-height: 1.25;
-  font-weight: 760;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 h3 {
   margin: 0;
   font-size: 15px;
   line-height: 1.35;
+  font-weight: 600;
+  letter-spacing: 0;
 }
 
 .shell {
@@ -4838,6 +4860,355 @@ span,
 button,
 a {
   overflow-wrap: anywhere;
+}
+
+/* Apple Support inspired refinement: quiet surfaces, SF typography, precise controls. */
+a {
+  color: #0066cc;
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button,
+a,
+input,
+select,
+textarea {
+  letter-spacing: 0;
+}
+
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--focus);
+}
+
+.sidebar {
+  background: rgba(251, 251, 253, 0.86);
+  border-right-color: rgba(210, 210, 215, 0.78);
+  box-shadow: none;
+  backdrop-filter: blur(18px);
+}
+
+.brand {
+  padding-bottom: 16px;
+}
+
+.brand span {
+  border-radius: var(--radius-control);
+  background: var(--blue);
+  box-shadow: none;
+}
+
+.brand strong {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.brand small {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+nav button {
+  min-height: 54px;
+  border-radius: var(--radius-control);
+  color: var(--muted);
+  background: transparent;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+nav button span {
+  border-radius: var(--radius-control);
+  color: var(--blue);
+  background: #fff;
+  font-weight: 600;
+}
+
+nav button strong {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+
+nav button.active,
+nav button:hover {
+  border-color: rgba(0, 113, 227, 0.18);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+nav button.active span {
+  color: #fff;
+  border-color: var(--blue);
+  background: var(--blue);
+}
+
+.topbar {
+  color: var(--muted);
+}
+
+.topMeta span,
+.releaseMetaItem span,
+.moduleSignal span,
+.workflowSummaryGrid span,
+.workflowSummaryGrid small,
+.roleSummaryGrid span,
+.roleSummaryGrid small,
+.muted,
+.eyebrow {
+  color: var(--muted);
+}
+
+.eyebrow {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.panel,
+.railPanel {
+  padding: clamp(18px, 2vw, 26px);
+}
+
+.missionHero,
+.cockpitSearch,
+.assetProgressPanel,
+.taskCenterPanel,
+.releaseStatusPanel,
+.workbenchFlowStrip,
+.moduleOpsPanel,
+.moduleOpsForm,
+.moduleOpsList,
+.moduleGrid article,
+.readinessGrid article,
+.workflowSummaryGrid > div,
+.workflowCard,
+.candidateCard,
+.overviewExportCard,
+.surfaceCard,
+.kpiWorkbench,
+.kpiInspector,
+.chatbiAnswerabilityPanel,
+.chatbiWorkbench,
+.auditFacets,
+.auditTimeline,
+.qualityWorkbench,
+.workflowTemplatePanel,
+.orchestrationCommandBar article,
+.orchestrationBoundary,
+.orchestrationLane,
+.orchestrationModuleMatrix,
+.handoffPanel,
+.orchestrationTaskPool,
+.roleSummaryGrid article,
+.roleMissionPanel,
+.roleQueueGrid > article,
+.roleActionPanel,
+.roleBatchActionPanel,
+.roleSlaShiftGrid > section,
+.roleSupportingGrid > section,
+.object360Panel,
+.objectEvidencePanel,
+.objectEventTimeline,
+.agentTraceTimeline,
+.recommendationCards article,
+.decisionWorkbench article,
+.knowledgeRulesWorkbench,
+.knowledgeRuleCards article,
+.kbGovernanceGrid article,
+.domainGrid article {
+  border-color: var(--line);
+  border-radius: var(--radius-card);
+  background: var(--panel);
+  box-shadow: var(--shadow-soft);
+}
+
+.missionHero {
+  gap: clamp(18px, 2.4vw, 32px);
+  padding: clamp(26px, 3.4vw, 46px);
+  background: linear-gradient(180deg, #fff, var(--panel-soft));
+  box-shadow: var(--shadow);
+}
+
+.heroCopy h1 {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: clamp(34px, 4.2vw, 56px);
+  line-height: 1.07143;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+.heroCopy p:last-child {
+  color: var(--muted);
+  font-size: clamp(15px, 1.18vw, 18px);
+  line-height: 1.55;
+}
+
+.moduleHeader h2,
+.sectionHeader h2,
+.surfaceHead h2,
+.compactHeader h2 {
+  font-weight: 600;
+}
+
+.moduleGrid article,
+.readinessGrid article,
+.workflowSummaryGrid > div,
+.overviewExportCard,
+.workflowCard,
+.candidateCard,
+.templateRail button,
+.moduleContractList article,
+.handoffList article,
+.roleQueueList button,
+.facetList button,
+.templateStep,
+.templateMetaGrid > div {
+  box-shadow: none;
+}
+
+.moduleGrid article:hover,
+.templateRail button.active,
+.moduleContractList article.active,
+.facetList button.active,
+.facetList button:hover {
+  border-color: rgba(0, 113, 227, 0.28);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.moduleSignal strong,
+.workflowSummaryGrid strong,
+.orchestrationCommandBar strong,
+.roleSummaryGrid strong,
+.qualitySummaryGrid strong,
+.readinessGrid strong {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.workflowSummaryGrid strong,
+.orchestrationCommandBar strong,
+.roleSlaScore strong,
+.qualitySummaryGrid strong {
+  font-size: clamp(24px, 2.2vw, 32px);
+  line-height: 1.08;
+}
+
+.textButton,
+.exportActions a,
+.exportActions span,
+.canvasControls button,
+.qualityActions button,
+.canvasActions button,
+.cockpitSearchActions button[type="submit"],
+.moduleOpsForm button[type="submit"],
+.roleActionDraftButton,
+.roleBatchActionButton,
+.templateReviewButton {
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+}
+
+.textButton,
+.exportActions a,
+.canvasControls button,
+.qualityActions button,
+.canvasActions button {
+  min-height: 32px;
+  border-color: rgba(0, 113, 227, 0.22);
+  color: var(--blue);
+  background: #fff;
+}
+
+.textButton:hover,
+.exportActions a:hover,
+.canvasControls button.active,
+.canvasControls button:hover,
+.qualityActions button:hover,
+.canvasActions button:hover {
+  color: #fff;
+  border-color: var(--blue);
+  background: var(--blue);
+  text-decoration: none;
+}
+
+.cockpitSearchActions button[type="submit"],
+.roleActionDraftButton,
+.roleBatchActionButton,
+.templateReviewButton {
+  border: 1px solid var(--blue);
+  color: #fff;
+  background: var(--blue);
+  box-shadow: none;
+}
+
+.cockpitSearchActions button[type="submit"]:hover,
+.roleActionDraftButton:hover,
+.roleBatchActionButton:hover,
+.templateReviewButton:hover {
+  background: #0077ed;
+}
+
+input,
+select,
+textarea {
+  border-color: var(--line);
+  border-radius: var(--radius-control);
+  color: var(--ink);
+  background: #fff;
+}
+
+textarea::placeholder,
+input::placeholder {
+  color: #86868b;
+}
+
+.cockpitAnswer,
+.chatbiAnswerabilityPanel,
+.answerabilityMiniGrid article,
+.knowledgeRuleSummaryGrid article,
+.templateRail button.active,
+.roleBatchSelector label.selected,
+.metricChip,
+.sectionLabel span {
+  border-color: rgba(0, 113, 227, 0.18);
+  background: var(--blue-soft);
+}
+
+.badge,
+.statusPill,
+.metricChip,
+.sectionLabel span,
+.moduleContractStats span,
+.laneModuleChips button {
+  border-radius: var(--radius-pill);
+  font-weight: 600;
+}
+
+.laneNumber,
+.templateStepIndex,
+.moduleContractTitle span,
+.brand span {
+  font-family: var(--font-display);
+  font-weight: 600;
+}
+
+.templateStep:not(:last-child)::after,
+.orchestrationLane:not(:last-child)::after {
+  border-color: rgba(0, 113, 227, 0.28);
 }
 
 @media (max-width: 1180px) {

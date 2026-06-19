@@ -19,6 +19,11 @@ import os
 from time import sleep
 
 base_url = os.environ["BASE_URL"]
+require_operation_dock = (
+    os.environ.get("REQUIRE_WORKBENCH_OPERATIONS") == "1"
+    or base_url.startswith("http://127.0.0.1")
+    or base_url.startswith("http://localhost")
+)
 expected = [
     "治理链路总览",
     "对象本体工作台",
@@ -76,6 +81,17 @@ for label in expected:
         raise SystemExit(f"Navigation failed for {label}: active header={state['h1']!r}")
     if "Application error" in state["body"] or "Unhandled Runtime Error" in state["body"]:
         raise SystemExit(f"Visible app error after opening {label}")
+    operation_dock = js("""
+    (() => ({
+      panel: !!document.querySelector('.moduleOpsPanel'),
+      summary: !!document.querySelector('.moduleOpsSummary'),
+      toggle: !!document.querySelector('.moduleOpsSummary .textButton')
+    }))()
+    """)
+    if require_operation_dock and (not operation_dock["panel"] or not operation_dock["summary"] or not operation_dock["toggle"]):
+        raise SystemExit(f"Workbench operation dock missing after opening {label}: {operation_dock}")
+    if require_operation_dock and label == "治理链路总览":
+        feature_checks.append({"workbenchOperations": operation_dock})
     if label == "治理链路总览":
         workflow = js("""
         (() => ({

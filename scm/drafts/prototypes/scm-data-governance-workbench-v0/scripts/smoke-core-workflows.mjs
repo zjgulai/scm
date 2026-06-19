@@ -210,6 +210,78 @@ const bulkReview = await request("/api/workflows/bulk-review", {
 });
 assert(bulkReview.updated === 1, "workflow bulk review failed", bulkReview);
 
+const workbenchOperation = await request("/api/workbench/operations", {
+  method: "POST",
+  body: JSON.stringify({
+    moduleId: "tags",
+    operationType: "rule_publish_request",
+    targetAssetType: "tag",
+    targetAssetIds: ["sku", "warehouse"],
+    operationTitle: `P1 smoke workbench operation ${Date.now()}`,
+    operationSummary: "P1 smoke validates module operation create, workflow linkage and ledger-only review.",
+    operationPayload: {
+      rule_version: "smoke-v1",
+      publish_policy: "review_before_canonical_write"
+    },
+    owner: "p1_ops_smoke",
+    priority: "P1",
+    createdBy: "p1_ops_smoke"
+  })
+});
+assert(workbenchOperation.operation?.id, "workbench operation was not created", workbenchOperation);
+assert(workbenchOperation.operation?.workflow_id, "workbench operation workflow was not created", workbenchOperation);
+
+const filteredOperations = await request(`/api/workbench/operations?moduleId=tags&operationType=rule_publish_request&owner=p1_ops_smoke&q=${encodeURIComponent("P1 smoke workbench")}`);
+assert(
+  Array.isArray(filteredOperations) && filteredOperations.some((operation) => operation.id === workbenchOperation.operation.id),
+  "workbench operation filters did not find smoke operation",
+  filteredOperations
+);
+
+const reviewedOperation = await request(`/api/workbench/operations/${workbenchOperation.operation.id}/review`, {
+  method: "POST",
+  body: JSON.stringify({
+    status: "approved",
+    reviewer: "p1_ops_smoke",
+    reviewNote: "Smoke approves the workbench operation without canonical table writes."
+  })
+});
+assert(reviewedOperation.operation?.status === "approved", "workbench operation review failed", reviewedOperation);
+
+const bulkOperation = await request("/api/workbench/operations", {
+  method: "POST",
+  body: JSON.stringify({
+    moduleId: "dimensions",
+    operationType: "compatibility_check",
+    targetAssetType: "dimension",
+    targetAssetIds: "warehouse,sku",
+    operationTitle: `P1 smoke bulk operation ${Date.now()}`,
+    operationSummary: "P1 smoke validates workbench operation bulk review.",
+    operationPayload: {
+      matrix: "metric_dimension",
+      conflict_policy: "review_required"
+    },
+    owner: "p1_ops_bulk_smoke",
+    priority: "P1",
+    createdBy: "p1_ops_bulk_smoke"
+  })
+});
+assert(bulkOperation.operation?.id, "bulk workbench operation was not created", bulkOperation);
+
+const bulkOperationReview = await request("/api/workbench/operations/bulk-review", {
+  method: "POST",
+  body: JSON.stringify({
+    ids: [bulkOperation.operation.id],
+    status: "rejected",
+    reviewer: "p1_ops_bulk_smoke",
+    note: "Smoke rejects bulk workbench operation to keep canonical assets unchanged."
+  })
+});
+assert(bulkOperationReview.updated === 1, "workbench operation bulk review failed", bulkOperationReview);
+
+const operationSummary = await request("/api/workbench/operations/summary");
+assert(operationSummary.total >= 2, "workbench operation summary missing smoke operations", operationSummary);
+
 const qualityRule = await request("/api/quality/rules", {
   method: "POST",
   body: JSON.stringify({
@@ -448,6 +520,11 @@ console.log(
         "workflowSummary.read",
         "workflowFilters.read",
         "workflowBulkReview.writeLedgerOnly",
+        "workbenchOperation.create",
+        "workbenchOperation.filter",
+        "workbenchOperation.review",
+        "workbenchOperation.bulkReview",
+        "workbenchOperation.summary",
         "ontologyPath.read",
         "kpiCanvasNode.read",
         "kpiCanvasNode.update",

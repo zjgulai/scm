@@ -221,6 +221,26 @@ type WorkflowInstance = {
   sla_note?: string;
 };
 
+type WorkbenchOperation = {
+  id: string;
+  module_id: string;
+  operation_type: string;
+  target_asset_type: string;
+  target_asset_ids: string;
+  operation_title: string;
+  operation_summary: string;
+  operation_payload: string;
+  owner: string;
+  priority: string;
+  status: string;
+  workflow_id: string;
+  reviewer: string;
+  review_note: string;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+};
+
 type OntologyPath = {
   object: AnyRow | null;
   outbound: AnyRow[];
@@ -379,7 +399,13 @@ const columnLabels: Record<string, string> = {
   sla_status: "SLA",
   sla_note: "SLA 说明",
   transition_count: "状态迁移",
-  last_transition_at: "最近迁移"
+  last_transition_at: "最近迁移",
+  operation_type: "操作类型",
+  operation_title: "操作标题",
+  operation_summary: "操作说明",
+  operation_payload: "操作载荷",
+  target_asset_ids: "目标资产",
+  workflow_ref: "关联流程"
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -512,19 +538,330 @@ function makeAsset(type: string, row: AnyRow, titleKeys: string[], subtitleKeys:
   };
 }
 
+function defaultOperationTemplate(moduleId: string) {
+  const templates: Record<string, { operationType: string; targetAssetType: string; title: string; summary: string; payload: Record<string, string> }> = {
+    overview: {
+      operationType: "risk_drilldown",
+      targetAssetType: "governance_module",
+      title: "治理风险下钻任务",
+      summary: "将总览中发现的 SLA、质量或认证风险转为 owner 可审核的治理任务。",
+      payload: { view: "overview", decision_boundary: "ledger_only" }
+    },
+    ontology: {
+      operationType: "revision_request",
+      targetAssetType: "ontology_object",
+      title: "对象本体修订建议",
+      summary: "对对象属性、关系解释或状态定义提出只读本体修订建议。",
+      payload: { readonly: "true", action: "annotate_comment_revision_only" }
+    },
+    tags: {
+      operationType: "rule_publish_request",
+      targetAssetType: "tag",
+      title: "标签规则发布审核",
+      summary: "批量复核标签规则、适用对象、owner 和发布状态。",
+      payload: { lifecycle: "draft_to_reviewed", validation: "target_object_required" }
+    },
+    dimensions: {
+      operationType: "compatibility_check",
+      targetAssetType: "dimension",
+      title: "维度适配矩阵检查",
+      summary: "复核维度层级、绑定对象与可用指标范围，沉淀冲突或缺失项。",
+      payload: { compatibility_scope: "metric_dimension", conflict_policy: "review_before_publish" }
+    },
+    "metric-engineering": {
+      operationType: "field_mapping_review",
+      targetAssetType: "metric",
+      title: "指标字段映射审核",
+      summary: "对指标公式、物理字段映射、异常处理和影响范围发起审核。",
+      payload: { canonical_metric_write: "false", review_scope: "formula_field_lineage" }
+    },
+    "metric-dictionary": {
+      operationType: "dictionary_revision_request",
+      targetAssetType: "metric",
+      title: "指标字典同义词与问法修订",
+      summary: "保持指标字典 2.0 只读，将口径、同义词或问法调整进入修订台账。",
+      payload: { metric_dictionary_v2: "read_only", route: "revision_proposal" }
+    },
+    "kpi-system": {
+      operationType: "mece_conflict_check",
+      targetAssetType: "kpi_node",
+      title: "指标体系 MECE 冲突检查",
+      summary: "对 L0-L3 节点、归因路径和点击注解发起结构复核。",
+      payload: { graph_scope: "L0_L3", check: "duplicate_gap_overlap" }
+    },
+    "lineage-quality": {
+      operationType: "quality_batch_run",
+      targetAssetType: "quality_rule",
+      title: "质量规则批量执行",
+      summary: "批量执行质量规则，生成问题、owner 任务和关闭复盘。",
+      payload: { run_mode: "ledger_record", issue_policy: "task_required" }
+    },
+    chatbi: {
+      operationType: "context_certification_review",
+      targetAssetType: "chatbi_context",
+      title: "ChatBI 上下文认证复核",
+      summary: "对问法样本、可用维度、证据链和拒答原因做认证复核。",
+      payload: { answer_policy: "certified_metric_only", sql_execution: "false" }
+    },
+    "ai-knowledge": {
+      operationType: "kb_source_quality_review",
+      targetAssetType: "kb_card",
+      title: "知识卡质量复核",
+      summary: "复核知识源、证据等级、过期风险和指标体系支撑关系。",
+      payload: { score_dimensions: "completeness_evidence_freshness_usage" }
+    },
+    "ai-chat": {
+      operationType: "question_feedback_review",
+      targetAssetType: "ai_chat_message",
+      title: "AI 问答反馈复核",
+      summary: "将证据不足、冲突或用户反馈沉淀为问法样本和治理任务。",
+      payload: { provider_calls: "false", feedback_loop: "required" }
+    },
+    "decision-loop": {
+      operationType: "action_replay_review",
+      targetAssetType: "action_task",
+      title: "决策动作复盘审核",
+      summary: "复核洞察、建议、审批、任务、结果和复盘链路。",
+      payload: { writeback_policy: "suggestion_approval_replay_only" }
+    },
+    "audit-log": {
+      operationType: "audit_export_request",
+      targetAssetType: "audit_event",
+      title: "审计证据导出请求",
+      summary: "对审计事件筛选、导出和保留策略提出受控操作请求。",
+      payload: { append_only: "true", retention_policy: "pending_design" }
+    }
+  };
+  return templates[moduleId] || templates.overview;
+}
+
+function WorkbenchOperationDock({ module }: { module: WorkbenchModule }) {
+  const template = useMemo(() => defaultOperationTemplate(module.id), [module.id]);
+  const [refresh, setRefresh] = useState(0);
+  const [expanded, setExpanded] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [filters, setFilters] = useState({ status: "", operationType: "", q: "" });
+  const [note, setNote] = useState("");
+  const [form, setForm] = useState({
+    operationType: template.operationType,
+    targetAssetType: template.targetAssetType,
+    targetAssetIds: "",
+    operationTitle: template.title,
+    operationSummary: template.summary,
+    owner: "data_governance",
+    priority: "P1",
+    operationPayload: JSON.stringify(template.payload, null, 2)
+  });
+  useEffect(() => {
+    setForm({
+      operationType: template.operationType,
+      targetAssetType: template.targetAssetType,
+      targetAssetIds: "",
+      operationTitle: template.title,
+      operationSummary: template.summary,
+      owner: "data_governance",
+      priority: "P1",
+      operationPayload: JSON.stringify(template.payload, null, 2)
+    });
+    setSelectedIds([]);
+    setFilters({ status: "", operationType: "", q: "" });
+  }, [module.id, template]);
+  const operationPath = useMemo(() => {
+    const params = new URLSearchParams({ moduleId: module.id, limit: "40", refresh: String(refresh) });
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value) params.set(key, value);
+    });
+    return `/api/workbench/operations?${params.toString()}`;
+  }, [module.id, filters, refresh]);
+  const operations = useApi<WorkbenchOperation[]>(operationPath, []);
+
+  async function submitOperation(event: React.FormEvent) {
+    event.preventDefault();
+    let operationPayload: unknown = form.operationPayload;
+    try {
+      operationPayload = JSON.parse(form.operationPayload || "{}");
+    } catch {
+      operationPayload = { raw: form.operationPayload };
+    }
+    const result = await api<{ ok: boolean; operation: WorkbenchOperation }>("/api/workbench/operations", {
+      method: "POST",
+      body: JSON.stringify({
+        moduleId: module.id,
+        operationType: form.operationType,
+        targetAssetType: form.targetAssetType,
+        targetAssetIds: form.targetAssetIds,
+        operationTitle: form.operationTitle,
+        operationSummary: form.operationSummary,
+        operationPayload,
+        owner: form.owner,
+        priority: form.priority,
+        createdBy: "local_user"
+      })
+    });
+    setNote(`已创建操作 ${result.operation.id}，关联 workflow ${result.operation.workflow_id}`);
+    setExpanded(true);
+    setRefresh((value) => value + 1);
+  }
+
+  async function reviewOperation(operation: WorkbenchOperation, status: "approved" | "rejected") {
+    await api(`/api/workbench/operations/${encodeURIComponent(operation.id)}/review`, {
+      method: "POST",
+      body: JSON.stringify({
+        status,
+        reviewer: "local_user",
+        reviewNote: `Workbench operation marked as ${status} from ${module.id}.`
+      })
+    });
+    setNote(`操作 ${operation.id} 已更新为 ${status}`);
+    setRefresh((value) => value + 1);
+  }
+
+  async function bulkReview(status: "approved" | "rejected") {
+    if (!selectedIds.length) return;
+    await api("/api/workbench/operations/bulk-review", {
+      method: "POST",
+      body: JSON.stringify({
+        ids: selectedIds,
+        status,
+        reviewer: "local_user",
+        note: `${module.id} bulk operation review: ${status}`
+      })
+    });
+    setNote(`已批量更新 ${selectedIds.length} 个操作为 ${status}`);
+    setSelectedIds([]);
+    setRefresh((value) => value + 1);
+  }
+
+  function toggleSelected(id: string) {
+    setSelectedIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  }
+
+  return (
+    <div className="moduleOpsPanel">
+      <div className="moduleOpsSummary">
+        <div>
+          <p className="eyebrow">Workbench operations</p>
+          <h3>工作台操作闭环</h3>
+        </div>
+        <div className="badgeCluster">
+          <Badge tone="blue">{operations.data.length} ops</Badge>
+          <button className="textButton" onClick={() => setExpanded((value) => !value)}>{expanded ? "收起" : "展开"}</button>
+        </div>
+      </div>
+      {note ? <div className="kbNotice">{note}</div> : null}
+      {expanded ? (
+        <div className="moduleOpsBody">
+          <form className="moduleOpsForm" onSubmit={submitOperation}>
+            <div className="formGrid">
+              <label>
+                操作类型
+                <input value={form.operationType} onChange={(event) => setForm({ ...form, operationType: event.target.value })} required />
+              </label>
+              <label>
+                目标资产类型
+                <input value={form.targetAssetType} onChange={(event) => setForm({ ...form, targetAssetType: event.target.value })} />
+              </label>
+              <label>
+                优先级
+                <select value={form.priority} onChange={(event) => setForm({ ...form, priority: event.target.value })}>
+                  <option value="P0">P0</option>
+                  <option value="P1">P1</option>
+                  <option value="P2">P2</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              操作标题
+              <input value={form.operationTitle} onChange={(event) => setForm({ ...form, operationTitle: event.target.value })} required />
+            </label>
+            <label>
+              目标资产 ID
+              <textarea value={form.targetAssetIds} onChange={(event) => setForm({ ...form, targetAssetIds: event.target.value })} placeholder="可用逗号或换行分隔" />
+            </label>
+            <label>
+              操作说明
+              <textarea value={form.operationSummary} onChange={(event) => setForm({ ...form, operationSummary: event.target.value })} required />
+            </label>
+            <label>
+              操作载荷 JSON
+              <textarea value={form.operationPayload} onChange={(event) => setForm({ ...form, operationPayload: event.target.value })} />
+            </label>
+            <button type="submit">创建操作并进入 workflow</button>
+          </form>
+          <div className="moduleOpsList">
+            <div className="workflowFilters compactFilters">
+              <label>
+                状态
+                <select value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value })}>
+                  <option value="">全部</option>
+                  <option value="review_pending">review_pending</option>
+                  <option value="approved">approved</option>
+                  <option value="rejected">rejected</option>
+                </select>
+              </label>
+              <label>
+                类型
+                <input value={filters.operationType} onChange={(event) => setFilters({ ...filters, operationType: event.target.value })} placeholder={template.operationType} />
+              </label>
+              <label>
+                搜索
+                <input value={filters.q} onChange={(event) => setFilters({ ...filters, q: event.target.value })} placeholder="标题 / 说明 / 资产" />
+              </label>
+            </div>
+            <div className="bulkActionBar compact">
+              <button className="textButton" onClick={() => setSelectedIds(selectedIds.length === operations.data.length ? [] : operations.data.map((item) => item.id))}>
+                {selectedIds.length === operations.data.length && operations.data.length ? "取消全选" : "选择可见项"}
+              </button>
+              <span>{selectedIds.length} selected</span>
+              <button className="textButton" disabled={!selectedIds.length} onClick={() => bulkReview("approved")}>批量批准</button>
+              <button className="textButton" disabled={!selectedIds.length} onClick={() => bulkReview("rejected")}>批量拒绝</button>
+            </div>
+            <div className="operationCards">
+              {operations.data.length ? operations.data.map((operation) => (
+                <article className="operationCard" key={operation.id}>
+                  <div className="ledgerItemHead">
+                    <label className="checkRow">
+                      <input type="checkbox" checked={selectedIds.includes(operation.id)} onChange={() => toggleSelected(operation.id)} />
+                      <strong>{operation.operation_title}</strong>
+                    </label>
+                    <Badge tone={toneFromStatus(operation.status)}>{operation.status}</Badge>
+                  </div>
+                  <p>{operation.operation_summary}</p>
+                  <small>{operation.operation_type} / {operation.target_asset_type || "--"} / {operation.workflow_id}</small>
+                  <div className="qualityActions">
+                    {!["approved", "rejected", "closed", "done"].includes(operation.status) ? (
+                      <>
+                        <button className="textButton" onClick={() => reviewOperation(operation, "approved")}>批准</button>
+                        <button className="textButton" onClick={() => reviewOperation(operation, "rejected")}>拒绝</button>
+                      </>
+                    ) : <span className="muted">reviewed by {operation.reviewer || "--"}</span>}
+                  </div>
+                </article>
+              )) : <div className="empty compact">暂无操作台账。</div>}
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 function ModuleHeader({ module, eyebrow }: { module: WorkbenchModule; eyebrow?: string }) {
   return (
-    <div className="moduleHeader">
-      <div>
-        <p className="eyebrow">{eyebrow || `${module.stage} / ${module.code}`}</p>
-        <h2>{module.title}</h2>
-        <p className="muted">{module.focus}</p>
+    <div className="moduleHeaderStack">
+      <div className="moduleHeader">
+        <div>
+          <p className="eyebrow">{eyebrow || `${module.stage} / ${module.code}`}</p>
+          <h2>{module.title}</h2>
+          <p className="muted">{module.focus}</p>
+        </div>
+        <div className="moduleSignal">
+          <Badge tone={toneFromStatus(module.status)}>{module.status}</Badge>
+          <strong>{module.primaryMetric}</strong>
+          <span>{module.secondaryMetric}</span>
+        </div>
       </div>
-      <div className="moduleSignal">
-        <Badge tone={toneFromStatus(module.status)}>{module.status}</Badge>
-        <strong>{module.primaryMetric}</strong>
-        <span>{module.secondaryMetric}</span>
-      </div>
+      <WorkbenchOperationDock module={module} />
     </div>
   );
 }
@@ -611,9 +948,11 @@ function OverviewPanel({
   onSelect: (id: string) => void;
   onOpenAsset: (asset: AssetRef) => void;
 }) {
+  const overviewModule = modules.find((module) => module.id === "overview") || fallbackModules[0];
   return (
     <div className="stack">
       <MissionHero overview={overview} modules={modules} />
+      <WorkbenchOperationDock module={overviewModule} />
       <ArchitectureRail layers={overview.architectureLayers || []} />
       <section className="panel">
         <div className="sectionHeader">

@@ -45,6 +45,7 @@ ensureKnowledgeSchema();
 ensureAiChatSchema();
 ensureP0GovernanceSchema();
 ensureP1WorkflowSchema();
+ensureP1WorkbenchOperationSchema();
 
 function json(res, payload, status = 200) {
   const body = JSON.stringify(payload);
@@ -589,6 +590,34 @@ function ensureP1WorkflowSchema() {
   `);
 }
 
+function ensureP1WorkbenchOperationSchema() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS workbench_operations (
+      id TEXT PRIMARY KEY,
+      module_id TEXT NOT NULL,
+      operation_type TEXT NOT NULL,
+      target_asset_type TEXT NOT NULL DEFAULT '',
+      target_asset_ids TEXT NOT NULL DEFAULT '[]',
+      operation_title TEXT NOT NULL,
+      operation_summary TEXT NOT NULL,
+      operation_payload TEXT NOT NULL DEFAULT '{}',
+      owner TEXT NOT NULL DEFAULT 'data_governance',
+      priority TEXT NOT NULL DEFAULT 'P1',
+      status TEXT NOT NULL DEFAULT 'review_pending',
+      workflow_id TEXT NOT NULL DEFAULT '',
+      reviewer TEXT NOT NULL DEFAULT '',
+      review_note TEXT NOT NULL DEFAULT '',
+      created_by TEXT NOT NULL DEFAULT 'local_user',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_workbench_operations_module ON workbench_operations(module_id, status, priority);
+    CREATE INDEX IF NOT EXISTS idx_workbench_operations_type ON workbench_operations(operation_type, status);
+    CREATE INDEX IF NOT EXISTS idx_workbench_operations_workflow ON workbench_operations(workflow_id);
+  `);
+}
+
 function seedKbDomains() {
   const createdAt = nowIso();
   kbDomainSeeds.forEach((domain) => {
@@ -627,6 +656,7 @@ function getLedgerSummary() {
     workflowInstances: tableCount("workflow_instances"),
     workflowSteps: tableCount("workflow_steps"),
     governanceCandidates: tableExists("governance_candidates") ? tableCount("governance_candidates") : 0,
+    workbenchOperations: tableExists("workbench_operations") ? tableCount("workbench_operations") : 0,
     auditEvents: tableCount("audit_events"),
     writable: true,
     actorFallback: "local_user",
@@ -1082,6 +1112,183 @@ function reviewGovernanceCandidate(id, body) {
   return get("SELECT * FROM governance_candidates WHERE id = ?", [id]);
 }
 
+function getWorkbenchOperations(url) {
+  const clauses = [];
+  const params = [];
+  const moduleId = url.searchParams.get("moduleId");
+  const operationType = url.searchParams.get("operationType");
+  const status = url.searchParams.get("status");
+  const owner = url.searchParams.get("owner");
+  const q = url.searchParams.get("q");
+  if (moduleId) {
+    clauses.push("module_id = ?");
+    params.push(moduleId);
+  }
+  if (operationType) {
+    clauses.push("operation_type = ?");
+    params.push(operationType);
+  }
+  if (status) {
+    clauses.push("status = ?");
+    params.push(status);
+  }
+  if (owner) {
+    clauses.push("owner = ?");
+    params.push(owner);
+  }
+  if (q) {
+    clauses.push("(operation_title LIKE ? OR operation_summary LIKE ? OR target_asset_ids LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 100, 500));
+  return all(`SELECT * FROM workbench_operations ${where} ORDER BY updated_at DESC, priority, created_at DESC LIMIT ?`, params);
+}
+
+function getWorkbenchOperationSummary() {
+  return {
+    total: tableCount("workbench_operations"),
+    byStatus: all("SELECT status, COUNT(*) AS count FROM workbench_operations GROUP BY status ORDER BY count DESC"),
+    byModule: all("SELECT module_id, status, COUNT(*) AS count FROM workbench_operations GROUP BY module_id, status ORDER BY module_id, status"),
+    byType: all("SELECT operation_type, COUNT(*) AS count FROM workbench_operations GROUP BY operation_type ORDER BY count DESC"),
+    openOperations: all("SELECT id, module_id, operation_type, operation_title, owner, priority, status, workflow_id, updated_at FROM workbench_operations WHERE status NOT IN ('approved', 'rejected', 'closed', 'done') ORDER BY priority, updated_at DESC LIMIT 12")
+  };
+}
+
+function normalizeTargetIds(value) {
+  if (Array.isArray(value)) return JSON.stringify(value.map((item) => normalizeText(item)).filter(Boolean));
+  const text = normalizeText(value);
+  if (!text) return "[]";
+  try {
+    const parsed = JSON.parse(text);
+    if (Array.isArray(parsed)) return JSON.stringify(parsed.map((item) => normalizeText(item)).filter(Boolean));
+  } catch {
+    // Accept newline or comma separated asset ids from the workbench form.
+  }
+  return JSON.stringify(text.split(/[\n,]+/).map((item) => item.trim()).filter(Boolean));
+}
+
+function createWorkbenchOperation(body) {
+  assertRequired(body, ["moduleId", "operationType", "operationTitle", "operationSummary"]);
+  const id = makeId("op");
+  const createdAt = nowIso();
+  const moduleId = normalizeText(body.moduleId);
+  const operationType = normalizeText(body.operationType);
+  const owner = normalizeText(body.owner, "data_governance");
+  const priority = normalizeText(body.priority, "P1");
+  const createdBy = normalizeText(body.createdBy || body.actor, "local_user");
+  const workflow = createWorkflowInstance({
+    workflowType: "workbench_operation_review",
+    assetType: "workbench_operation",
+    assetId: id,
+    title: `工作台操作审核: ${body.operationTitle}`,
+    sourceRef: `workbench_operation:${id}`,
+    moduleId,
+    priority,
+    owner,
+    createdBy,
+    steps: [
+      { key: "intake", name: "操作请求接收", status: "completed", note: "Workbench operation created in ledger." },
+      { key: "scope_check", name: "范围与影响确认", status: "pending", note: "Confirm target assets, batch scope and source evidence." },
+      { key: "owner_review", name: "Owner 审核", status: "pending", note: "Approve or reject ledger operation before promotion." },
+      { key: "publish_decision", name: "发布决策", status: "pending", note: "No canonical write without a later controlled publish flow." }
+    ]
+  });
+  const record = {
+    id,
+    module_id: moduleId,
+    operation_type: operationType,
+    target_asset_type: normalizeText(body.targetAssetType || body.target_asset_type),
+    target_asset_ids: normalizeTargetIds(body.targetAssetIds || body.target_asset_ids),
+    operation_title: normalizeText(body.operationTitle),
+    operation_summary: normalizeText(body.operationSummary),
+    operation_payload: normalizeJsonText(body.operationPayload || body.operation_payload, {}),
+    owner,
+    priority,
+    status: normalizeText(body.status, "review_pending"),
+    workflow_id: workflow.id,
+    reviewer: "",
+    review_note: "",
+    created_by: createdBy,
+    created_at: createdAt,
+    updated_at: createdAt
+  };
+  run(
+    `INSERT INTO workbench_operations
+      (id, module_id, operation_type, target_asset_type, target_asset_ids, operation_title, operation_summary,
+       operation_payload, owner, priority, status, workflow_id, reviewer, review_note, created_by, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      record.id,
+      record.module_id,
+      record.operation_type,
+      record.target_asset_type,
+      record.target_asset_ids,
+      record.operation_title,
+      record.operation_summary,
+      record.operation_payload,
+      record.owner,
+      record.priority,
+      record.status,
+      record.workflow_id,
+      record.reviewer,
+      record.review_note,
+      record.created_by,
+      record.created_at,
+      record.updated_at
+    ]
+  );
+  writeAudit("workbench_operation.created", "workbench_operation", id, record, createdBy);
+  return get("SELECT * FROM workbench_operations WHERE id = ?", [id]);
+}
+
+function reviewWorkbenchOperation(id, body) {
+  const current = get("SELECT * FROM workbench_operations WHERE id = ?", [id]);
+  if (!current) return null;
+  const status = normalizeText(body.status, "reviewed");
+  const reviewer = normalizeText(body.reviewer || body.actor, "local_user");
+  const reviewNote = normalizeText(body.reviewNote || body.review_note || body.note);
+  const updatedAt = nowIso();
+  run(
+    "UPDATE workbench_operations SET status = ?, reviewer = ?, review_note = ?, updated_at = ? WHERE id = ?",
+    [status, reviewer, reviewNote, updatedAt, id]
+  );
+  if (current.workflow_id) {
+    completeWorkflowStep(current.workflow_id, "scope_check", ["approved", "rejected"].includes(status) ? "completed" : "pending", reviewer, reviewNote);
+    completeWorkflowStep(current.workflow_id, "owner_review", ["approved", "rejected"].includes(status) ? "completed" : status, reviewer, reviewNote);
+    completeWorkflowStep(current.workflow_id, "publish_decision", status === "approved" ? "approved" : status === "rejected" ? "rejected" : "pending", reviewer, reviewNote);
+    setWorkflowStatus(current.workflow_id, status, reviewer, reviewNote);
+  }
+  writeAudit("workbench_operation.reviewed", "workbench_operation", id, { id, status, reviewer, reviewNote }, reviewer);
+  return get("SELECT * FROM workbench_operations WHERE id = ?", [id]);
+}
+
+function bulkReviewWorkbenchOperations(body) {
+  const ids = Array.isArray(body.ids) ? body.ids.map((id) => normalizeText(id)).filter(Boolean) : [];
+  if (!ids.length) {
+    const error = new Error("Missing required fields: ids");
+    error.statusCode = 400;
+    throw error;
+  }
+  const status = normalizeText(body.status, "reviewed");
+  const actor = normalizeText(body.reviewer || body.actor, "local_user");
+  const note = normalizeText(body.note || body.reviewNote || body.review_note, `Bulk workbench operation marked as ${status}.`);
+  const updated = [];
+  db.exec("BEGIN");
+  try {
+    ids.forEach((id) => {
+      const operation = reviewWorkbenchOperation(id, { status, reviewer: actor, reviewNote: note });
+      if (operation) updated.push(operation);
+    });
+    writeAudit("workbench_operation.bulk_reviewed", "workbench_operation", ids.join(","), { ids, status, updated: updated.length, note }, actor);
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+  return { requested: ids.length, updated: updated.length, operations: updated };
+}
+
 function workflowSlaStatus(workflow) {
   if (isClosedWorkflowStatus(workflow.status)) return { status: "closed", note: "Workflow is already closed." };
   if (!normalizeText(workflow.due_date)) return { status: "no_due", note: "No due date is configured." };
@@ -1200,6 +1407,12 @@ function reviewWorkflow(id, body) {
   if (current.asset_type === "governance_candidate") {
     run(
       "UPDATE governance_candidates SET lifecycle_status = ?, reviewer = ?, review_note = ?, updated_at = ? WHERE id = ?",
+      [status, actor, note, nowIso(), current.asset_id]
+    );
+  }
+  if (current.asset_type === "workbench_operation") {
+    run(
+      "UPDATE workbench_operations SET status = ?, reviewer = ?, review_note = ?, updated_at = ? WHERE id = ?",
       [status, actor, note, nowIso(), current.asset_id]
     );
   }
@@ -2447,34 +2660,39 @@ function getWorkbenchModules() {
 function getWorkbenchModule(id) {
   const meta = getWorkbenchModules().find((module) => module.id === id);
   if (!meta) return null;
+  const operationsForModule = () => getWorkbenchOperations(new URL(`http://local/api/workbench/operations?moduleId=${encodeURIComponent(id)}&limit=80`));
   const payloads = {
-    overview: () => ({ overview: getOverview() }),
+    overview: () => ({ overview: getOverview(), operations: operationsForModule(), operationSummary: getWorkbenchOperationSummary() }),
     ontology: () => ({
       objects: all("SELECT * FROM ontology_objects ORDER BY object_type, id"),
-      links: all("SELECT * FROM ontology_links ORDER BY id")
+      links: all("SELECT * FROM ontology_links ORDER BY id"),
+      operations: operationsForModule()
     }),
-    tags: () => ({ tags: all("SELECT * FROM tags ORDER BY lifecycle_status, id") }),
-    dimensions: () => ({ dimensions: all("SELECT * FROM dimensions ORDER BY dimension_type, id") }),
-    "metric-engineering": () => ({ metrics: all("SELECT * FROM metrics ORDER BY CASE level WHEN 'L0' THEN 0 WHEN 'L1' THEN 1 WHEN 'L2' THEN 2 ELSE 3 END, id LIMIT 500") }),
-    "metric-dictionary": () => ({ metrics: all("SELECT * FROM metrics WHERE level = 'L3' ORDER BY l1_domain, l2_group, id LIMIT 500") }),
-    "kpi-system": () => ({ tree: getKpiTree(), canvasNodes: getKpiCanvasNodes(new URL("http://local/api/kpi-canvas/nodes?limit=500")) }),
+    tags: () => ({ tags: all("SELECT * FROM tags ORDER BY lifecycle_status, id"), operations: operationsForModule() }),
+    dimensions: () => ({ dimensions: all("SELECT * FROM dimensions ORDER BY dimension_type, id"), operations: operationsForModule() }),
+    "metric-engineering": () => ({ metrics: all("SELECT * FROM metrics ORDER BY CASE level WHEN 'L0' THEN 0 WHEN 'L1' THEN 1 WHEN 'L2' THEN 2 ELSE 3 END, id LIMIT 500"), operations: operationsForModule() }),
+    "metric-dictionary": () => ({ metrics: all("SELECT * FROM metrics WHERE level = 'L3' ORDER BY l1_domain, l2_group, id LIMIT 500"), operations: operationsForModule() }),
+    "kpi-system": () => ({ tree: getKpiTree(), canvasNodes: getKpiCanvasNodes(new URL("http://local/api/kpi-canvas/nodes?limit=500")), operations: operationsForModule() }),
     "lineage-quality": () => ({
       lineage: all("SELECT * FROM lineage_edges ORDER BY status, edge_type LIMIT 1000"),
       tasks: all("SELECT * FROM governance_tasks ORDER BY priority, status, id LIMIT 500"),
       qualityRules: getQualityRules(new URL("http://local/api/quality/rules?limit=100")),
-      qualityIssues: getQualityIssues(new URL("http://local/api/quality/issues?limit=100"))
+      qualityIssues: getQualityIssues(new URL("http://local/api/quality/issues?limit=100")),
+      operations: operationsForModule()
     }),
-    chatbi: () => ({ summary: getChatbiSummary(), contexts: getChatbiContext() }),
-    "ai-knowledge": () => ({ domains: getKbDomains(), cards: getKbCards(new URL("http://local/api/kb/cards?limit=40")) }),
-    "ai-chat": () => ({ sessions: getAiChatSessions(new URL("http://local/api/ai-chat/sessions?limit=20")), summary: getAiChatSummary() }),
+    chatbi: () => ({ summary: getChatbiSummary(), contexts: getChatbiContext(), operations: operationsForModule() }),
+    "ai-knowledge": () => ({ domains: getKbDomains(), cards: getKbCards(new URL("http://local/api/kb/cards?limit=40")), operations: operationsForModule() }),
+    "ai-chat": () => ({ sessions: getAiChatSessions(new URL("http://local/api/ai-chat/sessions?limit=20")), summary: getAiChatSummary(), operations: operationsForModule() }),
     "decision-loop": () => ({
       decisions: all("SELECT * FROM decision_logs ORDER BY status, id"),
       actions: getActionTasks(new URL("http://local/api/decision/action-tasks?limit=100")),
-      summary: getDecisionSummary()
+      summary: getDecisionSummary(),
+      operations: operationsForModule()
     }),
     "audit-log": () => ({
       summary: getAuditSummary(),
-      events: getAuditEvents(new URL("http://local/api/audit-events?limit=100"))
+      events: getAuditEvents(new URL("http://local/api/audit-events?limit=100")),
+      operations: operationsForModule()
     })
   };
   return { ...meta, payload: payloads[id]() };
@@ -3112,6 +3330,22 @@ const server = createServer(async (req, res) => {
         return json(res, { ok: true, result: runLocalAiChat(body) }, 201);
       }
       if (req.method === "GET" && url.pathname === "/api/workbench/modules") return json(res, getWorkbenchModules());
+      if (req.method === "GET" && url.pathname === "/api/workbench/operations") return json(res, getWorkbenchOperations(url));
+      if (req.method === "GET" && url.pathname === "/api/workbench/operations/summary") return json(res, getWorkbenchOperationSummary());
+      if (req.method === "POST" && url.pathname === "/api/workbench/operations") {
+        const body = await readBody(req);
+        return json(res, { ok: true, operation: createWorkbenchOperation(body) }, 201);
+      }
+      if (req.method === "POST" && url.pathname === "/api/workbench/operations/bulk-review") {
+        const body = await readBody(req);
+        return json(res, { ok: true, ...bulkReviewWorkbenchOperations(body) });
+      }
+      const operationReview = url.pathname.match(/^\/api\/workbench\/operations\/([^/]+)\/review$/);
+      if (req.method === "POST" && operationReview) {
+        const body = await readBody(req);
+        const operation = reviewWorkbenchOperation(operationReview[1], body);
+        return operation ? json(res, { ok: true, operation }) : json(res, { error: "Workbench operation not found" }, 404);
+      }
       const workbenchModule = url.pathname.match(/^\/api\/workbench\/([^/]+)$/);
       if (req.method === "GET" && workbenchModule) {
         const payload = getWorkbenchModule(workbenchModule[1]);

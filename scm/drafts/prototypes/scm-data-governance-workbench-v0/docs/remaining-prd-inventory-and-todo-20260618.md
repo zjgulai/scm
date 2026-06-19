@@ -3,8 +3,8 @@ title: "供应链数据开发治理工作台剩余 PRD 盘点与 TODO"
 status: "draft"
 created_at: "2026-06-18"
 updated_at: "2026-06-19"
-scope: "post-main-deploy PRD gap inventory and remaining roadmap"
-boundary: "planning document; no code change; no production writeback"
+scope: "post-main-deploy PRD gap inventory, P1 workbench operation closure, and remaining roadmap"
+boundary: "status tracking; local ledger smoke only; no ERP/Jijia writeback; provider calls remain disabled"
 source_of_truth:
   - "drafts/prototypes/scm-data-governance-workbench-v0/docs/second-iteration-prd-20260618.md"
   - "drafts/prototypes/scm-data-governance-workbench-v0/docs/second-iteration-implementation-plan-20260618.md"
@@ -34,7 +34,7 @@ current_deploy:
 
 ### 1.2 当前推断
 
-当前版本已经完成 P0 工程验收闭环，并已完成三批 P1 交互闭环：候选资产流、统一 workflow board、owner/SLA/批量审核、对象图谱路径解释、决策闭环状态机、ChatBI 上下文认证流和审计日志操作页。下一阶段差距集中在知识库运营、AI 语义治理、问法样本质量评分和外部模型接入治理。
+当前版本已经完成 P0 工程验收闭环，并已完成三批 P1 交互闭环：候选资产流、统一 workflow board、owner/SLA/批量审核、对象图谱路径解释、决策闭环状态机、ChatBI 上下文认证流和审计日志操作页。2026-06-19 本地新增 `workbench_operations` 治理型 CRUD 基础版，13 个模块均具备创建操作请求、查询/筛选、批量审核、状态流转与审计留痕入口；该能力通过本地 `smoke:p0`，但尚未在腾讯云线上 release 中启用。下一阶段差距集中在知识库运营、AI 语义治理、问法样本质量评分、外部模型接入治理和生产部署收口。
 
 ### 1.3 当前不确定项
 
@@ -48,11 +48,11 @@ current_deploy:
 
 | 范围 | PRD 目标 | 当前状态 | 缺口判断 | 优先级 |
 |---|---|---:|---|---:|
-| 治理总览 | 统一展示对象、标签、维度、指标、质量、AI、闭环健康度 | 部分完成 | 有健康指标，但缺趋势、风险下钻、任务 SLA 和责任视图 | P1 |
+| 治理总览 | 统一展示对象、标签、维度、指标、质量、AI、闭环健康度 | 部分完成 | 有健康指标、workflow board 和操作台入口，但仍缺趋势、风险下钻深度视图和责任视图 | P1 |
 | 对象本体工作台 | 本体只读，支持注解、评论、修订建议 | 基本完成 | 缺对象图谱视图、关系路径解释、批量修订建议 | P1 |
-| 标签工程工作台 | 标签定义、规则、适用对象、质量、发布状态 | 部分完成 | 缺标签候选、规则版本、适用对象校验、发布流 | P1 |
-| 维度工程工作台 | 一致性维度、维度层级、维度主数据、指标适配 | 部分完成 | 缺层级编辑建议、维度候选、指标适配矩阵、冲突检测 | P1 |
-| 指标工程工作台 | 原子/派生/复合指标、公式、字段映射、异常处理 | 部分完成 | 指标字典 2.0 保持不变，但缺候选指标、字段映射审核、公式变更流 | P1 |
+| 标签工程工作台 | 标签定义、规则、适用对象、质量、发布状态 | 部分完成 | 已有候选流和规则发布操作请求；仍缺规则版本差异、适用对象自动校验和正式发布 promote | P1 |
+| 维度工程工作台 | 一致性维度、维度层级、维度主数据、指标适配 | 部分完成 | 已有候选流和适配检查操作请求；仍缺可视化适配矩阵、冲突检测和正式发布 promote | P1 |
+| 指标工程工作台 | 原子/派生/复合指标、公式、字段映射、异常处理 | 部分完成 | 已有候选流和字段映射审核操作请求；仍缺字段级影响分析、公式版本 diff 和正式发布 promote | P1 |
 | 指标字典 | 指标口径、owner、版本、认证状态、同义词、常见问法 | 基本完成 | 指标字典 2.0 不重构；需补同义词审核、问法样本认证 | P2 |
 | 指标体系画布 | L0-L3 可点击画布、注解、钻取、证据链 | P0 完成 | 已有节点、连线、路径高亮、折叠、拖拽布局和点击注解；P1 继续补复杂图谱分析 | P1 |
 | 血缘与质量 | 字段血缘、指标血缘、报表影响、DQ 规则、质量评分 | P0 完成 | 已有 quality rules/issues 基础工作流；P1 继续补批量执行、评分模型和任务编排 | P1 |
@@ -155,7 +155,7 @@ current_deploy:
 
 | ID | 当前状态 | 新鲜证据 | 边界 |
 |---|---|---|---|
-| SCM-PRD-P1-001 | 部分完成 | 各资产详情抽屉已有查询、注解、评论、修订建议、审计；标签/维度/指标已有候选提交 | 还缺每个工作台的批量 CRUD 与专属编辑表单 |
+| SCM-PRD-P1-001 | 完成治理型 CRUD 基础版 | 新增 `workbench_operations`、`005_p1_workbench_operations.sql`、`/api/workbench/operations`、13 个模块操作台入口；`smoke:p0` 覆盖 `workbenchOperation.create/filter/review/bulkReview/summary`，本地 Browser Harness 强校验 `.moduleOpsPanel` | 只写 SQLite 治理台账与 workflow/audit；不直接删除、覆盖或 promote canonical 正本；生产站点尚未部署本批新 UI |
 | SCM-PRD-P1-002 | 完成基础版 | `governance_candidates` 统一承载 tag candidate，标签工程页可提交候选并创建 workflow | 不直接写 `tags` 正本 |
 | SCM-PRD-P1-003 | 完成基础版 | `governance_candidates` 统一承载 dimension candidate，维度工程页可提交候选并创建 workflow | 不直接写 `dimensions` 正本 |
 | SCM-PRD-P1-004 | 完成基础版 | `governance_candidates` 统一承载 metric candidate，指标工程页可提交候选并创建 workflow | 指标字典 2.0 仍保持只读 |

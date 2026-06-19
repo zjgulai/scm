@@ -3,7 +3,7 @@ title: "供应链治理工作台 E2E 验收矩阵"
 status: "draft"
 created_at: "2026-06-18"
 updated_at: "2026-06-19"
-scope: "P0 browser smoke, P1 workflow operations, ontology path, decision state machine, ChatBI certification, audit log smoke"
+scope: "P0 browser smoke, P1 workflow operations, workbench operation CRUD, ontology path, decision state machine, ChatBI certification, audit log smoke"
 boundary: "test design and executable smoke scripts; no ERP/Jijia writeback; provider calls remain disabled"
 ---
 
@@ -13,7 +13,7 @@ boundary: "test design and executable smoke scripts; no ERP/Jijia writeback; pro
 
 | 命令 | 默认目标 | 写入边界 | 用途 |
 |---|---|---|---|
-| `npm run smoke:browser` | `https://scm.lute-tlz-dddd.top/` | 只读浏览器导航 | 使用 Browser Harness 打开真实 Chrome 标签页，验证 13 个模块可打开 |
+| `npm run smoke:browser` | `https://scm.lute-tlz-dddd.top/` | 只读浏览器导航 | 使用 Browser Harness 打开真实 Chrome 标签页，验证 13 个模块可打开；本地 URL 或 `REQUIRE_WORKBENCH_OPERATIONS=1` 时强校验工作台操作入口 |
 | `npm run smoke:workflows` | `http://127.0.0.1:5174` | 只写本项目治理台账 | 验证注解、评论、修订建议、候选资产流、Workflow Board、ChatBI 认证流、AI 本地证据问答、审计筛选 |
 | `npm run smoke:p0` | 临时本地 API/本地新 bundle + 线上浏览器导航 | 临时 SQLite 副本写入 + 线上只读导航 | 执行 build、SQLite 迁移、临时 API 工作流 smoke、本地 Browser Harness 导航 smoke、线上 Browser Harness 导航 smoke |
 
@@ -52,6 +52,9 @@ ALLOW_LEDGER_WRITE_SMOKE=1 SCM_WORKBENCH_URL=https://staging.example.com npm run
 | workflow board read/summary | `smoke-core-workflows.mjs` | 能读取 workflow 列表和候选汇总 |
 | workflow filters/SLA | `smoke-core-workflows.mjs` | 能按 owner、模块、优先级、关键词筛选 workflow，并返回 SLA 状态 |
 | workflow bulk review | `smoke-core-workflows.mjs` | 能批量拒绝 smoke workflow，只写 SQLite 治理台账，不写 canonical 表 |
+| workbench operation create/filter/review | `smoke-core-workflows.mjs` | 能创建模块级操作请求、自动生成 workflow、按模块/类型/owner/关键词筛选，并审核通过 |
+| workbench operation bulk review | `smoke-core-workflows.mjs` | 能批量审核模块级操作请求，只写 SQLite 治理台账，不写 canonical 表 |
+| workbench operation rendering | Browser Harness DOM check | 本地新 bundle 中 13 个模块均存在 `.moduleOpsPanel`、`.moduleOpsSummary` 和展开控件 |
 | ontology path explanation | `smoke-core-workflows.mjs` | `sku` 对象可返回出向关系和指标桥接 |
 | KPI canvas node read/update | `smoke-core-workflows.mjs` | 能读取 canvas 节点并更新临时布局版本 |
 | KPI canvas visual rendering | Browser Harness DOM check | 公开站点中 canvas 有可见节点、连线、选中态和可打开的上下文抽屉 |
@@ -79,4 +82,5 @@ ALLOW_LEDGER_WRITE_SMOKE=1 SCM_WORKBENCH_URL=https://staging.example.com npm run
 - 该矩阵先固化 P0 可重复验收，不代表完整 PRD 已完成。
 - 浏览器 smoke 是页面级导航验收；KPI 画布、质量工作台、ChatBI 认证台和审计日志页另有 DOM 交互检查。
 - 工作流 smoke 默认只对本地服务执行台账写入；生产站点默认只做只读导航检查。
+- 工作台操作 CRUD 是治理型 CRUD：创建、查询、筛选、审核、批量审核和审计留痕；不包含对本体、指标字典、标签、维度、指标正本表的直接删除或覆盖。
 - 外部模型 provider 仍保持关闭。

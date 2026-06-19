@@ -173,6 +173,53 @@ Boundary confirmed by local smoke:
 - `erpWriteback=false`
 - `SCM_SKIP_PUBLIC_BROWSER_SMOKE=1`, so no public production assertion is made for this batch.
 
+## 15. Platform Readiness Public Deployment And Acceptance
+
+Verified publicly at: `2026-06-19T21:29:00+0800`
+
+| Item | Status | Evidence |
+|---|---|---|
+| Git commit | `pushed` | `b2a2d9a` pushed to `scm/codex/scm-ledger-workbench` |
+| Release package | `deployed` | `/opt/scm-governance-workbench/releases/scm-workbench-platform-readiness-b2a2d9a-20260619212735` |
+| Pre-deploy backup | `created` | `/opt/scm-governance-workbench/backups/20260619212743-before-platform-readiness-b2a2d9a.sqlite` |
+| Post-deploy backup | `created` | `/opt/scm-governance-workbench/backups/20260619212829-after-platform-readiness-b2a2d9a.sqlite` |
+| Container | `healthy` | `curl -fsS http://127.0.0.1:5174/api/deploy/health` on server |
+| Public URL | `passed_public` | `https://scm.lute-tlz-dddd.top/` |
+| Public Browser Harness | `passed_public_read_only` | `REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser` |
+| Platform readiness API | `passed_public` | `/api/platform-readiness/summary` returned RBAC, Postgres trigger, compatibility finding and write-back assessment ledgers |
+| Public responsive gate | `passed_public` | `1350x900`, `1024x900`, `768x900`, `390x900`; all 15 modules checked |
+
+Public API evidence:
+
+```json
+{
+  "release": "scm-workbench-platform-readiness-b2a2d9a-20260619212735",
+  "gitSha": "b2a2d9a",
+  "platformReadiness": {
+    "rbacPolicies": 3,
+    "loginEnabled": false,
+    "postgresTriggers": 5,
+    "readyTriggers": 1,
+    "postgresFindings": 5,
+    "highRiskFindings": 1,
+    "writebackAssessments": 4,
+    "enabledWritebacks": 0
+  },
+  "boundary": {
+    "productionWrites": false,
+    "providerCalls": false,
+    "erpWriteback": false
+  }
+}
+```
+
+Boundary confirmed:
+
+- RBAC is a future policy ledger only; login remains disabled.
+- SQLite -> Postgres is represented as migration triggers and compatibility findings only; production still uses the Docker external SQLite volume.
+- write-back remains assessment-only; no ERP/Jijia/WMS/TMS writeback was made.
+- public Browser Harness was read-only.
+
 ## 23. Batch 5 Role Domain Workbench Release
 
 Verified at: `2026-06-19T21:10:40+0800`

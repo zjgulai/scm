@@ -890,6 +890,23 @@ assert(
   roleWorkbenches
 );
 
+const roleDetails = {};
+for (const roleId of requiredRoleIds) {
+  const roleDetail = await request(`/api/roles/workbenches/${roleId}`);
+  roleDetails[roleId] = roleDetail;
+  assert(roleDetail.role?.id === roleId, `Role detail failed for ${roleId}`, roleDetail);
+  assert(roleDetail.domainProfile?.operatingQuestion, `Role domain profile missing operating question for ${roleId}`, roleDetail.domainProfile);
+  assert(Array.isArray(roleDetail.domainProfile?.inputAssets) && roleDetail.domainProfile.inputAssets.length >= 3, `Role domain profile missing input assets for ${roleId}`, roleDetail.domainProfile);
+  assert(Array.isArray(roleDetail.workstreams) && roleDetail.workstreams.length >= 4, `Role workstreams missing for ${roleId}`, roleDetail.workstreams);
+  assert(Array.isArray(roleDetail.filterOptions?.objectTypes) && roleDetail.filterOptions.objectTypes.length >= 1, `Role filter options missing object types for ${roleId}`, roleDetail.filterOptions);
+  assert(roleDetail.actionBoundary?.providerCalls === false && roleDetail.actionBoundary?.erpWriteback === false, `Role action boundary changed for ${roleId}`, roleDetail.actionBoundary);
+}
+
+const plannerFiltered = await request("/api/roles/workbenches/role_planner?objectType=sku&riskLevel=high");
+assert(plannerFiltered.activeFilters?.objectType === "sku", "Role filter did not echo objectType", plannerFiltered.activeFilters);
+assert(plannerFiltered.activeFilters?.riskLevel === "high", "Role filter did not echo riskLevel", plannerFiltered.activeFilters);
+assert(plannerFiltered.objects.every((object) => object.object_type === "sku" && object.risk_level === "high"), "Role object filter returned unexpected objects", plannerFiltered.objects);
+
 const inventoryRoleDetail = await request("/api/roles/workbenches/role_inventory");
 assert(inventoryRoleDetail.role?.id === "role_inventory", "Inventory role detail failed", inventoryRoleDetail);
 assert(inventoryRoleDetail.objects?.some((object) => object.id === "obj_batch_fba_negative_available"), "Inventory role missing negative inventory object", inventoryRoleDetail.objects);
@@ -897,6 +914,18 @@ assert(inventoryRoleDetail.events?.some((event) => event.event_type === "negativ
 assert(inventoryRoleDetail.playbooks?.some((playbook) => playbook.id === "pb_inventory_negative"), "Inventory role missing negative inventory playbook", inventoryRoleDetail.playbooks);
 assert(inventoryRoleDetail.evalCases?.some((item) => item.scenario_type === "negative_available_inventory"), "Inventory role missing eval case", inventoryRoleDetail.evalCases);
 assert(inventoryRoleDetail.actionBoundary?.providerCalls === false && inventoryRoleDetail.actionBoundary?.erpWriteback === false, "Inventory role action boundary changed", inventoryRoleDetail.actionBoundary);
+
+const roleJsonExport = await request("/api/roles/workbenches/role_inventory/export?format=json");
+assert(roleJsonExport.boundary?.mode === "read_only_role_domain_export", "Role JSON export boundary changed", roleJsonExport.boundary);
+assert(roleJsonExport.payload?.domainProfile?.domain === "inventory", "Role JSON export missing inventory domain profile", roleJsonExport.payload?.domainProfile);
+
+const roleExcelExport = await requestRaw("/api/roles/workbenches/role_inventory/export?format=excel");
+assert(
+  roleExcelExport.response.headers.get("content-type")?.includes("application/vnd.ms-excel"),
+  "Role Excel export content type is wrong",
+  { contentType: roleExcelExport.response.headers.get("content-type") }
+);
+assert(roleExcelExport.text.includes("库存负责人工作台") && roleExcelExport.text.includes("<table"), "Role Excel export missing role content");
 
 const roleActionDraft = await request("/api/roles/workbenches/role_inventory/action-draft", {
   method: "POST",
@@ -1134,9 +1163,13 @@ console.log(
         "aipScenarios.runAgingOverstock",
         "roleSummary.read",
         "roleWorkbenches.read",
+        "roleWorkbench.domainProfiles",
+        "roleWorkbench.filters",
         "roleWorkbench.inventoryDetail",
         "roleWorkbench.actionDraft",
         "roleWorkbench.bulkActionDraft",
+        "roleWorkbench.domainExportJson",
+        "roleWorkbench.domainExportExcel",
         "providerGatewayPolicies.readDisabled",
         "providerGatewaySummary.read",
         "providerDecisionRecords.read",

@@ -263,6 +263,11 @@ for label in expected:
           roleWorkbench: !!document.querySelector('.roleWorkbench'),
           summaryCards: document.querySelectorAll('.roleSummaryGrid > article').length,
           roleButtons: document.querySelectorAll('.roleRail button').length,
+          roleDomainPanel: !!document.querySelector('.roleDomainPanel'),
+          roleDomainCards: document.querySelectorAll('.roleDomainGrid > article').length,
+          roleWorkstreams: document.querySelectorAll('.roleWorkstreamGrid > article').length,
+          roleFilters: document.querySelectorAll('.roleFilterPanel label').length,
+          roleDomainExports: document.querySelectorAll('.roleDomainPanel .exportGroup a').length,
           roleQueueGrid: !!document.querySelector('.roleQueueGrid'),
           queueColumns: document.querySelectorAll('.roleQueueGrid > article').length,
           providerPolicyPanel: !!document.querySelector('.providerPolicyPanel'),
@@ -287,6 +292,11 @@ for label in expected:
             not role["roleWorkbench"]
             or role["summaryCards"] < 4
             or role["roleButtons"] < 5
+            or not role["roleDomainPanel"]
+            or role["roleDomainCards"] < 3
+            or role["roleWorkstreams"] < 4
+            or role["roleFilters"] < 5
+            or role["roleDomainExports"] < 2
             or not role["roleQueueGrid"]
             or role["queueColumns"] < 3
             or not role["providerPolicyPanel"]

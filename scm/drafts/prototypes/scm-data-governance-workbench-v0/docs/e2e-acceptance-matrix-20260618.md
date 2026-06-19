@@ -119,6 +119,7 @@ ALLOW_LEDGER_WRITE_SMOKE=1 SCM_WORKBENCH_URL=https://staging.example.com npm run
 | FBA 可用库存为负 | `REQUIRE_AIP_SCENARIOS=1` Browser Harness + local workflow smoke | 能从对象事件进入 trace，trace 展示业务解释、证据缺口和排查行动卡 |
 | 断货风险 | `REQUIRE_AIP_SCENARIOS=1` Browser Harness + local workflow smoke | 能展示 SKU -> Listing -> PO/Shipment/InventoryBatch 路径和补货/调拨行动卡 |
 | 库龄/超储 | `REQUIRE_AIP_SCENARIOS=1` Browser Harness + local workflow smoke | 能展示 InventoryBatch/Warehouse/SKU 健康分和调拨/清仓/促销行动卡 |
+| 角色域工作台 | `smoke-core-workflows.mjs` + Browser Harness DOM check | 计划、采购、库存、物流、成本 5 个角色均有 domainProfile、workstream、筛选、行动草稿和只读导出 |
 
 ## 4. 当前限制
 

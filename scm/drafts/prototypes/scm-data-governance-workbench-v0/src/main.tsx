@@ -748,6 +748,31 @@ type AgentEvalCase = {
   status: string;
 };
 
+type RoleDomainProfile = {
+  domain: string;
+  persona: string;
+  operatingQuestion: string;
+  inputAssets: string[];
+  outputArtifacts: string[];
+  evidenceChecklist: string[];
+  defaultScenarioTypes: string[];
+  roleGoal: string;
+  roleId: string;
+  roleCode: string;
+  owner: string;
+  cadence: string;
+  metricRefs: string[];
+  objectTypes: string[];
+};
+
+type RoleWorkstream = {
+  key: string;
+  name: string;
+  description: string;
+  expectedOutput: string;
+  owner: string;
+};
+
 type ProviderDecisionRecord = {
   id: string;
   provider_code: string;
@@ -817,6 +842,15 @@ type ProviderGatewaySummary = {
 
 type RoleWorkbenchDetail = {
   role: RoleWorkbench;
+  domainProfile: RoleDomainProfile;
+  workstreams: RoleWorkstream[];
+  filterOptions: {
+    objectTypes: string[];
+    riskLevels: string[];
+    eventStatuses: string[];
+    scenarioTypes: string[];
+  };
+  activeFilters: Record<string, string | number>;
   objects: AipObject[];
   events: (AipEvent & { display_name?: string; object_type?: string; object_owner?: string })[];
   recommendations: AipRecommendation[];
@@ -5498,6 +5532,30 @@ const emptyRoleDetail: RoleWorkbenchDetail = {
       evalCases: 0
     }
   },
+  domainProfile: {
+    domain: "",
+    persona: "",
+    operatingQuestion: "",
+    inputAssets: [],
+    outputArtifacts: [],
+    evidenceChecklist: [],
+    defaultScenarioTypes: [],
+    roleGoal: "",
+    roleId: "",
+    roleCode: "",
+    owner: "",
+    cadence: "",
+    metricRefs: [],
+    objectTypes: []
+  },
+  workstreams: [],
+  filterOptions: {
+    objectTypes: [],
+    riskLevels: [],
+    eventStatuses: [],
+    scenarioTypes: []
+  },
+  activeFilters: {},
   objects: [],
   events: [],
   recommendations: [],
@@ -5576,10 +5634,22 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
   const [drafting, setDrafting] = useState(false);
   const [providerAuditNote, setProviderAuditNote] = useState("");
   const [providerDryRun, setProviderDryRun] = useState(false);
+  const [roleFilters, setRoleFilters] = useState({
+    objectType: "",
+    riskLevel: "",
+    eventStatus: "",
+    scenarioType: "",
+    q: ""
+  });
+  const roleFilterQuery = new URLSearchParams({ refresh: String(refresh) });
+  Object.entries(roleFilters).forEach(([key, value]) => {
+    if (value) roleFilterQuery.set(key, value);
+  });
   const summary = useApi<RoleGovernanceSummary>(`/api/roles/summary?refresh=${refresh}`, emptyRoleSummary);
   const roles = useApi<RoleWorkbench[]>(`/api/roles/workbenches?refresh=${refresh}`, []);
-  const detail = useApi<RoleWorkbenchDetail>(`/api/roles/workbenches/${encodeURIComponent(selectedRoleId)}?refresh=${refresh}`, emptyRoleDetail);
+  const detail = useApi<RoleWorkbenchDetail>(`/api/roles/workbenches/${encodeURIComponent(selectedRoleId)}?${roleFilterQuery.toString()}`, emptyRoleDetail);
   const activeRole = detail.data.role;
+  const roleDomain = detail.data.domainProfile;
   const firstObject = detail.data.objects[0];
   const firstEvent = detail.data.events[0];
   const openEvents = detail.data.events.filter((event) => event.status !== "closed");
@@ -5639,6 +5709,16 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
 
   function toggleRoleTarget(id: string) {
     setSelectedRoleTargetIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  }
+
+  function updateRoleFilter(key: keyof typeof roleFilters, value: string) {
+    setRoleFilters((current) => ({ ...current, [key]: value }));
+    setSelectedRoleTargetIds([]);
+  }
+
+  function clearRoleFilters() {
+    setRoleFilters({ objectType: "", riskLevel: "", eventStatus: "", scenarioType: "", q: "" });
+    setSelectedRoleTargetIds([]);
   }
 
   async function createActionDraft(mode: "single" | "bulk" = "single") {
@@ -5774,6 +5854,81 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
             <div className="roleObjectChips">
               {activeRole.primary_object_types.map((item) => <span key={item}>{item}</span>)}
               {activeRole.metric_refs.map((item) => <span key={item} className="metricChip">{item}</span>)}
+            </div>
+            <div className="roleDomainPanel">
+              <div className="surfaceHead">
+                <div>
+                  <p className="eyebrow">Role domain</p>
+                  <h3>{roleDomain.persona || activeRole.role_name} 操作模型</h3>
+                  <p className="muted">{roleDomain.operatingQuestion || "当前角色的问题域、输入证据和输出动作。"}</p>
+                </div>
+                <div className="exportGroup">
+                  <a href={`/api/roles/workbenches/${encodeURIComponent(activeRole.id || selectedRoleId)}/export?format=json`} className="textButton" target="_blank" rel="noreferrer">导出 JSON</a>
+                  <a href={`/api/roles/workbenches/${encodeURIComponent(activeRole.id || selectedRoleId)}/export?format=excel`} className="textButton" target="_blank" rel="noreferrer">导出 Excel</a>
+                </div>
+              </div>
+              <div className="roleDomainGrid">
+                <article>
+                  <span>输入对象</span>
+                  <strong>{roleDomain.inputAssets.slice(0, 4).join(" / ") || "--"}</strong>
+                  <small>{roleDomain.roleGoal || activeRole.mission}</small>
+                </article>
+                <article>
+                  <span>输出产物</span>
+                  <strong>{roleDomain.outputArtifacts.slice(0, 3).join(" / ") || "--"}</strong>
+                  <small>只生成建议、审核和复盘证据，不自动写回。</small>
+                </article>
+                <article>
+                  <span>证据要求</span>
+                  <strong>{roleDomain.evidenceChecklist.slice(0, 4).join(" / ") || "--"}</strong>
+                  <small>用于 ChatBI/Agent 的可回答性和行动依据。</small>
+                </article>
+              </div>
+              <div className="roleWorkstreamGrid">
+                {detail.data.workstreams.map((stream, index) => (
+                  <article key={stream.key}>
+                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    <strong>{stream.name}</strong>
+                    <p>{stream.description}</p>
+                    <small>{stream.expectedOutput}</small>
+                  </article>
+                ))}
+              </div>
+            </div>
+            <div className="roleFilterPanel">
+              <label>
+                对象类型
+                <select value={roleFilters.objectType} onChange={(event) => updateRoleFilter("objectType", event.target.value)}>
+                  <option value="">全部</option>
+                  {detail.data.filterOptions.objectTypes.map((item) => <option key={item} value={item}>{item}</option>)}
+                </select>
+              </label>
+              <label>
+                风险等级
+                <select value={roleFilters.riskLevel} onChange={(event) => updateRoleFilter("riskLevel", event.target.value)}>
+                  <option value="">全部</option>
+                  {detail.data.filterOptions.riskLevels.map((item) => <option key={item} value={item}>{item}</option>)}
+                </select>
+              </label>
+              <label>
+                事件状态
+                <select value={roleFilters.eventStatus} onChange={(event) => updateRoleFilter("eventStatus", event.target.value)}>
+                  <option value="">全部</option>
+                  {detail.data.filterOptions.eventStatuses.map((item) => <option key={item} value={item}>{item}</option>)}
+                </select>
+              </label>
+              <label>
+                场景
+                <select value={roleFilters.scenarioType} onChange={(event) => updateRoleFilter("scenarioType", event.target.value)}>
+                  <option value="">全部</option>
+                  {detail.data.filterOptions.scenarioTypes.map((item) => <option key={item} value={item}>{item}</option>)}
+                </select>
+              </label>
+              <label>
+                搜索
+                <input value={roleFilters.q} onChange={(event) => updateRoleFilter("q", event.target.value)} placeholder="对象、事件、owner" />
+              </label>
+              <button className="textButton" type="button" onClick={clearRoleFilters}>清空筛选</button>
             </div>
             <div className="roleSlaShiftGrid">
               <section className="roleSlaPanel">

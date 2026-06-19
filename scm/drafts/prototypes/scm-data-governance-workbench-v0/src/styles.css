@@ -4365,6 +4365,8 @@ tbody tr:hover td {
 
 .roleSummaryGrid article,
 .roleMissionPanel,
+.roleDomainPanel,
+.roleFilterPanel,
 .roleQueueGrid > article,
 .roleActionPanel,
 .roleBatchActionPanel,
@@ -4490,6 +4492,100 @@ tbody tr:hover td {
   color: var(--blue);
   background: var(--blue-soft);
   border-color: rgba(33, 79, 128, 0.16);
+}
+
+.roleDomainPanel {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.roleDomainPanel .surfaceHead {
+  align-items: flex-start;
+}
+
+.roleDomainGrid,
+.roleWorkstreamGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.roleDomainGrid article,
+.roleWorkstreamGrid article {
+  min-width: 0;
+  padding: 13px;
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.roleDomainGrid span,
+.roleWorkstreamGrid span {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.roleDomainGrid strong,
+.roleWorkstreamGrid strong {
+  display: block;
+  margin-top: 6px;
+  color: var(--ink);
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.roleDomainGrid small,
+.roleWorkstreamGrid small,
+.roleWorkstreamGrid p {
+  display: block;
+  margin: 7px 0 0;
+  color: var(--muted);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.roleWorkstreamGrid article {
+  background: linear-gradient(180deg, #fff, var(--panel-soft));
+}
+
+.roleFilterPanel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 160px), 1fr));
+  gap: 10px;
+  align-items: end;
+  padding: 14px;
+}
+
+.roleFilterPanel label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.roleFilterPanel select,
+.roleFilterPanel input {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 0 10px;
+  color: var(--ink);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  outline: none;
+}
+
+.roleFilterPanel select:focus,
+.roleFilterPanel input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px var(--focus);
 }
 
 .roleSlaShiftGrid {

@@ -554,10 +554,11 @@ REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm
 ### P3：后续规划
 
 - [x] AIP-B5-001 角色工作台 shell
-- [ ] AIP-B5-002 计划员工作台
-- [ ] AIP-B5-003 采购员工作台
-- [ ] AIP-B5-004 仓库库存工作台
-- [ ] AIP-B5-005 物流控制塔
+- [x] AIP-B5-002 计划员工作台
+- [x] AIP-B5-003 采购员工作台
+- [x] AIP-B5-004 仓库库存工作台
+- [x] AIP-B5-005 物流控制塔
+- [x] AIP-B5-006 财务成本工作台
 - [x] AIP-B5-007 provider decision record
 - [x] AIP-B5-008 provider gateway 设计
 - [x] AIP-B5-009 prompt version 表
@@ -574,9 +575,16 @@ Batch 5 第一片已完成：
 - DeepSeek/Kimi 仅作为 provider policy 进入账本，状态保持 `disabled`，不调用外部模型；
 - 角色页支持基于对象/事件/playbook 创建 L1 行动草稿，只写 `workbench_operations`。
 
+Batch 5 第三片已完成：
+
+- 计划、采购、库存、物流、成本 5 个角色域均新增 `domainProfile`，明确输入对象、输出产物、证据要求、角色问题域和目标；
+- 角色详情 API 支持 `objectType`、`riskLevel`、`eventStatus`、`scenarioType`、`q` 查询筛选，并返回 `filterOptions` 与 `activeFilters`；
+- 角色页新增角色操作模型、4 步 workstream、角色专属筛选栏和当前角色 JSON/Excel 只读导出；
+- smoke 覆盖 5 个角色域的画像、workstream、筛选、库存角色 JSON/Excel 导出；
+- 仍不启用排班系统，当前班次/SLA 是工作流提示，不是人力排班。
+
 仍未完成：
 
-- B5-002 到 B5-005 的独立角色应用深水区，例如角色专属筛选、批量动作、SLA 和排班；
 - B5-012 到 B5-015 的 RBAC、Postgres 迁移和 write-back 风险评估。
 
 Batch 5 第二片已完成：

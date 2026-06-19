@@ -3537,6 +3537,180 @@ function roleObjectTypes(role) {
   return Array.isArray(role?.primary_object_types) ? role.primary_object_types.filter(Boolean) : [];
 }
 
+function roleDomainProfile(role) {
+  const profiles = {
+    role_planner: {
+      domain: "planning",
+      persona: "计划员",
+      operatingQuestion: "哪些 SKU 需要补货、调整预测或触发采购计划？",
+      inputAssets: ["ForecastVersion", "SKU", "PurchasePlan", "InventoryBatch"],
+      outputArtifacts: ["补货建议", "预测偏差复核", "计划版本复盘", "采购需求草稿"],
+      evidenceChecklist: ["forecast_qty", "business_available_qty", "open_po_qty", "shipment_eta", "listing_velocity"],
+      defaultScenarioTypes: ["stockout_risk", "forecast_gap", "purchase_plan_gap"],
+      roleGoal: "把预测、库存、在途和采购需求合并为可审核的计划动作。"
+    },
+    role_buyer: {
+      domain: "procurement",
+      persona: "采购员",
+      operatingQuestion: "哪些供应商、PO 或货件会影响交期、缺货和采购履约？",
+      inputAssets: ["Supplier", "PO", "Shipment", "SKU"],
+      outputArtifacts: ["PO 风险跟进", "供应商 ETA 更新", "交付偏差复盘", "采购行动草稿"],
+      evidenceChecklist: ["supplier_otif_rate", "po_open_qty", "eta_deviation_days", "supplier_lead_time", "shipment_status"],
+      defaultScenarioTypes: ["supplier_risk", "po_delay", "shipment_eta_delay"],
+      roleGoal: "把供应商履约和采购订单风险转成 owner 可处理的行动队列。"
+    },
+    role_inventory: {
+      domain: "inventory",
+      persona: "库存负责人",
+      operatingQuestion: "哪些仓库、批次或 SKU 存在负库存、库龄、状态和库存质量问题？",
+      inputAssets: ["Warehouse", "InventoryBatch", "SKU", "CostEvent"],
+      outputArtifacts: ["库存异常排查", "库龄/超储处置", "盘点建议", "调拨/清仓草稿"],
+      evidenceChecklist: ["business_available_qty", "inventory_sync_delay", "batch_age_days", "storage_fee_rate", "inventory_flow"],
+      defaultScenarioTypes: ["negative_available_inventory", "aging_overstock_risk", "inventory_quality_gap"],
+      roleGoal: "把库存可用性、批次状态和仓储成本异常联动治理。"
+    },
+    role_logistics: {
+      domain: "logistics",
+      persona: "物流控制塔",
+      operatingQuestion: "哪些 Shipment、Container 或入库节点延误会影响可售库存？",
+      inputAssets: ["Shipment", "Container", "Warehouse", "PO"],
+      outputArtifacts: ["ETA 延误影响评估", "节点异常跟进", "替代物流建议", "到仓风险复盘"],
+      evidenceChecklist: ["eta_deviation_days", "milestone_status", "inbound_on_time_rate", "warehouse_receipt_status", "affected_sku"],
+      defaultScenarioTypes: ["shipment_eta_delay", "inbound_delay", "logistics_cost_exception"],
+      roleGoal: "把物流节点、入库状态和库存风险连接成控制塔视图。"
+    },
+    role_cost: {
+      domain: "cost",
+      persona: "成本财务",
+      operatingQuestion: "哪些 SKU、货件、仓库或费用事件正在侵蚀毛利和现金效率？",
+      inputAssets: ["CostEvent", "SKU", "Shipment", "Warehouse"],
+      outputArtifacts: ["成本归因复盘", "现金占用提醒", "费用异常跟进", "降本行动草稿"],
+      evidenceChecklist: ["landed_cost_per_unit", "storage_fee_rate", "slow_moving_inventory_ratio", "shipment_fee", "gross_margin_impact"],
+      defaultScenarioTypes: ["cost_exception", "aging_overstock_risk", "cash_lockup"],
+      roleGoal: "把库存、物流和费用事件转成可解释的成本影响和降本动作。"
+    }
+  };
+  const profile = profiles[role?.id] || profiles[`role_${role?.role_code}`] || {
+    domain: "supply_chain",
+    persona: role?.role_name || "供应链角色",
+    operatingQuestion: "当前角色应该优先处理哪些对象、风险和行动？",
+    inputAssets: roleObjectTypes(role),
+    outputArtifacts: ["治理行动草稿", "证据复核", "owner 审核"],
+    evidenceChecklist: Array.isArray(role?.metric_refs) ? role.metric_refs : [],
+    defaultScenarioTypes: [],
+    roleGoal: role?.mission || ""
+  };
+  return {
+    ...profile,
+    roleId: role?.id || "",
+    roleCode: role?.role_code || "",
+    owner: role?.owner || "",
+    cadence: role?.decision_cadence || "",
+    metricRefs: Array.isArray(role?.metric_refs) ? role.metric_refs : [],
+    objectTypes: roleObjectTypes(role)
+  };
+}
+
+function roleWorkstreams(role) {
+  const profile = roleDomainProfile(role);
+  return [
+    {
+      key: "intake",
+      name: "输入盘点",
+      description: `拉齐 ${profile.inputAssets.slice(0, 4).join(" / ")} 的对象队列、风险等级和证据状态。`,
+      expectedOutput: "角色对象队列和可追踪 source refs",
+      owner: role?.owner || ""
+    },
+    {
+      key: "diagnose",
+      name: "证据诊断",
+      description: `围绕 ${profile.evidenceChecklist.slice(0, 5).join(" / ")} 做可回答性和缺口判断。`,
+      expectedOutput: "事件、指标、知识卡和 evidence gap",
+      owner: role?.owner || ""
+    },
+    {
+      key: "draft_action",
+      name: "行动草稿",
+      description: `把风险对象和 playbook 汇总成 ${profile.outputArtifacts.slice(0, 3).join(" / ")}，进入治理台账。`,
+      expectedOutput: "workbench operation + workflow",
+      owner: role?.owner || ""
+    },
+    {
+      key: "review_replay",
+      name: "审核复盘",
+      description: "Owner 审核后记录处理结论、影响指标和后续复盘，不触发自动写回。",
+      expectedOutput: "review note + audit event + replay evidence",
+      owner: role?.owner || ""
+    }
+  ];
+}
+
+function roleDetailFilters(url = new URL("http://local/api/roles/workbenches/detail")) {
+  const normalize = (key) => {
+    const value = normalizeText(url.searchParams.get(key));
+    return value && value !== "all" ? value : "";
+  };
+  return {
+    objectType: normalize("objectType") || normalize("object_type"),
+    riskLevel: normalize("riskLevel") || normalize("risk_level"),
+    eventStatus: normalize("eventStatus") || normalize("event_status"),
+    scenarioType: normalize("scenarioType") || normalize("scenario_type"),
+    q: normalizeText(url.searchParams.get("q")),
+    limit: parseLimit(url, 60, 200)
+  };
+}
+
+function textMatchesQuery(values, q) {
+  if (!q) return true;
+  const needle = q.toLowerCase();
+  return values.some((value) => String(value || "").toLowerCase().includes(needle));
+}
+
+function filterRoleObjects(objects, filters) {
+  return objects.filter((object) => {
+    if (filters.objectType && object.object_type !== filters.objectType) return false;
+    if (filters.riskLevel && object.risk_level !== filters.riskLevel) return false;
+    return textMatchesQuery([object.id, object.object_key, object.display_name, object.owner], filters.q);
+  });
+}
+
+function filterRoleEvents(events, filters) {
+  return events.filter((event) => {
+    if (filters.objectType && event.object_type !== filters.objectType) return false;
+    if (filters.riskLevel && event.severity !== filters.riskLevel) return false;
+    if (filters.eventStatus && event.status !== filters.eventStatus) return false;
+    if (filters.scenarioType && event.event_type !== filters.scenarioType) return false;
+    return textMatchesQuery([event.id, event.event_title, event.event_type, event.display_name, event.object_id], filters.q);
+  });
+}
+
+function filterRoleRecommendations(recommendations, filters) {
+  return recommendations.filter((item) => {
+    if (filters.objectType && item.target_object_type !== filters.objectType) return false;
+    if (filters.riskLevel && item.priority !== filters.riskLevel) return false;
+    if (filters.scenarioType && item.scenario_type !== filters.scenarioType) return false;
+    return textMatchesQuery([item.id, item.recommendation_title, item.scenario_type, item.owner], filters.q);
+  });
+}
+
+function roleFilterOptions(role, objects, events, recommendations) {
+  const uniq = (values) => Array.from(new Set(values.filter(Boolean))).sort();
+  return {
+    objectTypes: uniq([...roleObjectTypes(role), ...objects.map((object) => object.object_type)]),
+    riskLevels: uniq([
+      ...objects.map((object) => object.risk_level),
+      ...events.map((event) => event.severity),
+      ...recommendations.map((item) => item.priority)
+    ]),
+    eventStatuses: uniq(events.map((event) => event.status)),
+    scenarioTypes: uniq([
+      ...events.map((event) => event.event_type),
+      ...recommendations.map((item) => item.scenario_type),
+      ...roleDomainProfile(role).defaultScenarioTypes
+    ])
+  };
+}
+
 function getRoleObjects(role, limit = 60) {
   const types = roleObjectTypes(role);
   if (!types.length) return [];
@@ -3925,15 +4099,28 @@ function getRoleWorkbenches(url = new URL("http://local/api/roles/workbenches"))
     });
 }
 
-function getRoleWorkbenchDetail(id) {
+function getRoleWorkbenchDetail(id, url = new URL("http://local/api/roles/workbenches/detail")) {
   const role = rowToRoleWorkbench(get("SELECT * FROM role_workbenches WHERE id = ? OR role_code = ?", [id, id]));
   if (!role) return null;
-  const objects = getRoleObjects(role);
-  const objectIds = new Set(objects.map((object) => object.id));
-  const events = getRoleEvents(role).filter((event) => objectIds.has(event.object_id));
-  const recommendations = getRoleRecommendations(role).filter((item) => !item.target_object_id || objectIds.has(item.target_object_id) || item.owner === role.owner);
+  const filters = roleDetailFilters(url);
+  const unfilteredObjects = getRoleObjects(role, 200);
+  const objectIds = new Set(unfilteredObjects.map((object) => object.id));
+  const unfilteredEvents = getRoleEvents(role, 200).filter((event) => objectIds.has(event.object_id));
+  const unfilteredRecommendations = getRoleRecommendations(role, 200).filter((item) => !item.target_object_id || objectIds.has(item.target_object_id) || item.owner === role.owner);
+  const objects = filterRoleObjects(unfilteredObjects, filters).slice(0, filters.limit);
+  const filteredObjectIds = new Set(objects.map((object) => object.id));
+  const events = filterRoleEvents(unfilteredEvents, filters)
+    .filter((event) => !filters.objectType || filteredObjectIds.has(event.object_id))
+    .slice(0, filters.limit);
+  const recommendations = filterRoleRecommendations(unfilteredRecommendations, filters)
+    .filter((item) => !filters.objectType || !item.target_object_id || filteredObjectIds.has(item.target_object_id) || item.owner === role.owner)
+    .slice(0, filters.limit);
   return {
     role,
+    domainProfile: roleDomainProfile(role),
+    workstreams: roleWorkstreams(role),
+    filterOptions: roleFilterOptions(role, unfilteredObjects, unfilteredEvents, unfilteredRecommendations),
+    activeFilters: filters,
     objects,
     events,
     recommendations,
@@ -3954,6 +4141,47 @@ function getRoleWorkbenchDetail(id) {
       erpWriteback: false
     }
   };
+}
+
+function exportRoleWorkbench(res, id, url) {
+  const detail = getRoleWorkbenchDetail(id, url);
+  if (!detail) return json(res, { error: "Role workbench not found" }, 404);
+  const format = normalizeText(url.searchParams.get("format"), "json").toLowerCase();
+  const moduleExport = {
+    module: {
+      id: `role-workbench-${safeExportName(detail.role.role_code || detail.role.id)}`,
+      code: detail.role.role_code,
+      title: `${detail.role.role_name} - AIP-SCM`,
+      focus: detail.domainProfile.operatingQuestion,
+      stage: "Operate",
+      status: detail.role.lifecycle_status,
+      score: detail.role.counts?.objects || detail.objects.length
+    },
+    exportedAt: nowIso(),
+    boundary: {
+      mode: "read_only_role_domain_export",
+      importAllowed: false,
+      productionWrites: false,
+      providerCalls: false,
+      erpWriteback: false
+    },
+    payload: detail
+  };
+  const baseName = `${safeExportName(detail.role.role_code || detail.role.id)}-role-workbench-${new Date().toISOString().slice(0, 10)}`;
+  if (format === "excel" || format === "xls") {
+    return sendDownload(
+      res,
+      renderExcelHtml(moduleExport),
+      "application/vnd.ms-excel; charset=utf-8",
+      `${baseName}.xls`
+    );
+  }
+  return sendDownload(
+    res,
+    JSON.stringify(moduleExport, null, 2),
+    "application/json; charset=utf-8",
+    `${baseName}.json`
+  );
 }
 
 function getRoleGovernanceSummary() {
@@ -7363,9 +7591,13 @@ const server = createServer(async (req, res) => {
         const result = createRoleActionDraft(roleActionDraftRoute[1], body);
         return result ? json(res, { ok: true, ...result }, 201) : json(res, { error: "Role workbench not found" }, 404);
       }
+      const roleWorkbenchExportRoute = url.pathname.match(/^\/api\/roles\/workbenches\/([^/]+)\/export$/);
+      if (req.method === "GET" && roleWorkbenchExportRoute) {
+        return exportRoleWorkbench(res, roleWorkbenchExportRoute[1], url);
+      }
       const roleWorkbenchRoute = url.pathname.match(/^\/api\/roles\/workbenches\/([^/]+)$/);
       if (req.method === "GET" && roleWorkbenchRoute) {
-        const detail = getRoleWorkbenchDetail(roleWorkbenchRoute[1]);
+        const detail = getRoleWorkbenchDetail(roleWorkbenchRoute[1], url);
         return detail ? json(res, detail) : json(res, { error: "Role workbench not found" }, 404);
       }
       if (req.method === "GET" && url.pathname === "/api/provider-gateway/policies") return json(res, getProviderGatewayPolicies(url));

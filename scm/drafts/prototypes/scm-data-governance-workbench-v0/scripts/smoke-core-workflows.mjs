@@ -52,6 +52,9 @@ assert(health.database?.aipPhase1?.providerCalls === false, "AIP provider bounda
 assert(health.database?.aipPhase1?.erpWriteback === false, "AIP ERP writeback boundary changed", health.database?.aipPhase1);
 assert(health.database?.roleProviderGovernance?.roles >= 5, "Role provider governance summary missing roles", health.database?.roleProviderGovernance);
 assert(health.database?.roleProviderGovernance?.boundary?.providerCalls === false, "Role provider boundary changed", health.database?.roleProviderGovernance);
+assert(health.database?.providerGateway?.decisionRecords >= 2, "Provider gateway decision records missing", health.database?.providerGateway);
+assert(health.database?.providerGateway?.promptVersions >= 3, "Provider gateway prompt versions missing", health.database?.providerGateway);
+assert(health.database?.providerGateway?.boundary?.providerCalls === false, "Provider gateway boundary changed", health.database?.providerGateway);
 
 const modules = await request("/api/workbench/modules");
 assert(Array.isArray(modules) && modules.length === 14, "expected 14 workbench modules", { count: modules.length });
@@ -843,6 +846,72 @@ const providerPolicies = await request("/api/provider-gateway/policies");
 assert(Array.isArray(providerPolicies) && providerPolicies.length >= 2, "Provider policies missing", providerPolicies);
 assert(providerPolicies.every((policy) => policy.status === "disabled" && policy.evidence_required === true), "Provider policies should remain disabled and evidence-gated", providerPolicies);
 
+const providerSummary = await request("/api/provider-gateway/summary");
+assert(providerSummary.providerPolicies >= 2, "Provider summary missing policies", providerSummary);
+assert(providerSummary.decisionRecords >= 2, "Provider summary missing decision records", providerSummary);
+assert(providerSummary.promptVersions >= 3, "Provider summary missing prompt versions", providerSummary);
+assert(providerSummary.boundary?.providerCalls === false && providerSummary.boundary?.erpWriteback === false, "Provider summary boundary changed", providerSummary.boundary);
+
+const providerDecisions = await request("/api/provider-gateway/decision-records");
+assert(Array.isArray(providerDecisions) && providerDecisions.some((record) => record.provider_code === "deepseek" && record.preferred_rank === 1), "Provider decision records missing DeepSeek rank", providerDecisions);
+
+const providerDecisionDraft = await request("/api/provider-gateway/decision-records", {
+  method: "POST",
+  body: JSON.stringify({
+    providerCode: "deepseek",
+    decisionTitle: `Provider smoke decision ${stamp}`,
+    decisionSummary: "Smoke records a provider decision draft without enabling external calls.",
+    costNotes: "No cost incurred; smoke only.",
+    riskNotes: "Provider remains disabled.",
+    fallbackPolicy: "Continue local evidence only.",
+    evidenceRefs: ["provider_policy:provider_deepseek"],
+    owner: "p0_provider_smoke",
+    createdBy: "p0_provider_smoke"
+  })
+});
+assert(providerDecisionDraft.decisionRecord?.id, "Provider decision draft was not created", providerDecisionDraft);
+assert(providerDecisionDraft.decisionRecord?.decision_status === "review_pending", "Provider decision draft status changed", providerDecisionDraft);
+
+const promptVersions = await request("/api/provider-gateway/prompt-versions");
+assert(Array.isArray(promptVersions) && promptVersions.some((prompt) => prompt.status === "draft_disabled"), "Prompt versions missing draft_disabled status", promptVersions);
+
+const promptVersionDraft = await request("/api/provider-gateway/prompt-versions", {
+  method: "POST",
+  body: JSON.stringify({
+    promptCode: `provider_smoke_prompt_${Date.now()}`,
+    providerCode: "deepseek",
+    roleId: "role_inventory",
+    evalCaseId: "eval_inventory_negative",
+    scenarioType: "negative_available_inventory",
+    promptTitle: `Provider smoke prompt ${stamp}`,
+    promptBody: "Smoke prompt remains draft_disabled and is never sent to an external provider.",
+    contextContract: { allowedInputs: ["certified_metric_context"], forbiddenInputs: ["raw_erp_export"] },
+    allowedEvidenceRefs: ["object_event:evt_negative_available_inventory"],
+    owner: "p0_provider_smoke",
+    createdBy: "p0_provider_smoke"
+  })
+});
+assert(promptVersionDraft.promptVersion?.id, "Prompt version draft was not created", promptVersionDraft);
+assert(promptVersionDraft.promptVersion?.status === "draft_disabled", "Prompt version draft status changed", promptVersionDraft);
+
+const providerBlockedDryRun = await request("/api/provider-gateway/blocked-dry-run", {
+  method: "POST",
+  body: JSON.stringify({
+    providerCode: "deepseek",
+    promptVersionId: promptVersionDraft.promptVersion.id,
+    evalCaseId: "eval_inventory_negative",
+    traceId: aipTrace.trace.id,
+    requestPurpose: "Smoke proves provider gateway blocks disabled provider calls.",
+    evidenceRefs: ["object_event:evt_negative_available_inventory"],
+    actor: "p0_provider_smoke"
+  })
+});
+assert(providerBlockedDryRun.callAudit?.id, "Provider blocked dry-run audit was not created", providerBlockedDryRun);
+assert(providerBlockedDryRun.callAudit?.call_status === "blocked_disabled", "Provider blocked dry-run status changed", providerBlockedDryRun.callAudit);
+
+const providerCallAudits = await request("/api/provider-gateway/call-audits?providerCode=deepseek");
+assert(Array.isArray(providerCallAudits) && providerCallAudits.some((audit) => audit.id === providerBlockedDryRun.callAudit.id), "Provider call audit filter failed", providerCallAudits);
+
 const agentEvalCases = await request("/api/agent-evals");
 assert(Array.isArray(agentEvalCases) && agentEvalCases.length >= 5, "Agent eval cases missing", agentEvalCases);
 assert(agentEvalCases.some((item) => item.role_id === "role_inventory" && item.scenario_type === "negative_available_inventory"), "Inventory eval case missing", agentEvalCases);
@@ -886,7 +955,8 @@ console.log(
         metrics: health.database?.metrics,
         lineageEdges: health.database?.lineageEdges,
         aipPhase1: health.database?.aipPhase1,
-        roleProviderGovernance: health.database?.roleProviderGovernance
+        roleProviderGovernance: health.database?.roleProviderGovernance,
+        providerGateway: health.database?.providerGateway
       },
       validatedWorkflows: [
         "annotation.create",
@@ -964,6 +1034,13 @@ console.log(
         "roleWorkbench.inventoryDetail",
         "roleWorkbench.actionDraft",
         "providerGatewayPolicies.readDisabled",
+        "providerGatewaySummary.read",
+        "providerDecisionRecords.read",
+        "providerDecisionRecord.createDraft",
+        "promptVersions.read",
+        "promptVersion.createDraftDisabled",
+        "providerCallAudit.blockedDryRun",
+        "providerCallAudit.filter",
         "agentEvalCases.read",
         "roleWorkbench.exportJson",
         "roleWorkbench.exportExcel",

@@ -234,6 +234,40 @@ Public boundary:
 - `erpWriteback=false`;
 - public Browser Harness did not create ledger writes.
 
+## 14. Batch 5 Local Provider Readiness Status
+
+Verified locally at: `2026-06-19`
+
+| Batch 5 provider item | Status | Evidence |
+|---|---|---|
+| Provider readiness schema | `implemented_local` | `scripts/migrations/010_provider_gateway_readiness.sql`; `npm run migrate` applied `010_provider_gateway_readiness.sql` |
+| Provider decision records | `passed_local` | `/api/provider-gateway/decision-records`; workflow smoke `providerDecisionRecords.read`, `providerDecisionRecord.createDraft` |
+| Prompt versions | `passed_local` | `/api/provider-gateway/prompt-versions`; workflow smoke `promptVersions.read`, `promptVersion.createDraftDisabled` |
+| Provider call audit | `passed_local` | `/api/provider-gateway/blocked-dry-run`, `/api/provider-gateway/call-audits`; workflow smoke `providerCallAudit.blockedDryRun`, `providerCallAudit.filter` |
+| Provider summary | `passed_local` | `/api/provider-gateway/summary`: `decisionRecords>=2`, `promptVersions>=3`, `providerCalls=false` |
+| Role provider UI | `passed_local` | Browser Harness `.providerReadinessStats`, `.providerDecisionList`, `.promptVersionList`, `.providerCallAuditList`, `.providerDryRunButton` |
+| Responsive gate | `passed_local` | Browser Harness checked all 14 modules at `1350x900`, `1024x900`, `768x900`, `390x900` |
+| Public deployment | `not_done_yet` | Public site has not been updated for this provider-readiness slice |
+
+Verification commands:
+
+```bash
+node --check server/index.mjs
+node --check scripts/smoke-core-workflows.mjs
+bash -n scripts/smoke-browser-harness.sh
+npm run check
+npm run migrate
+REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm run smoke:p0
+git diff --check -- drafts/prototypes/scm-data-governance-workbench-v0
+```
+
+Boundary:
+
+- no DeepSeek/Kimi/provider call;
+- prompt versions remain `draft_disabled`;
+- provider call audit records only blocked/dry-run attempts;
+- no ERP/Jijia/WMS/TMS writeback.
+
 ## 12. Batch 4 Public Deployment And Acceptance
 
 Verified publicly at: `2026-06-19T17:34:00+0800`

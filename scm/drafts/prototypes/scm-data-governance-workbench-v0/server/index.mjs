@@ -50,6 +50,7 @@ ensureP2QuestionFeedbackSchema();
 ensureAipPhase1Schema();
 ensureKnowledgeRulesSchema();
 ensureRoleProviderGovernanceSchema();
+ensureProviderGatewayReadinessSchema();
 
 function json(res, payload, status = 200) {
   const body = JSON.stringify(payload);
@@ -687,6 +688,7 @@ function seedKbDomains() {
 seedKbDomains();
 seedAipPhase1Data();
 seedRoleProviderGovernanceData();
+seedProviderGatewayReadinessData();
 
 function writeAudit(eventType, assetType, assetId, payload, actor = "local_user") {
   const id = makeId("audit");
@@ -1952,6 +1954,72 @@ function ensureRoleProviderGovernanceSchema() {
   `);
 }
 
+function ensureProviderGatewayReadinessSchema() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS provider_decision_records (
+      id TEXT PRIMARY KEY,
+      provider_code TEXT NOT NULL DEFAULT '',
+      decision_title TEXT NOT NULL,
+      preferred_rank INTEGER NOT NULL DEFAULT 0,
+      decision_status TEXT NOT NULL DEFAULT 'draft',
+      decision_summary TEXT NOT NULL DEFAULT '',
+      cost_notes TEXT NOT NULL DEFAULT '',
+      risk_notes TEXT NOT NULL DEFAULT '',
+      fallback_policy TEXT NOT NULL DEFAULT '',
+      evidence_refs TEXT NOT NULL DEFAULT '[]',
+      owner TEXT NOT NULL DEFAULT 'ai_governance_owner',
+      lifecycle_status TEXT NOT NULL DEFAULT 'draft',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_provider_decision_records_provider ON provider_decision_records(provider_code, decision_status, lifecycle_status);
+    CREATE INDEX IF NOT EXISTS idx_provider_decision_records_rank ON provider_decision_records(preferred_rank, provider_code);
+
+    CREATE TABLE IF NOT EXISTS prompt_versions (
+      id TEXT PRIMARY KEY,
+      prompt_code TEXT NOT NULL UNIQUE,
+      provider_code TEXT NOT NULL DEFAULT '',
+      role_id TEXT NOT NULL DEFAULT '',
+      eval_case_id TEXT NOT NULL DEFAULT '',
+      scenario_type TEXT NOT NULL DEFAULT '',
+      prompt_title TEXT NOT NULL,
+      prompt_body TEXT NOT NULL DEFAULT '',
+      context_contract TEXT NOT NULL DEFAULT '{}',
+      allowed_evidence_refs TEXT NOT NULL DEFAULT '[]',
+      version_no INTEGER NOT NULL DEFAULT 1,
+      rollback_of TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'draft',
+      owner TEXT NOT NULL DEFAULT 'ai_governance_owner',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_prompt_versions_provider ON prompt_versions(provider_code, status, scenario_type);
+    CREATE INDEX IF NOT EXISTS idx_prompt_versions_role ON prompt_versions(role_id, eval_case_id, status);
+
+    CREATE TABLE IF NOT EXISTS provider_call_audits (
+      id TEXT PRIMARY KEY,
+      provider_code TEXT NOT NULL DEFAULT '',
+      prompt_version_id TEXT NOT NULL DEFAULT '',
+      trace_id TEXT NOT NULL DEFAULT '',
+      eval_case_id TEXT NOT NULL DEFAULT '',
+      call_status TEXT NOT NULL DEFAULT 'blocked_disabled',
+      request_purpose TEXT NOT NULL DEFAULT '',
+      evidence_refs TEXT NOT NULL DEFAULT '[]',
+      token_estimate INTEGER NOT NULL DEFAULT 0,
+      cost_estimate_usd REAL NOT NULL DEFAULT 0,
+      error_summary TEXT NOT NULL DEFAULT '',
+      response_digest TEXT NOT NULL DEFAULT '',
+      actor TEXT NOT NULL DEFAULT 'local_user',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_provider_call_audits_provider ON provider_call_audits(provider_code, call_status, created_at);
+    CREATE INDEX IF NOT EXISTS idx_provider_call_audits_prompt ON provider_call_audits(prompt_version_id, eval_case_id, trace_id);
+  `);
+}
+
 function parseJsonValue(value, fallback) {
   if (value && typeof value === "object") return value;
   try {
@@ -2027,6 +2095,31 @@ function rowToAgentEvalCase(row) {
   return {
     ...row,
     required_evidence_refs: parseJsonValue(row.required_evidence_refs, [])
+  };
+}
+
+function rowToProviderDecisionRecord(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    evidence_refs: parseJsonValue(row.evidence_refs, [])
+  };
+}
+
+function rowToPromptVersion(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    context_contract: parseJsonValue(row.context_contract, {}),
+    allowed_evidence_refs: parseJsonValue(row.allowed_evidence_refs, [])
+  };
+}
+
+function rowToProviderCallAudit(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    evidence_refs: parseJsonValue(row.evidence_refs, [])
   };
 }
 
@@ -2544,6 +2637,153 @@ function seedRoleProviderGovernanceData() {
       [id, roleId, scenarioType, question, answerability, JSON.stringify(evidenceRefs), seededAt, seededAt]
     );
   });
+}
+
+function seedProviderGatewayReadinessData() {
+  if (!tableExists("provider_decision_records")) return;
+  const seededAt = nowIso();
+  const decisionRecords = [
+    {
+      id: "pdr_deepseek_primary_candidate",
+      provider_code: "deepseek",
+      decision_title: "DeepSeek 作为首选候选 provider",
+      preferred_rank: 1,
+      decision_status: "review_pending",
+      decision_summary: "DeepSeek 适合后续短上下文认证语义总结和证据改写场景；当前仅记录候选决策，不启用调用。",
+      cost_notes: "正式启用前需要 token 预算、单次调用上限和月度止损阈值。",
+      risk_notes: "风险集中在证据越界、未认证上下文外传和模型回答绕过 NL2Metric/NL2Object。",
+      fallback_policy: "如果 DeepSeek 不满足证据安全、稳定性或成本要求，则回退到 Kimi 或继续 local evidence only。",
+      evidence_refs: ["provider_policy:provider_deepseek", "agent_eval_cases", "chatbi_contexts"],
+      owner: "AI Governance Owner"
+    },
+    {
+      id: "pdr_kimi_long_context_candidate",
+      provider_code: "kimi",
+      decision_title: "Kimi 作为长上下文候选 provider",
+      preferred_rank: 2,
+      decision_status: "review_pending",
+      decision_summary: "Kimi 适合长文档知识库复核和政策差异解释；当前不启用 provider call。",
+      cost_notes: "正式启用前需要长上下文调用预算、证据截断策略和失败回退规则。",
+      risk_notes: "风险集中在长上下文中混入未认证知识、过期知识和原始导出敏感字段。",
+      fallback_policy: "长上下文任务仍可拆分为本地检索证据包；Kimi 仅在 owner 批准后作为可选 provider。",
+      evidence_refs: ["provider_policy:provider_kimi", "kb_crosswalk_matrix", "agent_eval_cases"],
+      owner: "AI Governance Owner"
+    }
+  ];
+  decisionRecords.forEach((item) => {
+    run(
+      `INSERT OR IGNORE INTO provider_decision_records
+        (id, provider_code, decision_title, preferred_rank, decision_status, decision_summary,
+         cost_notes, risk_notes, fallback_policy, evidence_refs, owner, lifecycle_status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'draft', ?, ?)`,
+      [
+        item.id,
+        item.provider_code,
+        item.decision_title,
+        item.preferred_rank,
+        item.decision_status,
+        item.decision_summary,
+        item.cost_notes,
+        item.risk_notes,
+        item.fallback_policy,
+        JSON.stringify(item.evidence_refs),
+        item.owner,
+        seededAt,
+        seededAt
+      ]
+    );
+  });
+
+  const promptVersions = [
+    {
+      id: "pv_inventory_negative_v1",
+      prompt_code: "inventory_negative_evidence_v1",
+      provider_code: "deepseek",
+      role_id: "role_inventory",
+      eval_case_id: "eval_inventory_negative",
+      scenario_type: "negative_available_inventory",
+      prompt_title: "负可用库存证据总结 prompt v1",
+      prompt_body: "仅基于 certified metric context、object event 和 knowledge evidence，总结负可用库存是否可解释，并给出拒答边界。",
+      context_contract: {
+        allowedInputs: ["certified_metric_context", "object_event", "knowledge_card_excerpt", "role_playbook"],
+        forbiddenInputs: ["raw_erp_export", "credentials", "personal_contact", "unreviewed_sql"],
+        outputShape: ["answerability", "evidence_refs", "risk_hypotheses", "owner_review_needed"]
+      },
+      allowed_evidence_refs: ["object_event:evt_negative_available_inventory", "knowledge_domain:stocking-rules", "metric:business_available_qty"],
+      owner: "库存 Owner"
+    },
+    {
+      id: "pv_planner_stockout_v1",
+      prompt_code: "planner_stockout_evidence_v1",
+      provider_code: "deepseek",
+      role_id: "role_planner",
+      eval_case_id: "eval_planner_stockout",
+      scenario_type: "stockout_risk",
+      prompt_title: "计划断货风险证据总结 prompt v1",
+      prompt_body: "基于 SKU、ForecastVersion、PO 和库存批次证据，生成断货风险说明和待 owner 审核的行动建议。",
+      context_contract: {
+        allowedInputs: ["object_path", "metric_context", "forecast_version", "recommendation_card"],
+        forbiddenInputs: ["free_nl2sql", "uncertified_metric", "raw_customer_data"],
+        outputShape: ["risk_level", "evidence_chain", "gap_reason", "recommended_l1_action"]
+      },
+      allowed_evidence_refs: ["object:obj_sku_momcozy_pillow_core", "object:obj_forecast_v202606_pillow", "metric:stockout_days"],
+      owner: "计划 Owner"
+    },
+    {
+      id: "pv_kimi_policy_gap_v1",
+      prompt_code: "kimi_policy_gap_review_v1",
+      provider_code: "kimi",
+      role_id: "role_cost",
+      eval_case_id: "eval_cost_storage",
+      scenario_type: "storage_cost_attribution",
+      prompt_title: "长上下文政策差异复核 prompt v1",
+      prompt_body: "仅在未来启用后，对知识库规则、成本事件和指标口径做长上下文差异解释；当前保持 draft_disabled。",
+      context_contract: {
+        allowedInputs: ["knowledge_rule", "metric_definition", "cost_event_summary"],
+        forbiddenInputs: ["full_raw_workbook", "private_order_detail", "secrets"],
+        outputShape: ["sample_supported", "sample_abnormal", "sample_unproven", "missing_evidence"]
+      },
+      allowed_evidence_refs: ["object:obj_cost_event_fba_storage", "metric:storage_fee_rate", "kb_crosswalk:cost"],
+      owner: "财务/成本 Owner"
+    }
+  ];
+  promptVersions.forEach((item) => {
+    run(
+      `INSERT OR IGNORE INTO prompt_versions
+        (id, prompt_code, provider_code, role_id, eval_case_id, scenario_type, prompt_title, prompt_body,
+         context_contract, allowed_evidence_refs, version_no, rollback_of, status, owner, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, '', 'draft_disabled', ?, ?, ?)`,
+      [
+        item.id,
+        item.prompt_code,
+        item.provider_code,
+        item.role_id,
+        item.eval_case_id,
+        item.scenario_type,
+        item.prompt_title,
+        item.prompt_body,
+        JSON.stringify(item.context_contract),
+        JSON.stringify(item.allowed_evidence_refs),
+        item.owner,
+        seededAt,
+        seededAt
+      ]
+    );
+  });
+
+  run(
+    `INSERT OR IGNORE INTO provider_call_audits
+      (id, provider_code, prompt_version_id, trace_id, eval_case_id, call_status, request_purpose,
+       evidence_refs, token_estimate, cost_estimate_usd, error_summary, response_digest, actor, created_at)
+     VALUES ('pca_seed_provider_disabled_guardrail', 'deepseek', 'pv_inventory_negative_v1', 'trace_seed_negative_available',
+       'eval_inventory_negative', 'blocked_disabled', ?, ?, 0, 0, ?, '', 'system', ?)`,
+    [
+      "Seed audit proving provider gateway remains closed until owner approval and eval pass.",
+      JSON.stringify(["prompt_version:pv_inventory_negative_v1", "provider_policy:provider_deepseek"]),
+      "Provider policy status is disabled; no external request was sent.",
+      seededAt
+    ]
+  );
 }
 
 function getAipObjects(url) {
@@ -3099,6 +3339,252 @@ function getProviderGatewayPolicies(url = new URL("http://local/api/provider-gat
   return all(`SELECT * FROM provider_gateway_policies ${where} ORDER BY status, provider_code LIMIT ?`, params).map(rowToProviderPolicy);
 }
 
+function getProviderDecisionRecords(url = new URL("http://local/api/provider-gateway/decision-records")) {
+  const clauses = [];
+  const params = [];
+  const providerCode = url.searchParams.get("providerCode") || url.searchParams.get("provider_code");
+  const status = url.searchParams.get("status");
+  if (providerCode) {
+    clauses.push("provider_code = ?");
+    params.push(providerCode);
+  }
+  if (status) {
+    clauses.push("decision_status = ?");
+    params.push(status);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 80, 200));
+  return all(`SELECT * FROM provider_decision_records ${where} ORDER BY preferred_rank, provider_code, updated_at DESC LIMIT ?`, params).map(rowToProviderDecisionRecord);
+}
+
+function createProviderDecisionRecord(body) {
+  assertRequired(body, ["providerCode", "decisionTitle", "decisionSummary"]);
+  const id = makeId("pdr");
+  const createdAt = nowIso();
+  const actor = normalizeText(body.createdBy || body.actor, "local_user");
+  const record = {
+    id,
+    provider_code: normalizeText(body.providerCode || body.provider_code),
+    decision_title: normalizeText(body.decisionTitle || body.decision_title),
+    preferred_rank: Number(body.preferredRank || body.preferred_rank || 0),
+    decision_status: normalizeText(body.decisionStatus || body.decision_status, "review_pending"),
+    decision_summary: normalizeText(body.decisionSummary || body.decision_summary),
+    cost_notes: normalizeText(body.costNotes || body.cost_notes),
+    risk_notes: normalizeText(body.riskNotes || body.risk_notes),
+    fallback_policy: normalizeText(body.fallbackPolicy || body.fallback_policy),
+    evidence_refs: normalizeJsonText(body.evidenceRefs || body.evidence_refs, []),
+    owner: normalizeText(body.owner, "AI Governance Owner"),
+    lifecycle_status: normalizeText(body.lifecycleStatus || body.lifecycle_status, "draft"),
+    created_at: createdAt,
+    updated_at: createdAt
+  };
+  run(
+    `INSERT INTO provider_decision_records
+      (id, provider_code, decision_title, preferred_rank, decision_status, decision_summary, cost_notes,
+       risk_notes, fallback_policy, evidence_refs, owner, lifecycle_status, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      record.id,
+      record.provider_code,
+      record.decision_title,
+      record.preferred_rank,
+      record.decision_status,
+      record.decision_summary,
+      record.cost_notes,
+      record.risk_notes,
+      record.fallback_policy,
+      record.evidence_refs,
+      record.owner,
+      record.lifecycle_status,
+      record.created_at,
+      record.updated_at
+    ]
+  );
+  writeAudit("provider_decision_record.created", "provider_decision_record", id, record, actor);
+  return rowToProviderDecisionRecord(get("SELECT * FROM provider_decision_records WHERE id = ?", [id]));
+}
+
+function getPromptVersions(url = new URL("http://local/api/provider-gateway/prompt-versions")) {
+  const clauses = [];
+  const params = [];
+  const providerCode = url.searchParams.get("providerCode") || url.searchParams.get("provider_code");
+  const roleId = url.searchParams.get("roleId") || url.searchParams.get("role_id");
+  const status = url.searchParams.get("status");
+  const scenarioType = url.searchParams.get("scenarioType") || url.searchParams.get("scenario_type");
+  if (providerCode) {
+    clauses.push("provider_code = ?");
+    params.push(providerCode);
+  }
+  if (roleId) {
+    clauses.push("role_id = ?");
+    params.push(roleId);
+  }
+  if (status) {
+    clauses.push("status = ?");
+    params.push(status);
+  }
+  if (scenarioType) {
+    clauses.push("scenario_type = ?");
+    params.push(scenarioType);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 100, 300));
+  return all(`SELECT * FROM prompt_versions ${where} ORDER BY provider_code, role_id, prompt_code, version_no DESC LIMIT ?`, params).map(rowToPromptVersion);
+}
+
+function createPromptVersion(body) {
+  assertRequired(body, ["promptCode", "promptTitle", "promptBody"]);
+  const id = makeId("pv");
+  const createdAt = nowIso();
+  const actor = normalizeText(body.createdBy || body.actor, "local_user");
+  const record = {
+    id,
+    prompt_code: normalizeText(body.promptCode || body.prompt_code),
+    provider_code: normalizeText(body.providerCode || body.provider_code),
+    role_id: normalizeText(body.roleId || body.role_id),
+    eval_case_id: normalizeText(body.evalCaseId || body.eval_case_id),
+    scenario_type: normalizeText(body.scenarioType || body.scenario_type),
+    prompt_title: normalizeText(body.promptTitle || body.prompt_title),
+    prompt_body: normalizeText(body.promptBody || body.prompt_body),
+    context_contract: normalizeJsonText(body.contextContract || body.context_contract, {}),
+    allowed_evidence_refs: normalizeJsonText(body.allowedEvidenceRefs || body.allowed_evidence_refs, []),
+    version_no: Number(body.versionNo || body.version_no || 1),
+    rollback_of: normalizeText(body.rollbackOf || body.rollback_of),
+    status: normalizeText(body.status, "draft_disabled"),
+    owner: normalizeText(body.owner, "AI Governance Owner"),
+    created_at: createdAt,
+    updated_at: createdAt
+  };
+  run(
+    `INSERT INTO prompt_versions
+      (id, prompt_code, provider_code, role_id, eval_case_id, scenario_type, prompt_title, prompt_body,
+       context_contract, allowed_evidence_refs, version_no, rollback_of, status, owner, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      record.id,
+      record.prompt_code,
+      record.provider_code,
+      record.role_id,
+      record.eval_case_id,
+      record.scenario_type,
+      record.prompt_title,
+      record.prompt_body,
+      record.context_contract,
+      record.allowed_evidence_refs,
+      record.version_no,
+      record.rollback_of,
+      record.status,
+      record.owner,
+      record.created_at,
+      record.updated_at
+    ]
+  );
+  writeAudit("prompt_version.created", "prompt_version", id, { ...record, prompt_body: "[redacted_for_audit_summary]" }, actor);
+  return rowToPromptVersion(get("SELECT * FROM prompt_versions WHERE id = ?", [id]));
+}
+
+function getProviderCallAudits(url = new URL("http://local/api/provider-gateway/call-audits")) {
+  const clauses = [];
+  const params = [];
+  const providerCode = url.searchParams.get("providerCode") || url.searchParams.get("provider_code");
+  const status = url.searchParams.get("status") || url.searchParams.get("callStatus") || url.searchParams.get("call_status");
+  if (providerCode) {
+    clauses.push("provider_code = ?");
+    params.push(providerCode);
+  }
+  if (status) {
+    clauses.push("call_status = ?");
+    params.push(status);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 100, 300));
+  return all(`SELECT * FROM provider_call_audits ${where} ORDER BY created_at DESC LIMIT ?`, params).map(rowToProviderCallAudit);
+}
+
+function createProviderBlockedDryRun(body) {
+  assertRequired(body, ["providerCode", "requestPurpose"]);
+  const providerCode = normalizeText(body.providerCode || body.provider_code);
+  const policy = get("SELECT * FROM provider_gateway_policies WHERE provider_code = ?", [providerCode]);
+  const id = makeId("pca");
+  const createdAt = nowIso();
+  const actor = normalizeText(body.actor || body.createdBy, "local_user");
+  const status = policy?.status === "enabled" ? "blocked_manual_gate_required" : "blocked_disabled";
+  const errorSummary = policy?.status === "enabled"
+    ? "Provider policy is enabled but this endpoint is a dry-run guard and cannot call external providers."
+    : "Provider policy is disabled; no external request was sent.";
+  const record = {
+    id,
+    provider_code: providerCode,
+    prompt_version_id: normalizeText(body.promptVersionId || body.prompt_version_id),
+    trace_id: normalizeText(body.traceId || body.trace_id),
+    eval_case_id: normalizeText(body.evalCaseId || body.eval_case_id),
+    call_status: status,
+    request_purpose: normalizeText(body.requestPurpose || body.request_purpose),
+    evidence_refs: normalizeJsonText(body.evidenceRefs || body.evidence_refs, []),
+    token_estimate: Number(body.tokenEstimate || body.token_estimate || 0),
+    cost_estimate_usd: Number(body.costEstimateUsd || body.cost_estimate_usd || 0),
+    error_summary: errorSummary,
+    response_digest: "",
+    actor,
+    created_at: createdAt
+  };
+  run(
+    `INSERT INTO provider_call_audits
+      (id, provider_code, prompt_version_id, trace_id, eval_case_id, call_status, request_purpose,
+       evidence_refs, token_estimate, cost_estimate_usd, error_summary, response_digest, actor, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      record.id,
+      record.provider_code,
+      record.prompt_version_id,
+      record.trace_id,
+      record.eval_case_id,
+      record.call_status,
+      record.request_purpose,
+      record.evidence_refs,
+      record.token_estimate,
+      record.cost_estimate_usd,
+      record.error_summary,
+      record.response_digest,
+      record.actor,
+      record.created_at
+    ]
+  );
+  writeAudit("provider_call.blocked_dry_run", "provider_call_audit", id, record, actor);
+  return rowToProviderCallAudit(get("SELECT * FROM provider_call_audits WHERE id = ?", [id]));
+}
+
+function getProviderGatewaySummary() {
+  const policies = tableExists("provider_gateway_policies") ? getProviderGatewayPolicies() : [];
+  const decisions = tableExists("provider_decision_records") ? getProviderDecisionRecords() : [];
+  const prompts = tableExists("prompt_versions") ? getPromptVersions() : [];
+  const audits = tableExists("provider_call_audits") ? getProviderCallAudits() : [];
+  return {
+    providerPolicies: policies.length,
+    disabledProviders: policies.filter((policy) => policy.status === "disabled").length,
+    decisionRecords: decisions.length,
+    promptVersions: prompts.length,
+    draftDisabledPrompts: prompts.filter((prompt) => prompt.status === "draft_disabled").length,
+    callAudits: audits.length,
+    blockedCalls: audits.filter((audit) => String(audit.call_status).startsWith("blocked")).length,
+    preferredProvider: decisions.find((item) => Number(item.preferred_rank) === 1)?.provider_code || "",
+    providerCandidates: policies.map((policy) => ({
+      providerCode: policy.provider_code,
+      providerName: policy.provider_name,
+      status: policy.status,
+      decision: decisions.find((decision) => decision.provider_code === policy.provider_code)?.decision_status || "missing",
+      promptVersions: prompts.filter((prompt) => prompt.provider_code === policy.provider_code).length,
+      blockedAudits: audits.filter((audit) => audit.provider_code === policy.provider_code && String(audit.call_status).startsWith("blocked")).length
+    })),
+    boundary: {
+      providerCalls: false,
+      erpWriteback: false,
+      allowedCallStatuses: ["blocked_disabled", "blocked_manual_gate_required"],
+      policy: "dry_run_audit_only_until_provider_enabled_with_owner_approval_eval_and_budget"
+    }
+  };
+}
+
 function getAgentEvalCases(url = new URL("http://local/api/agent-evals")) {
   const clauses = [];
   const params = [];
@@ -3174,6 +3660,10 @@ function getRoleWorkbenchDetail(id) {
     metrics: getRoleMetrics(role),
     evalCases: getAgentEvalCases(new URL(`http://local/api/agent-evals?roleId=${encodeURIComponent(role.id)}&limit=100`)),
     providerPolicies: getProviderGatewayPolicies(),
+    providerDecisionRecords: getProviderDecisionRecords(),
+    promptVersions: getPromptVersions(new URL(`http://local/api/provider-gateway/prompt-versions?roleId=${encodeURIComponent(role.id)}&limit=100`)),
+    providerCallAudits: getProviderCallAudits(),
+    providerGatewaySummary: getProviderGatewaySummary(),
     actionBoundary: {
       mode: "role_action_draft_only",
       actionTier: "L1",
@@ -3195,6 +3685,9 @@ function getRoleGovernanceSummary() {
     evalCases: tableExists("agent_eval_cases") ? tableCount("agent_eval_cases") : 0,
     providerPolicies: policies.length,
     disabledProviders: policies.filter((policy) => policy.status === "disabled").length,
+    providerDecisionRecords: tableExists("provider_decision_records") ? tableCount("provider_decision_records") : 0,
+    promptVersions: tableExists("prompt_versions") ? tableCount("prompt_versions") : 0,
+    providerCallAudits: tableExists("provider_call_audits") ? tableCount("provider_call_audits") : 0,
     roleQueues: roles.map((role) => ({
       id: role.id,
       roleName: role.role_name,
@@ -5635,6 +6128,10 @@ function getWorkbenchModule(id) {
       roles: getRoleWorkbenches(new URL("http://local/api/roles/workbenches?limit=50")),
       selected: getRoleWorkbenchDetail("role_inventory"),
       providerPolicies: getProviderGatewayPolicies(),
+      providerGatewaySummary: getProviderGatewaySummary(),
+      providerDecisionRecords: getProviderDecisionRecords(),
+      promptVersions: getPromptVersions(),
+      providerCallAudits: getProviderCallAudits(),
       evalCases: getAgentEvalCases(new URL("http://local/api/agent-evals?limit=100")),
       operations: operationsForModule()
     }),
@@ -5799,7 +6296,8 @@ function getDeployHealth() {
       knowledgeBase: getKnowledgeSummary(),
       aiChat: getAiChatSummary(),
       aipPhase1: getAipPhase1Summary(),
-      roleProviderGovernance: getRoleGovernanceSummary()
+      roleProviderGovernance: getRoleGovernanceSummary(),
+      providerGateway: getProviderGatewaySummary()
     },
     boundary: {
       productionWrites: false,
@@ -6564,6 +7062,22 @@ const server = createServer(async (req, res) => {
         return detail ? json(res, detail) : json(res, { error: "Role workbench not found" }, 404);
       }
       if (req.method === "GET" && url.pathname === "/api/provider-gateway/policies") return json(res, getProviderGatewayPolicies(url));
+      if (req.method === "GET" && url.pathname === "/api/provider-gateway/summary") return json(res, getProviderGatewaySummary());
+      if (req.method === "GET" && url.pathname === "/api/provider-gateway/decision-records") return json(res, getProviderDecisionRecords(url));
+      if (req.method === "POST" && url.pathname === "/api/provider-gateway/decision-records") {
+        const body = await readBody(req);
+        return json(res, { ok: true, decisionRecord: createProviderDecisionRecord(body) }, 201);
+      }
+      if (req.method === "GET" && url.pathname === "/api/provider-gateway/prompt-versions") return json(res, getPromptVersions(url));
+      if (req.method === "POST" && url.pathname === "/api/provider-gateway/prompt-versions") {
+        const body = await readBody(req);
+        return json(res, { ok: true, promptVersion: createPromptVersion(body) }, 201);
+      }
+      if (req.method === "GET" && url.pathname === "/api/provider-gateway/call-audits") return json(res, getProviderCallAudits(url));
+      if (req.method === "POST" && url.pathname === "/api/provider-gateway/blocked-dry-run") {
+        const body = await readBody(req);
+        return json(res, { ok: true, callAudit: createProviderBlockedDryRun(body) }, 201);
+      }
       if (req.method === "GET" && url.pathname === "/api/agent-evals") return json(res, getAgentEvalCases(url));
       if (req.method === "GET" && url.pathname === "/api/workbench/modules") return json(res, getWorkbenchModules());
       if (req.method === "GET" && url.pathname === "/api/workbench/operations") return json(res, getWorkbenchOperations(url));

@@ -647,6 +647,73 @@ type AgentEvalCase = {
   status: string;
 };
 
+type ProviderDecisionRecord = {
+  id: string;
+  provider_code: string;
+  decision_title: string;
+  preferred_rank: number;
+  decision_status: string;
+  decision_summary: string;
+  cost_notes: string;
+  risk_notes: string;
+  fallback_policy: string;
+  evidence_refs: unknown[];
+  owner: string;
+  lifecycle_status: string;
+};
+
+type PromptVersion = {
+  id: string;
+  prompt_code: string;
+  provider_code: string;
+  role_id: string;
+  eval_case_id: string;
+  scenario_type: string;
+  prompt_title: string;
+  prompt_body: string;
+  context_contract: Record<string, unknown>;
+  allowed_evidence_refs: unknown[];
+  version_no: number;
+  rollback_of: string;
+  status: string;
+  owner: string;
+};
+
+type ProviderCallAudit = {
+  id: string;
+  provider_code: string;
+  prompt_version_id: string;
+  trace_id: string;
+  eval_case_id: string;
+  call_status: string;
+  request_purpose: string;
+  evidence_refs: unknown[];
+  token_estimate: number;
+  cost_estimate_usd: number;
+  error_summary: string;
+  response_digest: string;
+  actor: string;
+  created_at: string;
+};
+
+type ProviderGatewaySummary = {
+  providerPolicies: number;
+  disabledProviders: number;
+  decisionRecords: number;
+  promptVersions: number;
+  draftDisabledPrompts: number;
+  callAudits: number;
+  blockedCalls: number;
+  preferredProvider: string;
+  providerCandidates: AnyRow[];
+  boundary: {
+    providerCalls: boolean;
+    erpWriteback: boolean;
+    allowedCallStatuses: string[];
+    policy: string;
+  };
+};
+
 type RoleWorkbenchDetail = {
   role: RoleWorkbench;
   objects: AipObject[];
@@ -656,6 +723,10 @@ type RoleWorkbenchDetail = {
   metrics: Metric[];
   evalCases: AgentEvalCase[];
   providerPolicies: ProviderPolicy[];
+  providerDecisionRecords: ProviderDecisionRecord[];
+  promptVersions: PromptVersion[];
+  providerCallAudits: ProviderCallAudit[];
+  providerGatewaySummary: ProviderGatewaySummary;
   actionBoundary: AnyRow;
 };
 
@@ -666,6 +737,9 @@ type RoleGovernanceSummary = {
   evalCases: number;
   providerPolicies: number;
   disabledProviders: number;
+  providerDecisionRecords: number;
+  promptVersions: number;
+  providerCallAudits: number;
   roleQueues: Array<{ id: string; roleName: string; owner: string; counts?: RoleWorkbench["counts"] }>;
   boundary: {
     providerCalls: boolean;
@@ -864,7 +938,27 @@ const columnLabels: Record<string, string> = {
   prompt_version_policy: "Prompt 版本策略",
   cost_policy: "成本策略",
   pii_policy: "PII 策略",
-  required_evidence_refs: "必需证据"
+  required_evidence_refs: "必需证据",
+  decision_title: "决策标题",
+  preferred_rank: "优先级排序",
+  decision_status: "决策状态",
+  decision_summary: "决策摘要",
+  cost_notes: "成本说明",
+  risk_notes: "风险说明",
+  fallback_policy: "回退策略",
+  prompt_code: "Prompt 编码",
+  prompt_title: "Prompt 标题",
+  prompt_body: "Prompt 正文",
+  context_contract: "上下文契约",
+  allowed_evidence_refs: "允许证据",
+  version_no: "版本号",
+  rollback_of: "回滚来源",
+  prompt_version_id: "Prompt 版本",
+  trace_id: "Trace",
+  call_status: "调用状态",
+  request_purpose: "请求目的",
+  token_estimate: "Token 估算",
+  cost_estimate_usd: "成本估算"
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -4912,6 +5006,26 @@ const emptyRoleDetail: RoleWorkbenchDetail = {
   metrics: [],
   evalCases: [],
   providerPolicies: [],
+  providerDecisionRecords: [],
+  promptVersions: [],
+  providerCallAudits: [],
+  providerGatewaySummary: {
+    providerPolicies: 0,
+    disabledProviders: 0,
+    decisionRecords: 0,
+    promptVersions: 0,
+    draftDisabledPrompts: 0,
+    callAudits: 0,
+    blockedCalls: 0,
+    preferredProvider: "",
+    providerCandidates: [],
+    boundary: {
+      providerCalls: false,
+      erpWriteback: false,
+      allowedCallStatuses: ["blocked_disabled", "blocked_manual_gate_required"],
+      policy: "dry_run_audit_only_until_provider_enabled_with_owner_approval_eval_and_budget"
+    }
+  },
   actionBoundary: {}
 };
 
@@ -4922,6 +5036,9 @@ const emptyRoleSummary: RoleGovernanceSummary = {
   evalCases: 0,
   providerPolicies: 0,
   disabledProviders: 0,
+  providerDecisionRecords: 0,
+  promptVersions: 0,
+  providerCallAudits: 0,
   roleQueues: [],
   boundary: {
     providerCalls: false,
@@ -4957,6 +5074,8 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
   const [refresh, setRefresh] = useState(0);
   const [actionNote, setActionNote] = useState("");
   const [drafting, setDrafting] = useState(false);
+  const [providerAuditNote, setProviderAuditNote] = useState("");
+  const [providerDryRun, setProviderDryRun] = useState(false);
   const summary = useApi<RoleGovernanceSummary>(`/api/roles/summary?refresh=${refresh}`, emptyRoleSummary);
   const roles = useApi<RoleWorkbench[]>(`/api/roles/workbenches?refresh=${refresh}`, []);
   const detail = useApi<RoleWorkbenchDetail>(`/api/roles/workbenches/${encodeURIComponent(selectedRoleId)}?refresh=${refresh}`, emptyRoleDetail);
@@ -4998,6 +5117,33 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
     }
   }
 
+  async function recordProviderBlockedDryRun() {
+    const prompt = detail.data.promptVersions[0];
+    const evaluation = detail.data.evalCases[0];
+    setProviderDryRun(true);
+    setProviderAuditNote("");
+    try {
+      const payload = await api<{ ok: boolean; callAudit: ProviderCallAudit }>("/api/provider-gateway/blocked-dry-run", {
+        method: "POST",
+        body: JSON.stringify({
+          providerCode: prompt?.provider_code || "deepseek",
+          promptVersionId: prompt?.id || "",
+          evalCaseId: evaluation?.id || "",
+          traceId: "trace_seed_negative_available",
+          requestPurpose: `${activeRole.role_name || "角色"} provider readiness dry-run`,
+          evidenceRefs: prompt?.allowed_evidence_refs || evaluation?.required_evidence_refs || [],
+          actor: "local_user"
+        })
+      });
+      setProviderAuditNote(`已记录 ${payload.callAudit.call_status} audit ${payload.callAudit.id}，未调用 provider。`);
+      setRefresh((value) => value + 1);
+    } catch (err) {
+      setProviderAuditNote(`记录失败：${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setProviderDryRun(false);
+    }
+  }
+
   return (
     <div className="panelStack">
       <ModuleHeader module={module} />
@@ -5022,6 +5168,11 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
             <span>Provider</span>
             <strong>{summary.data.disabledProviders}/{summary.data.providerPolicies}</strong>
             <small>{summary.data.boundary.providerCalls ? "provider on" : "provider off"}</small>
+          </article>
+          <article>
+            <span>Prompt</span>
+            <strong>{summary.data.promptVersions}</strong>
+            <small>{summary.data.providerCallAudits} call audits</small>
           </article>
         </div>
         {(summary.error || roles.error || detail.error) ? <div className="error">{summary.error || roles.error || detail.error}</div> : null}
@@ -5149,10 +5300,22 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
               </section>
               <section className="providerPolicyPanel">
                 <div className="surfaceHead">
-                  <h3>Provider Gateway</h3>
-                  <Badge tone="good">default off</Badge>
+                  <div>
+                    <h3>Provider Gateway</h3>
+                    <p className="muted">决策记录、prompt 版本和 call audit 只进入治理账本；当前不调用外部模型。</p>
+                  </div>
+                  <div className="badgeCluster">
+                    <Badge tone="good">default off</Badge>
+                    <Badge tone="blue">{detail.data.providerGatewaySummary.blockedCalls} blocked</Badge>
+                  </div>
                 </div>
-                <div className="providerPolicyList">
+                <div className="providerReadinessStats">
+                  <div><span>决策记录</span><strong>{detail.data.providerGatewaySummary.decisionRecords}</strong></div>
+                  <div><span>Prompt 版本</span><strong>{detail.data.providerGatewaySummary.promptVersions}</strong></div>
+                  <div><span>Call audit</span><strong>{detail.data.providerGatewaySummary.callAudits}</strong></div>
+                  <div><span>首选候选</span><strong>{detail.data.providerGatewaySummary.preferredProvider || "--"}</strong></div>
+                </div>
+                <div className="providerPolicyList providerReadinessList">
                   {detail.data.providerPolicies.map((policy) => (
                     <article key={policy.id}>
                       <div className="ledgerItemHead">
@@ -5163,6 +5326,67 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
                       <small>{policy.prompt_version_policy}</small>
                     </article>
                   ))}
+                </div>
+                <div className="providerGovernanceGrid">
+                  <div>
+                    <div className="sectionLabel">
+                      <span>Decision</span>
+                      <strong>Provider 决策记录</strong>
+                    </div>
+                    <div className="providerDecisionList">
+                      {detail.data.providerDecisionRecords.map((decision) => (
+                        <article key={decision.id}>
+                          <div className="ledgerItemHead">
+                            <strong>{decision.decision_title}</strong>
+                            <Badge tone={toneFromStatus(decision.decision_status)}>{decision.provider_code} / rank {decision.preferred_rank}</Badge>
+                          </div>
+                          <p>{decision.decision_summary}</p>
+                          <small>{decision.fallback_policy}</small>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="sectionLabel">
+                      <span>Prompt</span>
+                      <strong>Prompt 版本</strong>
+                    </div>
+                    <div className="promptVersionList">
+                      {detail.data.promptVersions.map((prompt) => (
+                        <article key={prompt.id}>
+                          <div className="ledgerItemHead">
+                            <strong>{prompt.prompt_title}</strong>
+                            <Badge tone={toneFromStatus(prompt.status)}>{prompt.status}</Badge>
+                          </div>
+                          <p>{prompt.prompt_body}</p>
+                          <small>{prompt.provider_code} / {prompt.prompt_code} / v{prompt.version_no}</small>
+                        </article>
+                      ))}
+                      {!detail.data.promptVersions.length ? <div className="empty compact">当前角色暂无 prompt 版本。</div> : null}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="sectionLabel">
+                      <span>Audit</span>
+                      <strong>Blocked call audit</strong>
+                    </div>
+                    <div className="providerCallAuditList">
+                      {detail.data.providerCallAudits.slice(0, 5).map((audit) => (
+                        <article key={audit.id}>
+                          <div className="ledgerItemHead">
+                            <strong>{audit.provider_code}</strong>
+                            <Badge tone={toneFromStatus(audit.call_status)}>{audit.call_status}</Badge>
+                          </div>
+                          <p>{audit.request_purpose}</p>
+                          <small>{audit.error_summary}</small>
+                        </article>
+                      ))}
+                    </div>
+                    <button className="textButton providerDryRunButton" disabled={providerDryRun} onClick={recordProviderBlockedDryRun}>
+                      {providerDryRun ? "记录中..." : "记录 blocked dry-run"}
+                    </button>
+                    {providerAuditNote ? <div className="kbNotice compact">{providerAuditNote}</div> : null}
+                  </div>
                 </div>
               </section>
               <section className="evalCasePanel">

@@ -3966,6 +3966,9 @@ tbody tr:hover td {
 .roleQueueList,
 .playbookList,
 .providerPolicyList,
+.providerDecisionList,
+.promptVersionList,
+.providerCallAuditList,
 .evalCaseList {
   display: grid;
   gap: 10px;
@@ -3975,6 +3978,9 @@ tbody tr:hover td {
 .roleQueueList button,
 .playbookList article,
 .providerPolicyList article,
+.providerDecisionList article,
+.promptVersionList article,
+.providerCallAuditList article,
 .evalCaseList article {
   min-width: 0;
   width: 100%;
@@ -4009,9 +4015,68 @@ tbody tr:hover td {
 .roleQueueList small,
 .playbookList small,
 .providerPolicyList small,
+.providerDecisionList small,
+.promptVersionList small,
+.providerCallAuditList small,
 .evalCaseList small {
   color: var(--muted);
   line-height: 1.45;
+}
+
+.providerReadinessStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+  min-width: 0;
+}
+
+.providerReadinessStats div {
+  min-width: 0;
+  padding: 10px;
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.providerReadinessStats span,
+.providerReadinessStats strong {
+  display: block;
+}
+
+.providerReadinessStats span {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.providerReadinessStats strong {
+  margin-top: 5px;
+  color: var(--ink);
+  font-size: 18px;
+}
+
+.providerGovernanceGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 14px;
+  min-width: 0;
+}
+
+.providerGovernanceGrid > div {
+  min-width: 0;
+}
+
+.providerDecisionList p,
+.promptVersionList p,
+.providerCallAuditList p {
+  margin: 7px 0;
+  color: var(--ink-2);
+  line-height: 1.45;
+}
+
+.providerDryRunButton {
+  margin-top: 10px;
 }
 
 .roleActionDraftButton {
@@ -4211,7 +4276,8 @@ a {
 	  .auditFilters,
     .roleWorkbenchLayout,
     .roleQueueGrid,
-    .roleSupportingGrid {
+    .roleSupportingGrid,
+    .providerGovernanceGrid {
 	    grid-template-columns: 1fr;
 	  }
 
@@ -4270,6 +4336,8 @@ a {
   .roleSummaryGrid,
   .roleQueueGrid,
   .roleSupportingGrid,
+  .providerReadinessStats,
+  .providerGovernanceGrid,
   .objectSignalGrid,
   .recommendationCards,
   .navGroup {

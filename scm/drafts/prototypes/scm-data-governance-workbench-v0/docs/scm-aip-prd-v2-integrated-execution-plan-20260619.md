@@ -558,7 +558,11 @@ REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm
 - [ ] AIP-B5-003 采购员工作台
 - [ ] AIP-B5-004 仓库库存工作台
 - [ ] AIP-B5-005 物流控制塔
-- [ ] AIP-B5-007 provider decision record
+- [x] AIP-B5-007 provider decision record
+- [x] AIP-B5-008 provider gateway 设计
+- [x] AIP-B5-009 prompt version 表
+- [x] AIP-B5-010 provider call audit
+- [x] AIP-B5-011 Agent eval cases
 - [ ] AIP-B5-012 future RBAC 设计
 - [ ] AIP-B5-013 SQLite -> Postgres 触发条件
 
@@ -573,9 +577,15 @@ Batch 5 第一片已完成：
 仍未完成：
 
 - B5-002 到 B5-005 的独立角色应用深水区，例如角色专属筛选、批量动作、SLA 和排班；
-- B5-007 的 provider 选型决策文档；
-- B5-009 到 B5-010 的 prompt version 和 provider call audit；
 - B5-012 到 B5-015 的 RBAC、Postgres 迁移和 write-back 风险评估。
+
+Batch 5 第二片已完成：
+
+- 已建立 `provider_decision_records`、`prompt_versions`、`provider_call_audits` 三张 provider readiness 账本；
+- DeepSeek/Kimi 决策记录进入 `review_pending`，但 provider policy 仍为 `disabled`；
+- Prompt versions 均为 `draft_disabled`，绑定 role、eval case、scenario 和 evidence contract；
+- `blocked-dry-run` 只记录本地 call audit，不发送任何外部 provider 请求；
+- 角色工作台 Provider Gateway 面板可查看决策、prompt 和 blocked audit。
 
 ## 12. 验收矩阵
 

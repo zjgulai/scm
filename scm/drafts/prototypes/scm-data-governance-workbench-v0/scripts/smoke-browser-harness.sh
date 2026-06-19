@@ -225,6 +225,11 @@ for label in expected:
           roleQueueGrid: !!document.querySelector('.roleQueueGrid'),
           queueColumns: document.querySelectorAll('.roleQueueGrid > article').length,
           providerPolicyPanel: !!document.querySelector('.providerPolicyPanel'),
+          providerReadinessStats: document.querySelectorAll('.providerReadinessStats > div').length,
+          providerDecisionList: !!document.querySelector('.providerDecisionList'),
+          promptVersionList: !!document.querySelector('.promptVersionList'),
+          providerCallAuditList: !!document.querySelector('.providerCallAuditList'),
+          providerDryRunButton: !!document.querySelector('.providerDryRunButton'),
           evalCasePanel: !!document.querySelector('.evalCasePanel'),
           actionButton: !!document.querySelector('.roleActionDraftButton'),
           exports: document.querySelectorAll('.exportActions a').length,
@@ -239,6 +244,11 @@ for label in expected:
             or not role["roleQueueGrid"]
             or role["queueColumns"] < 3
             or not role["providerPolicyPanel"]
+            or role["providerReadinessStats"] < 4
+            or not role["providerDecisionList"]
+            or not role["promptVersionList"]
+            or not role["providerCallAuditList"]
+            or not role["providerDryRunButton"]
             or not role["evalCasePanel"]
             or not role["actionButton"]
             or role["exports"] < 2

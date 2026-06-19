@@ -50,6 +50,7 @@ expected = [
     "血缘与质量工作台",
     "ChatBI 语义治理台",
     "AI 知识库",
+    "工作流编排台",
     "角色工作台",
     "决策闭环工作台",
     "审计日志工作台",
@@ -370,6 +371,38 @@ for label in expected:
         ):
           raise SystemExit(f"KB governance feature check failed: {kb}")
         feature_checks.append({"kbGovernance": kb})
+    if label == "工作流编排台":
+        orchestration = js("""
+        (() => ({
+          workbench: !!document.querySelector('.workflowOrchestrationWorkbench'),
+          commandCards: document.querySelectorAll('.orchestrationCommandBar article').length,
+          lanes: document.querySelectorAll('.orchestrationLaneCanvas .orchestrationLane').length,
+          moduleMatrix: !!document.querySelector('.orchestrationModuleMatrix'),
+          moduleContracts: document.querySelectorAll('.moduleContractList article').length,
+          handoffPanel: !!document.querySelector('.handoffPanel'),
+          handoffs: document.querySelectorAll('.handoffList article').length,
+          taskPool: !!document.querySelector('.orchestrationTaskPool'),
+          createButtons: document.querySelectorAll('.orchestrationCreateButton').length,
+          exports: document.querySelectorAll('.exportActions a').length,
+          flow: !!document.querySelector('.workbenchFlowStrip'),
+          importTextVisible: document.body.innerText.includes('导入')
+        }))()
+        """)
+        if (
+            not orchestration["workbench"]
+            or orchestration["commandCards"] < 4
+            or orchestration["lanes"] < 6
+            or not orchestration["moduleMatrix"]
+            or orchestration["moduleContracts"] < 12
+            or not orchestration["handoffPanel"]
+            or orchestration["handoffs"] < 5
+            or not orchestration["taskPool"]
+            or orchestration["createButtons"] < 1
+            or orchestration["exports"] < 2
+            or not orchestration["flow"]
+        ):
+          raise SystemExit(f"Workflow orchestration feature check failed: {orchestration}")
+        feature_checks.append({"workflowOrchestration": orchestration})
     if label == "AI 对话":
         ai = js("""
         (() => ({

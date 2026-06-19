@@ -1462,6 +1462,179 @@ function getWorkflowSummary() {
   };
 }
 
+function orchestrationModuleContract(moduleId) {
+  const contracts = {
+    overview: ["资产状态、治理任务、发布边界", "管理驾驶舱、风险下钻、导出快照", "管理层 / 数据治理 Owner"],
+    "ai-chat": ["本地知识库证据、已认证语义上下文", "证据回答、拒答原因、反馈治理任务", "业务分析师 / ChatBI Owner"],
+    ontology: ["对象类型、对象实例、对象关系、状态事件", "对象图谱、对象路径、注解和修订建议", "数据架构 / 供应链 Owner"],
+    tags: ["标签定义、规则表达式、适用对象", "标签候选、适配矩阵、审核 workflow", "运营策略 / 对象 Owner"],
+    dimensions: ["一致性维度、分析维度、层级映射", "维度适配、冲突清单、影响评估", "主数据 Owner / BI 开发"],
+    "metric-engineering": ["指标公式、粒度、字段映射、质量规则", "指标工程候选、字段血缘和质检任务", "指标 Owner / 数仓开发"],
+    "metric-dictionary": ["指标字典 2.0、口径、owner、同义词", "只读字典、修订建议、ChatBI 上下文", "指标 Owner / 语义治理 Owner"],
+    "kpi-system": ["MECE V2 L0-L3、权重、归因路径", "思维导图、对象图谱、节点注解", "管理层 / 数据产品经理"],
+    "lineage-quality": ["字段血缘、指标血缘、DQ 规则、质量问题", "影响分析、问题单、关闭证据", "质量 Owner / 数仓开发"],
+    chatbi: ["认证指标、可用维度、问法样本、证据链", "可答性判断、认证上下文、拒答策略", "ChatBI Owner / 指标 Owner"],
+    "ai-knowledge": ["SCM 主知识库、备货规则、业务知识库", "知识卡、证据评分、资产 crosswalk", "知识库维护人 / 供应链专家"],
+    "workflow-orchestration": ["模块契约、workflow、operation、候选、注解、修订、审计", "跨工作台编排视图、任务池、审批流和证据包", "治理 PMO / 各工作台 Owner"],
+    "role-workbench": ["角色配置、对象队列、事件、建议卡、playbook", "角色待办、L1 行动草稿、eval 证据", "计划/采购/库存/物流/成本 Owner"],
+    "decision-loop": ["洞察、建议、审批、任务、结果、复盘", "决策任务、状态流转和复盘证据", "管理层 / 执行 Owner"],
+    "audit-log": ["审计事件、操作者、payload、资产引用", "证据回看、责任链和导出快照", "数据治理 / 审计"]
+  };
+  const [input, output, collaborators] = contracts[moduleId] || contracts.overview;
+  return {
+    input,
+    output,
+    collaborators,
+    guardrail: "禁止导入；所有变更先进入本地 SQLite 工作台账本；不调用外部 provider；不写回 ERP/Jijia/WMS/TMS。"
+  };
+}
+
+function countRowsBy(rows, keyField, valueField = "count") {
+  return rows.reduce((acc, row) => {
+    const key = normalizeText(row[keyField], "governance");
+    acc[key] = (acc[key] || 0) + Number(row[valueField] || 0);
+    return acc;
+  }, {});
+}
+
+function getWorkflowOrchestrationSummary(url = new URL("http://local/api/workflow-orchestration/summary")) {
+  const modules = getWorkbenchModules();
+  const workflowRows = all(`
+    SELECT COALESCE(NULLIF(module_id, ''), 'governance') AS module_id, status, COUNT(*) AS count
+    FROM workflow_instances
+    GROUP BY COALESCE(NULLIF(module_id, ''), 'governance'), status
+    ORDER BY module_id, status
+  `);
+  const operationRows = all(`
+    SELECT module_id, status, COUNT(*) AS count
+    FROM workbench_operations
+    GROUP BY module_id, status
+    ORDER BY module_id, status
+  `);
+  const workflowCounts = countRowsBy(workflowRows, "module_id");
+  const operationCounts = countRowsBy(operationRows, "module_id");
+  const openWorkflowRows = workflowRows.filter((row) => !isClosedWorkflowStatus(row.status));
+  const openWorkflowCounts = countRowsBy(openWorkflowRows, "module_id");
+  const candidateTypeCounts = countRowsBy(
+    all("SELECT candidate_type, COUNT(*) AS count FROM governance_candidates GROUP BY candidate_type"),
+    "candidate_type"
+  );
+  const candidateMap = {
+    tags: candidateTypeCounts.tag || 0,
+    dimensions: candidateTypeCounts.dimension || 0,
+    "metric-engineering": candidateTypeCounts.metric || 0,
+    "metric-dictionary": candidateTypeCounts.metric || 0,
+    chatbi: tableCount("chatbi_contexts"),
+    "ai-knowledge": tableCount("knowledge_rules"),
+    "decision-loop": tableCount("decision_logs"),
+    "role-workbench": tableCount("recommendation_cards")
+  };
+  const moduleMap = modules.map((module) => {
+    const contract = orchestrationModuleContract(module.id);
+    return {
+      id: module.id,
+      code: module.code,
+      title: module.title,
+      stage: module.stage,
+      status: module.status,
+      score: module.score,
+      input: contract.input,
+      output: contract.output,
+      collaborators: contract.collaborators,
+      guardrail: contract.guardrail,
+      workflowCount: workflowCounts[module.id] || 0,
+      openWorkflowCount: openWorkflowCounts[module.id] || 0,
+      operationCount: operationCounts[module.id] || 0,
+      candidateCount: candidateMap[module.id] || 0,
+      exportPath: `/api/export/${module.id}?format=json`
+    };
+  });
+  const stages = ["intake", "map", "review", "certify", "operate", "replay"];
+  const lanes = [
+    {
+      id: "intake",
+      title: "输入登记",
+      description: "从知识卡、对象、指标、维度、角色队列和问题样本进入工作台。",
+      moduleIds: ["overview", "ai-chat", "ai-knowledge", "ontology"]
+    },
+    {
+      id: "map",
+      title: "映射建模",
+      description: "完成对象、标签、维度、指标、血缘和 KPI 的关系绑定。",
+      moduleIds: ["ontology", "tags", "dimensions", "metric-engineering", "kpi-system", "lineage-quality"]
+    },
+    {
+      id: "review",
+      title: "Owner 审核",
+      description: "候选、修订、质量问题和工作台操作进入人工审核。",
+      moduleIds: ["workflow-orchestration", "metric-dictionary", "chatbi", "role-workbench"]
+    },
+    {
+      id: "certify",
+      title: "认证发布",
+      description: "认证指标、认证语义上下文和只读导出快照对外服务。",
+      moduleIds: ["metric-dictionary", "chatbi", "ai-knowledge", "audit-log"]
+    },
+    {
+      id: "operate",
+      title: "角色执行",
+      description: "角色工作台生成 L1 行动草稿，决策闭环跟踪审批与结果。",
+      moduleIds: ["role-workbench", "decision-loop"]
+    },
+    {
+      id: "replay",
+      title: "审计复盘",
+      description: "审计日志、注解、评论、修订建议和证据包支撑复盘。",
+      moduleIds: ["audit-log", "workflow-orchestration"]
+    }
+  ].map((lane, index) => ({
+    ...lane,
+    stage: stages[index],
+    moduleCount: lane.moduleIds.length,
+    openWorkflowCount: lane.moduleIds.reduce((sum, id) => sum + (openWorkflowCounts[id] || 0), 0),
+    operationCount: lane.moduleIds.reduce((sum, id) => sum + (operationCounts[id] || 0), 0)
+  }));
+  const workflowSummary = getWorkflowSummary();
+  const operationSummary = getWorkbenchOperationSummary();
+  return {
+    totals: {
+      modules: modules.length,
+      workflows: workflowSummary.total,
+      openWorkflows: openWorkflowRows.reduce((sum, row) => sum + Number(row.count || 0), 0),
+      operations: operationSummary.total,
+      candidates: tableCount("governance_candidates"),
+      annotations: tableCount("asset_annotations"),
+      comments: tableCount("asset_comments"),
+      revisionProposals: tableCount("revision_proposals"),
+      auditEvents: tableCount("audit_events")
+    },
+    lanes,
+    moduleMap,
+    statusBuckets: {
+      workflows: workflowSummary.byStatus,
+      operations: operationSummary.byStatus,
+      sla: workflowSummary.bySla
+    },
+    recentWorkflows: getWorkflowInstances(new URL(`http://local/api/workflows?limit=${parseLimit(url, 12, 80)}`)),
+    recentOperations: getWorkbenchOperations(new URL(`http://local/api/workbench/operations?limit=${parseLimit(url, 12, 80)}`)),
+    handoffs: [
+      { from: "ai-knowledge", to: "chatbi", contract: "知识卡/证据片段 -> 可回答性样本与认证上下文", status: "active" },
+      { from: "ontology", to: "metric-engineering", contract: "对象主键/关系 -> 指标粒度、作用对象与字段映射", status: "mapped" },
+      { from: "metric-engineering", to: "metric-dictionary", contract: "指标公式/质量规则 -> 口径、owner、认证状态", status: "reviewed" },
+      { from: "kpi-system", to: "role-workbench", contract: "KPI/指标风险 -> 角色队列与 L1 行动草稿", status: "draft" },
+      { from: "role-workbench", to: "decision-loop", contract: "行动草稿 -> 审批、执行、复盘", status: "draft" },
+      { from: "all", to: "audit-log", contract: "create/update/review/export -> append-only evidence", status: "active" }
+    ],
+    boundary: {
+      mode: "local_sqlite_workflow_orchestration",
+      importAllowed: false,
+      productionWrites: false,
+      providerCalls: false,
+      erpWriteback: false
+    }
+  };
+}
+
 function reviewWorkflow(id, body) {
   const current = get("SELECT * FROM workflow_instances WHERE id = ?", [id]);
   if (!current) return null;
@@ -5881,6 +6054,7 @@ function getWorkbenchModules() {
   const lineageMapped = scalar("SELECT COUNT(*) AS count FROM lineage_edges WHERE status IN ('mapped', 'certified')");
   const lineageTotal = tableCount("lineage_edges");
   const roleSummary = getRoleGovernanceSummary();
+  const workbenchOperationTotal = tableCount("workbench_operations");
   return [
     {
       id: "overview",
@@ -6015,8 +6189,20 @@ function getWorkbenchModules() {
       apiPath: "/api/workbench/ai-knowledge"
     },
     {
-      id: "role-workbench",
+      id: "workflow-orchestration",
       code: "10",
+      title: "工作流编排台",
+      focus: "统一编排各工作台输入、输出、状态迁移、审批、注解、修订建议、导出和审计证据。",
+      stage: "Operate",
+      status: "active",
+      score: Math.min(88, 54 + Math.min(openWorkflows, 20) + Math.min(workbenchOperationTotal, 14)),
+      primaryMetric: `${openWorkflows} open`,
+      secondaryMetric: `${workbenchOperationTotal} ops`,
+      apiPath: "/api/workflow-orchestration/summary"
+    },
+    {
+      id: "role-workbench",
+      code: "11",
       title: "角色工作台",
       focus: "计划、采购、库存、物流、成本角色队列，连接对象、指标、推荐动作和 provider/eval 边界。",
       stage: "Act",
@@ -6028,7 +6214,7 @@ function getWorkbenchModules() {
     },
     {
       id: "decision-loop",
-      code: "11",
+      code: "12",
       title: "决策闭环工作台",
       focus: "管理洞察、建议、审批、任务、执行反馈和复盘记录。",
       stage: "Act",
@@ -6040,7 +6226,7 @@ function getWorkbenchModules() {
     },
     {
       id: "audit-log",
-      code: "12",
+      code: "13",
       title: "审计日志工作台",
       focus: "查询 create/update/review/approve 等治理操作，支撑追责、复盘和影响核验。",
       stage: "Control",
@@ -6141,6 +6327,7 @@ function getWorkbenchModule(id) {
       rules: getKnowledgeRules(new URL("http://local/api/knowledge-rules?limit=40")),
       operations: operationsForModule()
     }),
+    "workflow-orchestration": () => getWorkflowOrchestrationSummary(new URL("http://local/api/workflow-orchestration/summary?limit=80")),
     "role-workbench": () => ({
       summary: getRoleGovernanceSummary(),
       roles: getRoleWorkbenches(new URL("http://local/api/roles/workbenches?limit=50")),
@@ -7099,6 +7286,7 @@ const server = createServer(async (req, res) => {
       }
       if (req.method === "GET" && url.pathname === "/api/agent-evals") return json(res, getAgentEvalCases(url));
       if (req.method === "GET" && url.pathname === "/api/workbench/modules") return json(res, getWorkbenchModules());
+      if (req.method === "GET" && url.pathname === "/api/workflow-orchestration/summary") return json(res, getWorkflowOrchestrationSummary(url));
       if (req.method === "GET" && url.pathname === "/api/workbench/operations") return json(res, getWorkbenchOperations(url));
       if (req.method === "GET" && url.pathname === "/api/workbench/operations/summary") return json(res, getWorkbenchOperationSummary());
       if (req.method === "POST" && url.pathname === "/api/workbench/operations") {

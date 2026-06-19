@@ -382,6 +382,56 @@ type WorkbenchOperation = {
   updated_at: string;
 };
 
+type OrchestrationLane = {
+  id: string;
+  title: string;
+  description: string;
+  stage: string;
+  moduleIds: string[];
+  moduleCount: number;
+  openWorkflowCount: number;
+  operationCount: number;
+};
+
+type OrchestrationModule = {
+  id: string;
+  code: string;
+  title: string;
+  stage: string;
+  status: string;
+  score: number;
+  input: string;
+  output: string;
+  collaborators: string;
+  guardrail: string;
+  workflowCount: number;
+  openWorkflowCount: number;
+  operationCount: number;
+  candidateCount: number;
+  exportPath: string;
+};
+
+type WorkflowOrchestrationSummary = {
+  totals: Record<string, number>;
+  lanes: OrchestrationLane[];
+  moduleMap: OrchestrationModule[];
+  statusBuckets: {
+    workflows: AnyRow[];
+    operations: AnyRow[];
+    sla: AnyRow[];
+  };
+  recentWorkflows: WorkflowInstance[];
+  recentOperations: WorkbenchOperation[];
+  handoffs: Array<{ from: string; to: string; contract: string; status: string }>;
+  boundary: {
+    mode: string;
+    importAllowed: boolean;
+    productionWrites: boolean;
+    providerCalls: boolean;
+    erpWriteback: boolean;
+  };
+};
+
 type OntologyPath = {
   object: AnyRow | null;
   outbound: AnyRow[];
@@ -790,9 +840,10 @@ const fallbackModules: WorkbenchModule[] = [
   { id: "lineage-quality", code: "07", title: "血缘与质量工作台", focus: "血缘、DQ 与影响分析。", stage: "Control", status: "reviewed", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/lineage-quality" },
   { id: "chatbi", code: "08", title: "ChatBI 语义治理台", focus: "可回答性与证据链。", stage: "Serve", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/chatbi" },
   { id: "ai-knowledge", code: "09", title: "AI 知识库", focus: "三大知识库主题域、本地检索和证据片段。", stage: "Serve", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/ai-knowledge" },
-  { id: "role-workbench", code: "10", title: "角色工作台", focus: "计划、采购、库存、物流、成本角色队列。", stage: "Act", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/role-workbench" },
-  { id: "decision-loop", code: "11", title: "决策闭环工作台", focus: "洞察到审批复盘。", stage: "Act", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/decision-loop" },
-  { id: "audit-log", code: "12", title: "审计日志工作台", focus: "治理操作审计、筛选和证据回看。", stage: "Control", status: "active", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/audit-log" }
+  { id: "workflow-orchestration", code: "10", title: "工作流编排台", focus: "跨工作台输入输出、审批、注解、修订和审计。", stage: "Operate", status: "active", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workflow-orchestration/summary" },
+  { id: "role-workbench", code: "11", title: "角色工作台", focus: "计划、采购、库存、物流、成本角色队列。", stage: "Act", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/role-workbench" },
+  { id: "decision-loop", code: "12", title: "决策闭环工作台", focus: "洞察到审批复盘。", stage: "Act", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/decision-loop" },
+  { id: "audit-log", code: "13", title: "审计日志工作台", focus: "治理操作审计、筛选和证据回看。", stage: "Control", status: "active", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/audit-log" }
 ];
 
 const columnLabels: Record<string, string> = {
@@ -1317,6 +1368,13 @@ function defaultOperationTemplate(moduleId: string) {
       summary: "将证据不足、冲突或用户反馈沉淀为问法样本和治理任务。",
       payload: { provider_calls: "false", feedback_loop: "required" }
     },
+    "workflow-orchestration": {
+      operationType: "cross_workbench_orchestration_review",
+      targetAssetType: "workbench_module",
+      title: "跨工作台编排复核",
+      summary: "复核模块输入、输出、状态迁移、审批、注解、修订建议、导出和审计证据是否闭合。",
+      payload: { import_allowed: "false", provider_calls: "false", erp_writeback: "false", orchestration_scope: "workflow_operation_candidate_ledger" }
+    },
     "role-workbench": {
       operationType: "role_action_draft",
       targetAssetType: "role_workbench",
@@ -1366,6 +1424,18 @@ function workbenchFlowSpec(moduleId: string) {
         { label: "取证", detail: "返回证据片段和可答性" },
         { label: "沉淀", detail: "生成问法样本或反馈" },
         { label: "审核", detail: "语义 Owner 认证" }
+      ]
+    },
+    "workflow-orchestration": {
+      input: "所有工作台模块契约、workflow、operation、候选、注解、修订和审计事件。",
+      output: "跨工作台编排画布、任务池、handoff 合同、审批状态和导出证据包。",
+      collaborators: "治理 PMO、各工作台 Owner、数据产品经理。",
+      guardrail: "只做本地 SQLite 编排和导出，不允许导入，不调用 provider，不写回 ERP/Jijia。",
+      steps: [
+        { label: "契约", detail: "定义输入/输出/协作" },
+        { label: "编排", detail: "串联状态迁移和任务" },
+        { label: "审核", detail: "Owner 批准或拒绝" },
+        { label: "取证", detail: "导出 JSON/Excel 证据" }
       ]
     },
     "role-workbench": {
@@ -2415,6 +2485,220 @@ function WorkflowBoard({ onOpenAsset }: { onOpenAsset: (asset: AssetRef) => void
             </div>
           </article>
         )) : <div className="empty compact">暂无 workflow。提交候选或修订建议后会进入这里。</div>}
+      </div>
+    </section>
+  );
+}
+
+function WorkflowOrchestrationPanel({
+  module,
+  onOpenAsset,
+  onSelect
+}: {
+  module: WorkbenchModule;
+  onOpenAsset: (asset: AssetRef) => void;
+  onSelect: (id: string) => void;
+}) {
+  const emptySummary: WorkflowOrchestrationSummary = {
+    totals: {},
+    lanes: [],
+    moduleMap: [],
+    statusBuckets: { workflows: [], operations: [], sla: [] },
+    recentWorkflows: [],
+    recentOperations: [],
+    handoffs: [],
+    boundary: {
+      mode: "local_sqlite_workflow_orchestration",
+      importAllowed: false,
+      productionWrites: false,
+      providerCalls: false,
+      erpWriteback: false
+    }
+  };
+  const [refresh, setRefresh] = useState(0);
+  const [selectedModuleId, setSelectedModuleId] = useState("workflow-orchestration");
+  const [note, setNote] = useState("");
+  const summary = useApi<WorkflowOrchestrationSummary>(`/api/workflow-orchestration/summary?limit=16&refresh=${refresh}`, emptySummary);
+  const selectedModule = summary.data.moduleMap.find((item) => item.id === selectedModuleId) || summary.data.moduleMap[0];
+
+  async function createOrchestrationOperation(target?: OrchestrationModule) {
+    const targetModule = target || selectedModule;
+    if (!targetModule) return;
+    const result = await api<{ ok: boolean; operation: WorkbenchOperation }>("/api/workbench/operations", {
+      method: "POST",
+      body: JSON.stringify({
+        moduleId: "workflow-orchestration",
+        operationType: "cross_workbench_orchestration_review",
+        targetAssetType: "workbench_module",
+        targetAssetIds: [targetModule.id],
+        operationTitle: `${targetModule.title} 编排复核`,
+        operationSummary: `复核 ${targetModule.title} 的输入、输出、协作、状态迁移、审批、注解、修订建议和导出证据是否闭合。`,
+        operationPayload: {
+          targetModuleId: targetModule.id,
+          input: targetModule.input,
+          output: targetModule.output,
+          collaborators: targetModule.collaborators,
+          guardrail: targetModule.guardrail,
+          workflowCount: targetModule.workflowCount,
+          operationCount: targetModule.operationCount,
+          candidateCount: targetModule.candidateCount,
+          importAllowed: false,
+          providerCalls: false,
+          erpWriteback: false
+        },
+        owner: "governance_pmo",
+        priority: targetModule.openWorkflowCount > 0 ? "P1" : "P2",
+        createdBy: "local_user"
+      })
+    });
+    setNote(`已创建编排操作 ${result.operation.id}，关联 workflow ${result.operation.workflow_id}`);
+    setSelectedModuleId(targetModule.id);
+    setRefresh((value) => value + 1);
+  }
+
+  return (
+    <section className="panel">
+      <ModuleHeader module={module} />
+      {note ? <div className="kbNotice">{note}</div> : null}
+      <div className="workflowOrchestrationWorkbench">
+        <div className="orchestrationCommandBar">
+          {[
+            ["Modules", summary.data.totals.modules || 0, "workbench contracts"],
+            ["Open workflows", summary.data.totals.openWorkflows || 0, "owner review pool"],
+            ["Operations", summary.data.totals.operations || 0, "local ledger only"],
+            ["Evidence", (summary.data.totals.annotations || 0) + (summary.data.totals.revisionProposals || 0) + (summary.data.totals.auditEvents || 0), "annotation/revision/audit"]
+          ].map(([label, value, helper]) => (
+            <article key={String(label)}>
+              <span>{label}</span>
+              <strong>{value}</strong>
+              <small>{helper}</small>
+            </article>
+          ))}
+        </div>
+
+        <div className="orchestrationBoundary">
+          <div>
+            <p className="eyebrow">Orchestration boundary</p>
+            <h3>只做本地编排，不做生产写回</h3>
+          </div>
+          <div className="badgeCluster">
+            <Badge tone="good">import off</Badge>
+            <Badge tone="good">provider off</Badge>
+            <Badge tone="good">ERP writeback off</Badge>
+          </div>
+        </div>
+
+        <div className="orchestrationLaneCanvas">
+          {summary.data.lanes.map((lane, index) => (
+            <article className="orchestrationLane" key={lane.id}>
+              <div className="laneNumber">{String(index + 1).padStart(2, "0")}</div>
+              <div>
+                <span>{lane.stage}</span>
+                <h3>{lane.title}</h3>
+                <p>{lane.description}</p>
+                <small>{lane.moduleCount} modules / {lane.openWorkflowCount} open workflows / {lane.operationCount} ops</small>
+              </div>
+              <div className="laneModuleChips">
+                {lane.moduleIds.map((id) => (
+                  <button key={id} onClick={() => {
+                    setSelectedModuleId(id);
+                    onSelect(id);
+                  }}>{id}</button>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+
+        <div className="orchestrationDetailGrid">
+          <div className="orchestrationModuleMatrix">
+            <div className="sectionHeader compactHeader">
+              <div>
+                <p className="eyebrow">Module contracts</p>
+                <h2>工作台输入/输出协作矩阵</h2>
+              </div>
+              <button className="textButton orchestrationCreateButton" onClick={() => createOrchestrationOperation()}>生成编排操作</button>
+            </div>
+            <div className="moduleContractList">
+              {summary.data.moduleMap.map((item) => (
+                <article className={item.id === selectedModule?.id ? "active" : ""} key={item.id}>
+                  <button className="moduleContractTitle" onClick={() => setSelectedModuleId(item.id)}>
+                    <span>{item.code}</span>
+                    <strong>{item.title}</strong>
+                    <small>{item.stage} / {item.status}</small>
+                  </button>
+                  <div className="moduleContractBody">
+                    <p><b>输入</b>{item.input}</p>
+                    <p><b>输出</b>{item.output}</p>
+                    <p><b>协作</b>{item.collaborators}</p>
+                    <p><b>边界</b>{item.guardrail}</p>
+                    <div className="moduleContractStats">
+                      <span>{item.workflowCount} workflows</span>
+                      <span>{item.operationCount} ops</span>
+                      <span>{item.candidateCount} assets</span>
+                    </div>
+                    <div className="qualityActions">
+                      <button className="textButton" onClick={() => onSelect(item.id)}>进入工作台</button>
+                      <button className="textButton orchestrationCreateButton" onClick={() => createOrchestrationOperation(item)}>创建编排复核</button>
+                      <a className="textButton" href={item.exportPath} target="_blank" rel="noreferrer">导出 JSON</a>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </div>
+
+          <div className="orchestrationSideStack">
+            <div className="handoffPanel">
+              <div className="sectionHeader compactHeader">
+                <div>
+                  <p className="eyebrow">Handoff contracts</p>
+                  <h2>跨工作台交付关系</h2>
+                </div>
+              </div>
+              <div className="handoffList">
+                {summary.data.handoffs.map((handoff) => (
+                  <article key={`${handoff.from}-${handoff.to}`}>
+                    <strong>{handoff.from} → {handoff.to}</strong>
+                    <p>{handoff.contract}</p>
+                    <Badge tone={toneFromStatus(handoff.status)}>{handoff.status}</Badge>
+                  </article>
+                ))}
+              </div>
+            </div>
+
+            <div className="orchestrationTaskPool">
+              <div className="sectionHeader compactHeader">
+                <div>
+                  <p className="eyebrow">Task pool</p>
+                  <h2>近期 workflow / operation</h2>
+                </div>
+              </div>
+              <div className="orchestrationTaskColumns">
+                <div>
+                  <h3>Workflow</h3>
+                  {summary.data.recentWorkflows.slice(0, 5).map((workflow) => (
+                    <button key={workflow.id} onClick={() => onOpenAsset(makeAsset("workflow", workflow as unknown as AnyRow, ["title", "workflow_type", "id"], ["module_id", "owner"]))}>
+                      <strong>{workflow.title || workflow.workflow_type}</strong>
+                      <small>{workflow.module_id || "governance"} / {workflow.status} / {workflow.sla_status || "no_sla"}</small>
+                    </button>
+                  ))}
+                </div>
+                <div>
+                  <h3>Operation</h3>
+                  {summary.data.recentOperations.slice(0, 5).map((operation) => (
+                    <button key={operation.id} onClick={() => onOpenAsset(makeAsset("workbench_operation", operation as unknown as AnyRow, ["operation_title", "id"], ["module_id", "owner"]))}>
+                      <strong>{operation.operation_title}</strong>
+                      <small>{operation.module_id} / {operation.status}</small>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <WorkflowBoard onOpenAsset={onOpenAsset} />
       </div>
     </section>
   );
@@ -6213,7 +6497,7 @@ function Sidebar({ modules, active, onSelect }: { modules: WorkbenchModule[]; ac
     { title: "对象与模型", ids: ["ontology", "tags", "dimensions"] },
     { title: "指标治理", ids: ["metric-engineering", "metric-dictionary", "kpi-system"] },
     { title: "控制与语义", ids: ["lineage-quality", "chatbi", "ai-knowledge"] },
-    { title: "角色与闭环", ids: ["role-workbench", "decision-loop", "audit-log"] }
+    { title: "编排与闭环", ids: ["workflow-orchestration", "role-workbench", "decision-loop", "audit-log"] }
   ];
   const moduleById = Object.fromEntries(modules.map((module) => [module.id, module]));
   return (
@@ -6298,6 +6582,7 @@ function App() {
         {active === "lineage-quality" && <LineagePanel module={activeModule} onOpenAsset={setSelectedAsset} />}
         {active === "chatbi" && <ChatBiPanel module={activeModule} onOpenAsset={setSelectedAsset} />}
         {active === "ai-knowledge" && <KbPanel module={activeModule} onOpenAsset={setSelectedAsset} />}
+        {active === "workflow-orchestration" && <WorkflowOrchestrationPanel module={activeModule} onOpenAsset={setSelectedAsset} onSelect={selectModule} />}
         {active === "ai-chat" && (
           <AiChatPanel
             module={activeModule}

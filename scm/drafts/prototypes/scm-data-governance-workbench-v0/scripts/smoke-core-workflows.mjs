@@ -61,9 +61,10 @@ assert(health.database?.providerGateway?.promptVersions >= 3, "Provider gateway 
 assert(health.database?.providerGateway?.boundary?.providerCalls === false, "Provider gateway boundary changed", health.database?.providerGateway);
 
 const modules = await request("/api/workbench/modules");
-assert(Array.isArray(modules) && modules.length === 14, "expected 14 workbench modules", { count: modules.length });
+assert(Array.isArray(modules) && modules.length === 15, "expected 15 workbench modules", { count: modules.length });
 assert(modules.some((module) => module.id === "audit-log"), "audit log workbench module missing", modules);
 assert(modules.some((module) => module.id === "role-workbench"), "role workbench module missing", modules);
+assert(modules.some((module) => module.id === "workflow-orchestration"), "workflow orchestration workbench module missing", modules);
 assert(modules[0]?.id === "overview" && modules[1]?.id === "ai-chat", "AI chat should be directly below overview", modules.slice(0, 4));
 
 const overviewExport = await request("/api/export/overview?format=json");
@@ -317,6 +318,42 @@ assert(bulkOperationReview.updated === 1, "workbench operation bulk review faile
 
 const operationSummary = await request("/api/workbench/operations/summary");
 assert(operationSummary.total >= 2, "workbench operation summary missing smoke operations", operationSummary);
+
+const orchestrationSummary = await request("/api/workflow-orchestration/summary?limit=10");
+assert(orchestrationSummary.boundary?.importAllowed === false, "workflow orchestration import boundary changed", orchestrationSummary.boundary);
+assert(orchestrationSummary.boundary?.providerCalls === false, "workflow orchestration provider boundary changed", orchestrationSummary.boundary);
+assert(orchestrationSummary.boundary?.erpWriteback === false, "workflow orchestration ERP writeback boundary changed", orchestrationSummary.boundary);
+assert(Array.isArray(orchestrationSummary.lanes) && orchestrationSummary.lanes.length >= 6, "workflow orchestration lanes missing", orchestrationSummary);
+assert(Array.isArray(orchestrationSummary.moduleMap) && orchestrationSummary.moduleMap.some((item) => item.id === "role-workbench"), "workflow orchestration module map missing role workbench", orchestrationSummary.moduleMap);
+assert(Array.isArray(orchestrationSummary.handoffs) && orchestrationSummary.handoffs.length >= 5, "workflow orchestration handoff contracts missing", orchestrationSummary.handoffs);
+
+const orchestrationOperation = await request("/api/workbench/operations", {
+  method: "POST",
+  body: JSON.stringify({
+    moduleId: "workflow-orchestration",
+    operationType: "cross_workbench_orchestration_review",
+    targetAssetType: "workbench_module",
+    targetAssetIds: ["role-workbench", "decision-loop"],
+    operationTitle: `P1 smoke workflow orchestration ${Date.now()}`,
+    operationSummary: "P1 smoke validates cross-workbench orchestration operation stays in local ledger.",
+    operationPayload: {
+      importAllowed: false,
+      providerCalls: false,
+      erpWriteback: false,
+      handoff: "role-workbench -> decision-loop"
+    },
+    owner: "governance_pmo_smoke",
+    priority: "P1",
+    createdBy: "p1_orchestration_smoke"
+  })
+});
+assert(orchestrationOperation.operation?.id, "workflow orchestration operation was not created", orchestrationOperation);
+assert(orchestrationOperation.operation?.workflow_id, "workflow orchestration operation workflow was not created", orchestrationOperation);
+
+const orchestrationExport = await request("/api/export/workflow-orchestration?format=json");
+assert(orchestrationExport.boundary?.mode === "read_only_export", "workflow orchestration export is not read-only", orchestrationExport.boundary);
+assert(orchestrationExport.boundary?.importAllowed === false, "workflow orchestration export unexpectedly allows import", orchestrationExport.boundary);
+assert(orchestrationExport.payload?.lanes?.length >= 6, "workflow orchestration export missing lanes", orchestrationExport.payload);
 
 const qualityRule = await request("/api/quality/rules", {
   method: "POST",
@@ -1006,6 +1043,9 @@ console.log(
         "workbenchOperation.review",
         "workbenchOperation.bulkReview",
         "workbenchOperation.summary",
+        "workflowOrchestration.summary",
+        "workflowOrchestration.operation",
+        "workflowOrchestration.exportJson",
         "ontologyPath.read",
         "kpiCanvasNode.read",
         "kpiCanvasNode.update",

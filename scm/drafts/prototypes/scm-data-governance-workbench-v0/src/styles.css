@@ -1926,6 +1926,303 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+.workflowOrchestrationWorkbench {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.orchestrationCommandBar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.orchestrationCommandBar article,
+.orchestrationBoundary,
+.orchestrationLane,
+.orchestrationModuleMatrix,
+.handoffPanel,
+.orchestrationTaskPool {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fff, var(--panel-soft));
+}
+
+.orchestrationCommandBar article {
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+}
+
+.orchestrationCommandBar span,
+.orchestrationCommandBar small,
+.orchestrationLane span,
+.orchestrationLane small,
+.moduleContractBody p,
+.moduleContractStats span,
+.handoffList p,
+.orchestrationTaskColumns small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.orchestrationCommandBar strong {
+  color: var(--ink);
+  font-size: 30px;
+  line-height: 1;
+}
+
+.orchestrationBoundary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+}
+
+.orchestrationBoundary h3 {
+  margin: 2px 0 0;
+}
+
+.orchestrationLaneCanvas {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.orchestrationLane {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-content: start;
+  padding: 13px;
+  overflow: hidden;
+}
+
+.orchestrationLane:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 28px;
+  right: -6px;
+  width: 12px;
+  height: 12px;
+  border-top: 2px solid rgba(0, 94, 184, 0.36);
+  border-right: 2px solid rgba(0, 94, 184, 0.36);
+  transform: rotate(45deg);
+  background: var(--panel-soft);
+}
+
+.laneNumber {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--blue);
+  font-size: 12px;
+  font-weight: 820;
+}
+
+.orchestrationLane h3 {
+  margin: 2px 0 6px;
+  font-size: 15px;
+}
+
+.orchestrationLane p {
+  margin: 0 0 8px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.laneModuleChips {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.laneModuleChips button {
+  min-width: 0;
+  border: 1px solid rgba(0, 94, 184, 0.16);
+  border-radius: 999px;
+  padding: 5px 8px;
+  color: var(--blue);
+  background: #fff;
+  cursor: pointer;
+  font-size: 11px;
+  overflow-wrap: anywhere;
+}
+
+.orchestrationDetailGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(320px, 0.75fr);
+  gap: 14px;
+  min-width: 0;
+}
+
+.orchestrationModuleMatrix,
+.handoffPanel,
+.orchestrationTaskPool {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.compactHeader {
+  margin-bottom: 0;
+}
+
+.moduleContractList {
+  display: grid;
+  gap: 10px;
+  max-height: 820px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.moduleContractList article {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.moduleContractList article.active {
+  border-color: rgba(0, 94, 184, 0.44);
+  box-shadow: 0 10px 24px rgba(0, 94, 184, 0.08);
+}
+
+.moduleContractTitle {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  width: 100%;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.moduleContractTitle span {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  color: #fff;
+  background: var(--ink);
+  font-size: 12px;
+  font-weight: 820;
+}
+
+.moduleContractTitle strong,
+.orchestrationTaskColumns strong,
+.handoffList strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.moduleContractTitle small {
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.moduleContractBody {
+  display: grid;
+  gap: 8px;
+}
+
+.moduleContractBody p {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 8px;
+  margin: 0;
+}
+
+.moduleContractBody b {
+  color: var(--ink);
+}
+
+.moduleContractStats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.moduleContractStats span {
+  border: 1px solid rgba(17, 24, 39, 0.08);
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: var(--panel-soft);
+  font-size: 12px;
+}
+
+.orchestrationSideStack {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  min-width: 0;
+}
+
+.handoffList,
+.orchestrationTaskColumns,
+.orchestrationTaskColumns > div {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.handoffList article {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.handoffList p {
+  margin: 0;
+}
+
+.orchestrationTaskColumns {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.orchestrationTaskColumns h3 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.orchestrationTaskColumns button {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.orchestrationCreateButton {
+  white-space: nowrap;
+}
+
 .workflowFilters {
   display: grid;
   grid-template-columns: repeat(5, minmax(120px, 1fr)) minmax(220px, 1.4fr);
@@ -4301,6 +4598,8 @@ tbody tr:hover td {
 .aiChatLayout,
 .aiGovernanceWorkbench,
 .decisionWorkbench,
+.orchestrationDetailGrid,
+.orchestrationTaskColumns,
 .qualitySplit {
   min-width: 0;
   max-width: 100%;
@@ -4330,7 +4629,9 @@ tbody tr:hover td {
 .aiFeedbackActions,
 .roleSummaryGrid,
 .roleQueueGrid,
-.roleSlaShiftGrid {
+.roleSlaShiftGrid,
+.orchestrationCommandBar,
+.orchestrationLaneCanvas {
   min-width: 0;
   max-width: 100%;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
@@ -4354,6 +4655,7 @@ tbody tr:hover td {
 .sectionHeader,
 .surfaceHead,
 .moduleOpsSummary,
+.orchestrationBoundary,
 .ledgerItemHead,
 .bulkActionBar,
 .canvasToolbar,

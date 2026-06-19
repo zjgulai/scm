@@ -6582,6 +6582,53 @@ function getAiChatSession(id) {
   return { ...session, messages };
 }
 
+function getAiEvidenceExportRegistry(url) {
+  const clauses = ["m.role = 'assistant'"];
+  const params = [];
+  const answerability = normalizeText(url.searchParams.get("answerability"));
+  const q = normalizeText(url.searchParams.get("q"));
+  if (answerability) {
+    clauses.push("m.answerability = ?");
+    params.push(answerability);
+  }
+  if (q) {
+    clauses.push("(m.content LIKE ? OR s.title LIKE ? OR m.answerability LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`);
+  }
+  const limit = parseLimit(url, 80, 300);
+  params.push(limit);
+  const rows = all(
+    `SELECT
+       m.id AS message_id,
+       m.session_id,
+       s.title AS session_title,
+       m.content,
+       m.answerability,
+       m.answerability_score,
+       m.created_at,
+       (SELECT COUNT(*) FROM ai_retrieval_evidence ev WHERE ev.message_id = m.id) AS evidence_count,
+       (SELECT GROUP_CONCAT(DISTINCT kc.domain_id) FROM ai_retrieval_evidence ev LEFT JOIN kb_cards kc ON kc.id = ev.card_id WHERE ev.message_id = m.id) AS domain_ids
+     FROM ai_chat_messages m
+     LEFT JOIN ai_chat_sessions s ON s.id = m.session_id
+     WHERE ${clauses.join(" AND ")}
+     ORDER BY m.created_at DESC
+     LIMIT ?`,
+    params
+  );
+  return rows.map((row) => ({
+    ...row,
+    preview: String(row.content || "").slice(0, 180),
+    domain_ids: String(row.domain_ids || "").split(",").filter(Boolean),
+    json_url: `/api/ai-chat/messages/${encodeURIComponent(String(row.message_id))}/evidence-export?format=json`,
+    markdown_url: `/api/ai-chat/messages/${encodeURIComponent(String(row.message_id))}/evidence-export?format=markdown`,
+    boundary: {
+      providerCalls: false,
+      erpWriteback: false,
+      mode: "local_evidence_export_registry"
+    }
+  }));
+}
+
 function renderAiEvidenceMarkdown(payload) {
   const message = payload.message || {};
   const session = payload.session || {};
@@ -7229,7 +7276,7 @@ function getWorkbenchModule(id) {
       qualityIssues: getQualityIssues(new URL("http://local/api/quality/issues?limit=100")),
       operations: operationsForModule()
     }),
-    chatbi: () => ({ summary: getChatbiSummary(), contexts: getChatbiContext(), operations: operationsForModule() }),
+    chatbi: () => ({ summary: getChatbiSummary(), scorecard: getChatbiAnswerabilityScorecard(), contexts: getChatbiContext(), operations: operationsForModule() }),
     "ai-knowledge": () => ({
       domains: getKbDomains(),
       cards: getKbCards(new URL("http://local/api/kb/cards?limit=40")),
@@ -7251,7 +7298,13 @@ function getWorkbenchModule(id) {
       evalCases: getAgentEvalCases(new URL("http://local/api/agent-evals?limit=100")),
       operations: operationsForModule()
     }),
-    "ai-chat": () => ({ sessions: getAiChatSessions(new URL("http://local/api/ai-chat/sessions?limit=20")), summary: getAiChatSummary(), operations: operationsForModule() }),
+    "ai-chat": () => ({
+      sessions: getAiChatSessions(new URL("http://local/api/ai-chat/sessions?limit=20")),
+      summary: getAiChatSummary(),
+      governance: getAiGovernanceSummary(),
+      evidenceExports: getAiEvidenceExportRegistry(new URL("http://local/api/ai-chat/evidence-exports?limit=20")),
+      operations: operationsForModule()
+    }),
     "decision-loop": () => ({
       decisions: all("SELECT * FROM decision_logs ORDER BY status, id"),
       actions: getActionTasks(new URL("http://local/api/decision/action-tasks?limit=100")),
@@ -7915,6 +7968,137 @@ function getChatbiSummary() {
   };
 }
 
+function getChatbiAnswerabilityScorecard() {
+  const rows = all(
+    `SELECT
+       c.id,
+       c.metric_id,
+       c.question_sample,
+       c.allowed_dimensions,
+       c.evidence_chain,
+       c.answer_policy,
+       c.answerability,
+       c.answerability_score,
+       c.evidence_count,
+       c.status,
+       c.source_asset_type,
+       c.source_asset_id,
+       c.source_message_id,
+       c.workflow_id,
+       c.updated_at,
+       c.created_at,
+       m.code,
+       m.name,
+       m.level,
+       m.l1_domain,
+       m.l2_group,
+       m.owner,
+       m.certification_status
+     FROM chatbi_contexts c
+     LEFT JOIN metrics m ON m.id = c.metric_id
+     ORDER BY c.updated_at DESC, c.created_at DESC
+     LIMIT 500`
+  );
+  const total = rows.length;
+  const certified = rows.filter((row) => row.status === "certified" && row.answer_policy === "certified_metric_only").length;
+  const draft = rows.filter((row) => ["draft", "review_pending", "reviewed"].includes(String(row.status))).length;
+  const weakContexts = rows.filter((row) => (
+    ["insufficient", "refused", "rejected"].includes(String(row.answerability)) ||
+    ["rejected"].includes(String(row.status)) ||
+    Number(row.answerability_score || 0) < 55
+  ));
+  const avgScore = total
+    ? Math.round(rows.reduce((sum, row) => sum + Number(row.answerability_score || 0), 0) / total)
+    : 0;
+  const evidenceTotal = rows.reduce((sum, row) => sum + Number(row.evidence_count || 0), 0);
+  const bucketMap = new Map();
+  const domainMap = new Map();
+  rows.forEach((row) => {
+    const bucket = normalizeText(row.answerability, "unknown") || "unknown";
+    bucketMap.set(bucket, (bucketMap.get(bucket) || 0) + 1);
+    const domain = normalizeText(row.l1_domain, "未绑定领域") || "未绑定领域";
+    if (!domainMap.has(domain)) {
+      domainMap.set(domain, {
+        l1_domain: domain,
+        total_contexts: 0,
+        certified_contexts: 0,
+        draft_contexts: 0,
+        weak_contexts: 0,
+        evidence_count: 0,
+        score_total: 0,
+        metrics: new Set(),
+        statuses: new Map()
+      });
+    }
+    const item = domainMap.get(domain);
+    item.total_contexts += 1;
+    item.evidence_count += Number(row.evidence_count || 0);
+    item.score_total += Number(row.answerability_score || 0);
+    if (row.status === "certified" && row.answer_policy === "certified_metric_only") item.certified_contexts += 1;
+    if (["draft", "review_pending", "reviewed"].includes(String(row.status))) item.draft_contexts += 1;
+    if (weakContexts.some((weak) => weak.id === row.id)) item.weak_contexts += 1;
+    if (row.metric_id) item.metrics.add(row.metric_id);
+    item.statuses.set(row.status || "unknown", (item.statuses.get(row.status || "unknown") || 0) + 1);
+  });
+  const domainScorecards = Array.from(domainMap.values())
+    .map((item) => ({
+      l1_domain: item.l1_domain,
+      total_contexts: item.total_contexts,
+      certified_contexts: item.certified_contexts,
+      draft_contexts: item.draft_contexts,
+      weak_contexts: item.weak_contexts,
+      evidence_count: item.evidence_count,
+      metric_count: item.metrics.size,
+      average_score: item.total_contexts ? Math.round(item.score_total / item.total_contexts) : 0,
+      certified_coverage_rate: item.total_contexts ? Number((item.certified_contexts / item.total_contexts).toFixed(4)) : 0,
+      statuses: Array.from(item.statuses.entries()).map(([status, count]) => ({ status, count }))
+    }))
+    .sort((a, b) => b.weak_contexts - a.weak_contexts || b.total_contexts - a.total_contexts);
+  return {
+    summary: {
+      total,
+      certified,
+      draft,
+      weak: weakContexts.length,
+      average_score: avgScore,
+      evidence_count: evidenceTotal,
+      certified_coverage_rate: total ? Number((certified / total).toFixed(4)) : 0,
+      refusal_like_count: rows.filter((row) => ["insufficient", "refused", "rejected"].includes(String(row.answerability))).length,
+      providerCalls: false,
+      erpWriteback: false
+    },
+    answerabilityBuckets: Array.from(bucketMap.entries()).map(([answerability, count]) => ({ answerability, count })),
+    domainScorecards,
+    weakContexts: weakContexts.slice(0, 18).map((row) => ({
+      id: row.id,
+      metric_id: row.metric_id,
+      code: row.code,
+      name: row.name,
+      l1_domain: row.l1_domain || "未绑定领域",
+      question_sample: row.question_sample,
+      answerability: row.answerability,
+      answerability_score: row.answerability_score,
+      evidence_count: row.evidence_count,
+      status: row.status,
+      answer_policy: row.answer_policy,
+      source_message_id: row.source_message_id,
+      workflow_id: row.workflow_id,
+      recommended_action: row.status === "rejected"
+        ? "保留证据审计，不进入 certified_metric_only。"
+        : Number(row.evidence_count || 0) < 2
+          ? "补充本地知识证据后再提交认证。"
+          : "由 ChatBI Owner 复核口径、维度和证据链。"
+    })),
+    policy: {
+      answerPolicy: "certified_metric_only",
+      refusalRule: "未认证指标或弱证据上下文只进入治理队列，不作为正式 ChatBI 答案。",
+      evidenceExport: "AI evidence packages remain local JSON/Markdown exports.",
+      providerCalls: false,
+      erpWriteback: false
+    }
+  };
+}
+
 function getChatbiContextSamples(url) {
   return all(
     `SELECT c.*, m.code, m.name, m.definition, m.formula, m.grain, m.direction
@@ -8077,6 +8261,7 @@ const server = createServer(async (req, res) => {
       if (req.method === "GET" && url.pathname === "/api/ai-chat/summary") return json(res, getAiChatSummary());
       if (req.method === "GET" && url.pathname === "/api/ai-chat/governance-summary") return json(res, getAiGovernanceSummary());
       if (req.method === "GET" && url.pathname === "/api/ai-chat/sessions") return json(res, getAiChatSessions(url));
+      if (req.method === "GET" && url.pathname === "/api/ai-chat/evidence-exports") return json(res, getAiEvidenceExportRegistry(url));
       if (req.method === "GET" && url.pathname === "/api/ai-chat/question-samples") return json(res, getQuestionSamples(url));
       if (req.method === "POST" && url.pathname === "/api/ai-chat/question-samples") {
         const body = await readBody(req);
@@ -8280,6 +8465,7 @@ const server = createServer(async (req, res) => {
       }
       if (req.method === "GET" && url.pathname === "/api/governance/tasks") return json(res, all("SELECT * FROM governance_tasks ORDER BY priority, status, id LIMIT 500"));
       if (req.method === "GET" && url.pathname === "/api/chatbi/summary") return json(res, getChatbiSummary());
+      if (req.method === "GET" && url.pathname === "/api/chatbi/answerability-scorecard") return json(res, getChatbiAnswerabilityScorecard());
       if (req.method === "GET" && url.pathname === "/api/chatbi/context") return json(res, getChatbiContext(url));
       if (req.method === "POST" && url.pathname === "/api/chatbi/context") {
         const body = await readBody(req);

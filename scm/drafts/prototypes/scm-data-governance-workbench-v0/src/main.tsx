@@ -266,6 +266,24 @@ type AiGovernanceSummary = {
   };
 };
 
+type AiEvidenceExportRegistryItem = {
+  message_id: string;
+  session_id: string;
+  session_title: string;
+  preview: string;
+  answerability: string;
+  answerability_score: number;
+  evidence_count: number;
+  json_url: string;
+  markdown_url: string;
+  created_at: string;
+  boundary?: {
+    providerCalls: boolean;
+    erpWriteback: boolean;
+    mode: string;
+  };
+};
+
 type AssetRef = {
   type: string;
   id: string;
@@ -505,6 +523,31 @@ type ChatbiSummary = {
     refusalRule: string;
   };
   pending: AnyRow[];
+};
+
+type ChatbiAnswerabilityScorecard = {
+  summary: {
+    total: number;
+    certified: number;
+    draft: number;
+    weak: number;
+    average_score: number;
+    evidence_count: number;
+    certified_coverage_rate: number;
+    refusal_like_count: number;
+    providerCalls: boolean;
+    erpWriteback: boolean;
+  };
+  answerabilityBuckets: AnyRow[];
+  domainScorecards: AnyRow[];
+  weakContexts: AnyRow[];
+  policy: {
+    answerPolicy: string;
+    refusalRule: string;
+    evidenceExport: string;
+    providerCalls: boolean;
+    erpWriteback: boolean;
+  };
 };
 
 type AuditSummary = {
@@ -4227,6 +4270,30 @@ function ChatBiPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenA
     },
     pending: []
   });
+  const scorecard = useApi<ChatbiAnswerabilityScorecard>(`/api/chatbi/answerability-scorecard?refresh=${refresh}`, {
+    summary: {
+      total: 0,
+      certified: 0,
+      draft: 0,
+      weak: 0,
+      average_score: 0,
+      evidence_count: 0,
+      certified_coverage_rate: 0,
+      refusal_like_count: 0,
+      providerCalls: false,
+      erpWriteback: false
+    },
+    answerabilityBuckets: [],
+    domainScorecards: [],
+    weakContexts: [],
+    policy: {
+      answerPolicy: "certified_metric_only",
+      refusalRule: "未认证指标或弱证据上下文只进入治理队列。",
+      evidenceExport: "local evidence package",
+      providerCalls: false,
+      erpWriteback: false
+    }
+  });
   const metrics = useApi<Metric[]>("/api/metrics?level=L3&q=库存", []);
   const [question, setQuestion] = useState("库存可售性可以分析哪些认证指标？");
   const [result, setResult] = useState<any>(null);
@@ -4346,6 +4413,71 @@ function ChatBiPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenA
               <small>answerability bucket</small>
             </article>
           ))}
+        </div>
+      </div>
+      <div className="surface chatbiScorecardPanel">
+        <div className="surfaceHead">
+          <div>
+            <p className="eyebrow">Semantic operations</p>
+            <h3>ChatBI 可回答性评分运营面板</h3>
+          </div>
+          <Badge tone={scorecard.data.summary.providerCalls ? "bad" : "good"}>provider off</Badge>
+        </div>
+        <div className="answerabilityScoreGrid">
+          <article>
+            <span>认证覆盖率</span>
+            <strong>{Math.round(Number(scorecard.data.summary.certified_coverage_rate || 0) * 100)}%</strong>
+            <small>{scorecard.data.summary.certified} certified / {scorecard.data.summary.total} contexts</small>
+          </article>
+          <article>
+            <span>平均可回答性</span>
+            <strong>{scorecard.data.summary.average_score || 0}</strong>
+            <small>score / 100</small>
+          </article>
+          <article>
+            <span>弱证据队列</span>
+            <strong>{scorecard.data.summary.weak || 0}</strong>
+            <small>score&lt;55 / refused / rejected</small>
+          </article>
+          <article>
+            <span>证据片段</span>
+            <strong>{scorecard.data.summary.evidence_count || 0}</strong>
+            <small>local KB evidence only</small>
+          </article>
+        </div>
+        <p className="scorecardPolicy">{scorecard.data.policy.refusalRule}</p>
+        <div className="answerabilityDomainGrid">
+          {scorecard.data.domainScorecards.length ? scorecard.data.domainScorecards.slice(0, 8).map((domain) => (
+            <article key={String(domain.l1_domain)}>
+              <div className="ledgerItemHead">
+                <strong>{cellValue(domain.l1_domain)}</strong>
+                <Badge tone={Number(domain.weak_contexts || 0) ? "warn" : "good"}>{cellValue(domain.average_score)}分</Badge>
+              </div>
+              <ScoreLine score={Number(domain.average_score || 0)} />
+              <small>
+                {cellValue(domain.certified_contexts)} certified / {cellValue(domain.total_contexts)} contexts · {cellValue(domain.evidence_count)} evidence
+              </small>
+            </article>
+          )) : <div className="empty compact">暂无领域覆盖数据。先创建或认证 ChatBI 上下文。</div>}
+        </div>
+        <div className="answerabilityWeakQueue">
+          <div className="surfaceHead compactHead">
+            <h4>弱证据与拒答治理队列</h4>
+            <Badge tone={scorecard.data.weakContexts.length ? "warn" : "good"}>{scorecard.data.weakContexts.length} visible</Badge>
+          </div>
+          <div className="weakContextList">
+            {scorecard.data.weakContexts.length ? scorecard.data.weakContexts.slice(0, 6).map((context) => (
+              <article key={String(context.id)}>
+                <div className="ledgerItemHead">
+                  <strong>{cellValue(context.question_sample)}</strong>
+                  <Badge tone={answerabilityTone(String(context.answerability))}>{cellValue(context.answerability_score)}/100</Badge>
+                </div>
+                <p>{cellValue(context.name || context.metric_id)} / {cellValue(context.l1_domain)}</p>
+                <small>{cellValue(context.recommended_action)}</small>
+                <button className="textButton" onClick={() => openContext(context)}>打开上下文</button>
+              </article>
+            )) : <div className="empty compact">当前没有弱证据上下文。</div>}
+          </div>
         </div>
       </div>
       {note ? <div className="kbNotice">{note}</div> : null}
@@ -5090,6 +5222,7 @@ function AiChatPanel({
   });
   const questionSamples = useApi<AnyRow[]>(`/api/ai-chat/question-samples?limit=24&refresh=${refresh}`, []);
   const feedbackItems = useApi<AnyRow[]>(`/api/ai-chat/feedback?limit=24&refresh=${refresh}`, []);
+  const evidenceExports = useApi<AiEvidenceExportRegistryItem[]>(`/api/ai-chat/evidence-exports?limit=24&refresh=${refresh}`, []);
 
   useEffect(() => {
     if (!sourceAsset) return;
@@ -5428,6 +5561,34 @@ function AiChatPanel({
         </div>
       </div>
       <AgentTraceTimelinePanel refresh={refresh} onOpenAsset={onOpenAsset} />
+      <div className="surface aiEvidenceExportRegistry">
+        <div className="surfaceHead">
+          <div>
+            <p className="eyebrow">Evidence exports</p>
+            <h3>AI 证据导出台账</h3>
+          </div>
+          <Badge>{evidenceExports.data.length} packages</Badge>
+        </div>
+        <p className="registryPolicy">台账只记录本地知识库证据包导出入口；不调用外部模型，不写回积加/ERP。</p>
+        <div className="evidenceExportRegistryGrid">
+          {evidenceExports.data.length ? evidenceExports.data.slice(0, 9).map((item) => (
+            <article key={item.message_id}>
+              <div className="ledgerItemHead">
+                <strong>{cellValue(item.session_title || item.session_id)}</strong>
+                <Badge tone={answerabilityTone(String(item.answerability))}>{cellValue(item.answerability)}</Badge>
+              </div>
+              <p>{cellValue(item.preview)}</p>
+              <small>
+                score {cellValue(item.answerability_score)} / evidence {cellValue(item.evidence_count)} / {cellValue(item.created_at)}
+              </small>
+              <div className="exportActions compactExports">
+                <a href={item.json_url} target="_blank" rel="noreferrer">JSON</a>
+                <a href={item.markdown_url} target="_blank" rel="noreferrer">Markdown</a>
+              </div>
+            </article>
+          )) : <div className="empty compact">暂无证据导出记录。先运行一次本地证据回答。</div>}
+        </div>
+      </div>
       <div className="aiGovernanceWorkbench">
         <div className="surface questionSampleLibrary">
           <div className="surfaceHead">

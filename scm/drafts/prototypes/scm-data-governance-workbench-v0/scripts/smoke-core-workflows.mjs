@@ -529,6 +529,12 @@ assert(
   chatbiSummary
 );
 
+const chatbiScorecard = await request("/api/chatbi/answerability-scorecard");
+assert(chatbiScorecard.summary?.certified >= 1, "ChatBI scorecard missing certified contexts", chatbiScorecard);
+assert(chatbiScorecard.summary?.providerCalls === false && chatbiScorecard.summary?.erpWriteback === false, "ChatBI scorecard boundary changed", chatbiScorecard.summary);
+assert(Array.isArray(chatbiScorecard.domainScorecards) && chatbiScorecard.domainScorecards.length >= 1, "ChatBI scorecard missing domain coverage", chatbiScorecard);
+assert(Array.isArray(chatbiScorecard.weakContexts), "ChatBI scorecard weak queue missing", chatbiScorecard);
+
 const dryRun = await request("/api/chatbi/dry-run", {
   method: "POST",
   body: JSON.stringify({ question: smokeQuestion })
@@ -561,6 +567,19 @@ assert(
   { contentType: aiEvidenceMarkdown.response.headers.get("content-type") }
 );
 assert(aiEvidenceMarkdown.text.includes("AI Evidence Export"), "AI evidence Markdown export missing title");
+
+const aiEvidenceRegistry = await request("/api/ai-chat/evidence-exports?limit=12");
+assert(Array.isArray(aiEvidenceRegistry), "AI evidence export registry is not an array", aiEvidenceRegistry);
+assert(
+  aiEvidenceRegistry.some((item) => item.message_id === aiSupported.result.messageId && item.json_url && item.markdown_url),
+  "AI evidence export registry missing latest message package",
+  aiEvidenceRegistry
+);
+assert(
+  aiEvidenceRegistry.every((item) => item.boundary?.providerCalls === false && item.boundary?.erpWriteback === false),
+  "AI evidence export registry boundary changed",
+  aiEvidenceRegistry
+);
 
 const aiInsufficient = await request("/api/ai-chat/local", {
   method: "POST",
@@ -1149,10 +1168,13 @@ console.log(
         "chatbiContext.certify",
         "chatbiSummary.read",
         "chatbiSummary.answerabilityGovernance",
+        "chatbiAnswerability.scorecard",
+        "chatbiAnswerability.domainCoverage",
         "chatbi.dryRun",
         "aiChat.supportedOrPartial",
         "aiChat.evidenceExportJson",
         "aiChat.evidenceExportMarkdown",
+        "aiEvidenceExport.registry",
         "aiChat.failClosed",
         "kbSourceRegister.read",
         "kbCardQuality.score",

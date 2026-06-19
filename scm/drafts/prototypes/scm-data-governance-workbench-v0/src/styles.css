@@ -1300,6 +1300,93 @@ textarea {
   line-height: 1;
 }
 
+.chatbiScorecardPanel {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 16px;
+  overflow: hidden;
+}
+
+.answerabilityScoreGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.answerabilityScoreGrid article {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.answerabilityScoreGrid span,
+.answerabilityScoreGrid small,
+.scorecardPolicy,
+.registryPolicy {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.answerabilityScoreGrid strong {
+  color: var(--ink);
+  font-size: 26px;
+  line-height: 1;
+}
+
+.answerabilityDomainGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.answerabilityDomainGrid article,
+.weakContextList article,
+.evidenceExportRegistryGrid article {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.answerabilityDomainGrid small,
+.weakContextList p,
+.weakContextList small,
+.evidenceExportRegistryGrid p,
+.evidenceExportRegistryGrid small {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.answerabilityWeakQueue {
+  display: grid;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.weakContextList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.compactHead h4 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 15px;
+}
+
 .chatbiWorkbench {
   display: grid;
   grid-template-columns: minmax(320px, 0.9fr) minmax(340px, 1.1fr);
@@ -3839,6 +3926,24 @@ textarea {
 .aiEvidenceExportActions {
   justify-content: flex-start;
   padding: 10px 0 2px;
+}
+
+.aiEvidenceExportRegistry {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.evidenceExportRegistryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.compactExports {
+  justify-content: flex-start;
+  padding: 0;
 }
 
 .aiFeedbackActions strong,

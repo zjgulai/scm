@@ -82,13 +82,16 @@ ALLOW_LEDGER_WRITE_SMOKE=1 SCM_WORKBENCH_URL=https://staging.example.com npm run
 | ChatBI fail-closed before certification | `smoke-core-workflows.mjs` | 未认证问法命中样本时拒答，不进入正式回答 |
 | ChatBI context certify | `smoke-core-workflows.mjs` | Owner 审核后上下文变为 `status=certified` 且 `answer_policy=certified_metric_only` |
 | ChatBI dry-run | `smoke-core-workflows.mjs` | 认证后同一问法返回 `answerable=true` 和认证指标候选 |
-| ChatBI certification rendering | Browser Harness DOM check | ChatBI 页有 summary 卡、上下文候选表单、筛选条和 dry-run 控件 |
+| ChatBI answerability scorecard | `smoke-core-workflows.mjs` | `GET /api/chatbi/answerability-scorecard` 返回认证覆盖率、L1 领域覆盖、弱证据队列，且 `providerCalls=false`、`erpWriteback=false` |
+| ChatBI certification rendering | Browser Harness DOM check | ChatBI 页有 summary 卡、上下文候选表单、筛选条、dry-run 控件、`.chatbiScorecardPanel`、领域覆盖容器和弱证据队列 |
 | AI supported/partial answer | `smoke-core-workflows.mjs` | 返回 evidence-backed answerability，不调用 provider |
+| AI evidence package export | `smoke-core-workflows.mjs` | 单条 AI 回答证据包可导出 JSON 和 Markdown，导出 payload 标注 no-provider/no-writeback 边界 |
+| AI evidence export registry | `smoke-core-workflows.mjs` | `GET /api/ai-chat/evidence-exports` 返回跨消息证据导出台账，包含 JSON/Markdown 导出 URL |
 | AI insufficient/fail-closed | `smoke-core-workflows.mjs` | 对弱证据问题返回 insufficient 或 partial，不调用 provider |
 | AI question sample create/certify | `smoke-core-workflows.mjs` | 能创建问法样本、自动生成 workflow，并审核为 certified |
 | AI answer feedback create/close | `smoke-core-workflows.mjs` | 能记录回答反馈、自动生成 workflow，并关闭反馈 |
 | AI governance summary read | `smoke-core-workflows.mjs` | `GET /api/ai-chat/governance-summary` 返回样本、反馈和 no-provider 边界 |
-| AI feedback governance rendering | Browser Harness DOM check | 本地新 bundle 中 AI 对话页有 `.aiGovernanceGrid`、`.questionSampleLibrary`、`.aiFeedbackQueue` |
+| AI feedback governance rendering | Browser Harness DOM check | 本地新 bundle 中 AI 对话页有 `.aiGovernanceGrid`、`.questionSampleLibrary`、`.aiFeedbackQueue`、`.aiEvidenceExportRegistry` |
 | KB source register read | `smoke-core-workflows.mjs` | `GET /api/kb/sources` 返回 source register，含 `avg_quality_score` 和 `stale_status` |
 | KB card quality score | `smoke-core-workflows.mjs` | `GET /api/kb/cards` 返回 `quality_score`、质量状态和复核状态 |
 | KB stale findings read | `smoke-core-workflows.mjs` | `GET /api/kb/stale-findings` 返回数组，支持复核发现列表 |

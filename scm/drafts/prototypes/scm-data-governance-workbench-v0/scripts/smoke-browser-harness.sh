@@ -373,13 +373,17 @@ for label in expected:
           summaryCards: document.querySelectorAll('.chatbiSummaryGrid > div').length,
           answerabilityPanel: !!document.querySelector('.chatbiAnswerabilityPanel'),
           answerabilityCards: document.querySelectorAll('.answerabilityMiniGrid > article').length,
+          scorecardPanel: !!document.querySelector('.chatbiScorecardPanel'),
+          scorecardCards: document.querySelectorAll('.answerabilityScoreGrid > article').length,
+          domainGrid: !!document.querySelector('.answerabilityDomainGrid'),
+          weakQueue: !!document.querySelector('.answerabilityWeakQueue'),
           form: !!document.querySelector('.chatbiForm'),
           filters: !!document.querySelector('.chatbiFilters'),
           contextCards: document.querySelectorAll('.contextCards .contextCard').length,
           dryRun: !!document.querySelector('.chatBox button')
         }))()
         """)
-        if chatbi["summaryCards"] < 4 or not chatbi["answerabilityPanel"] or chatbi["answerabilityCards"] < 2 or not chatbi["form"] or not chatbi["filters"] or not chatbi["dryRun"]:
+        if chatbi["summaryCards"] < 4 or not chatbi["answerabilityPanel"] or chatbi["answerabilityCards"] < 2 or not chatbi["scorecardPanel"] or chatbi["scorecardCards"] < 4 or not chatbi["domainGrid"] or not chatbi["weakQueue"] or not chatbi["form"] or not chatbi["filters"] or not chatbi["dryRun"]:
           raise SystemExit(f"ChatBI certification feature check failed: {chatbi}")
         feature_checks.append({"chatbiCertification": chatbi})
     if label == "审计日志工作台":
@@ -483,6 +487,9 @@ for label in expected:
           governanceCards: document.querySelectorAll('.aiGovernanceGrid > article').length,
           questionLibrary: !!document.querySelector('.questionSampleLibrary'),
           feedbackQueue: !!document.querySelector('.aiFeedbackQueue'),
+          evidenceExportRegistry: !!document.querySelector('.aiEvidenceExportRegistry'),
+          evidenceExportRegistryCards: document.querySelectorAll('.aiEvidenceExportRegistry article').length,
+          evidenceExportEmpty: document.querySelector('.aiEvidenceExportRegistry')?.innerText.includes('暂无证据导出记录') || false,
           feedbackActions: !!document.querySelector('.aiFeedbackActions'),
           policyText: document.querySelector('.aiPolicy')?.textContent || ''
         }))()
@@ -491,6 +498,8 @@ for label in expected:
             ai["governanceCards"] < 3
             or not ai["questionLibrary"]
             or not ai["feedbackQueue"]
+            or not ai["evidenceExportRegistry"]
+            or (ai["evidenceExportRegistryCards"] < 1 and not ai["evidenceExportEmpty"])
         ):
           raise SystemExit(f"AI feedback governance feature check failed: {ai}")
         feature_checks.append({"aiFeedbackGovernance": ai})

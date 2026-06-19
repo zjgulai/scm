@@ -396,8 +396,8 @@ REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm
 
 | ID | 状态 | 证据/说明 |
 |---|---|---|
-| AIP-B4-001 | `implemented_local` | `GET /api/chatbi/summary` 返回 `averageAnswerabilityScore`、`weakContexts`、`answerabilityBuckets`，ChatBI 页新增 `.chatbiAnswerabilityPanel` |
-| AIP-B4-002 | `implemented_local` | `GET /api/ai-chat/messages/:messageId/evidence-export?format=json/markdown`，AI 对话结果新增 `.aiEvidenceExportActions` |
+| AIP-B4-001 | `implemented_local` | `GET /api/chatbi/summary` 和 `GET /api/chatbi/answerability-scorecard` 返回 answerability bucket、L1 领域覆盖、弱证据队列和 no-provider/no-writeback 边界；ChatBI 页新增 `.chatbiAnswerabilityPanel`、`.chatbiScorecardPanel` |
+| AIP-B4-002 | `implemented_local` | `GET /api/ai-chat/messages/:messageId/evidence-export?format=json/markdown` 支持单条证据包导出；`GET /api/ai-chat/evidence-exports` 支持跨消息证据导出台账；AI 对话页新增 `.aiEvidenceExportActions`、`.aiEvidenceExportRegistry` |
 | AIP-B4-003 | `implemented_local` | `scripts/migrations/008_knowledge_rules.sql` 新增 `knowledge_rules`、`knowledge_rule_conflicts` |
 | AIP-B4-004 | `implemented_local` | AI 知识库卡片新增 `.createKnowledgeRuleButton`，`POST /api/knowledge-rules` 可从知识卡创建规则候选 |
 | AIP-B4-005 | `implemented_local_initial` | 规则候选记录 `target_object_type`、`target_metric_ids`、`target_dimension_ids`，推断逻辑仍需 owner 复核 |
@@ -544,8 +544,8 @@ REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm
 
 ### P2：第二轮增强
 
-- [ ] AIP-B4-001 ChatBI 可回答性评分页
-- [ ] AIP-B4-002 AI 检索证据导出
+- [x] AIP-B4-001 ChatBI 可回答性评分页：本地实现，待部署验收
+- [x] AIP-B4-002 AI 检索证据导出：本地实现，待部署验收
 - [ ] AIP-B4-003 knowledge_rules 表
 - [ ] AIP-B4-004 从知识卡创建规则候选
 - [ ] AIP-B4-006 规则冲突检测

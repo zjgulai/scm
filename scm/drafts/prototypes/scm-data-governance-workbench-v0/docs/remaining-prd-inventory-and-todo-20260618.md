@@ -189,8 +189,8 @@ current_deploy:
 | SCM-PRD-P2-007 | 已部署 | 新增 `GET /api/kb/crosswalk-matrix` 与 `.crosswalkMatrixTable`；线上返回 `mapped_metrics=88/139`、`metric_coverage_rate=0.6331` | 仅展示当前 `kb_crosswalks` 覆盖，不自动补写正本资产 |
 | SCM-PRD-P2-004 | 已部署 | 新增 `ai_question_samples`、`GET/POST /api/ai-chat/question-samples`、样本审核接口和 `AI 对话`页 `.questionSampleLibrary`；`smoke:p0` 覆盖 `aiQuestionSample.create/certify`；线上 `REQUIRE_AI_FEEDBACK=1` Browser Harness 强校验通过 | 只写 SQLite 语义治理台账；不改写知识库源文件 |
 | SCM-PRD-P2-005 | 已部署 | 新增 `ai_answer_feedback`、`GET/POST /api/ai-chat/feedback`、反馈审核接口和 `AI 对话`页 `.aiFeedbackQueue`；`smoke:p0` 覆盖 `aiFeedback.create/close`；线上 `REQUIRE_AI_FEEDBACK=1` Browser Harness 强校验通过 | 反馈关闭表示治理处理完成，不代表业务问题已自动修复 |
-| SCM-PRD-P2-006 | 未开始 | 无 | 后续需从 ChatBI/AI chat 聚合可回答性覆盖 |
-| SCM-PRD-P2-008 | 未开始 | 无 | 后续需提供 Markdown/JSON 导出 |
+| SCM-PRD-P2-006 | 本地实现，待部署验收 | `GET /api/chatbi/answerability-scorecard`、`.chatbiScorecardPanel` | 已补 ChatBI 可回答性运营 scorecard、L1 领域覆盖、弱证据队列和 no-provider/no-writeback 边界 |
+| SCM-PRD-P2-008 | 本地实现，待部署验收 | `GET /api/ai-chat/evidence-exports`、`.aiEvidenceExportRegistry`、`/api/ai-chat/messages/:id/evidence-export` | 已补跨消息证据导出台账，单条证据包继续支持 JSON/Markdown |
 
 ### 4.4 P3 TODO：外部模型、权限和高级能力
 

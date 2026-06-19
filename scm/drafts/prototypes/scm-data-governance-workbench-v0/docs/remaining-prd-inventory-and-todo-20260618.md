@@ -12,8 +12,8 @@ source_of_truth:
   - "drafts/prototypes/scm-data-governance-workbench-v0/docs/second-iteration-ui-information-architecture-20260618.md"
 current_deploy:
   url: "https://scm.lute-tlz-dddd.top/"
-  deployed_branch_sha: "5f53edd"
-  release: "/opt/scm-governance-workbench/releases/scm-workbench-p1-ops-5f53edd-20260619120804"
+  deployed_branch_sha: "ef23b59"
+  release: "/opt/scm-governance-workbench/releases/scm-workbench-p2-kb-ef23b59-20260619123548"
 ---
 
 # 供应链数据开发治理工作台剩余 PRD 盘点与 TODO
@@ -183,10 +183,10 @@ current_deploy:
 
 | ID | 当前状态 | 新鲜证据 | 边界 |
 |---|---|---|---|
-| SCM-PRD-P2-001 | 本地完成，待线上强验收 | 新增 `GET /api/kb/sources` 增强字段与 `AI 知识库` 的 `.sourceRegisterTable`；`smoke:p0` 覆盖 `kbSourceRegister.read` | 只读 SQLite 治理视图；不新增独立知识库 |
-| SCM-PRD-P2-002 | 本地完成，待线上强验收 | `GET /api/kb/cards` 返回 `quality_score`、四项分数、质量状态和复核状态；`smoke:p0` 覆盖 `kbCardQuality.score` | 质量分是治理排序信号，不替代 owner 认证 |
-| SCM-PRD-P2-003 | 本地完成，待线上强验收 | 新增 `GET /api/kb/stale-findings` 与 `.staleFindingsPanel`；`smoke:p0` 覆盖 `kbStaleFindings.read` | stale 表示需要复核，不代表源规则错误 |
-| SCM-PRD-P2-007 | 本地完成，待线上强验收 | 新增 `GET /api/kb/crosswalk-matrix` 与 `.crosswalkMatrixTable`；`smoke:p0` 覆盖 `kbCrosswalkMatrix.read` | 仅展示当前 `kb_crosswalks` 覆盖，不自动补写正本资产 |
+| SCM-PRD-P2-001 | 已部署 | 新增 `GET /api/kb/sources` 增强字段与 `AI 知识库` 的 `.sourceRegisterTable`；`smoke:p0` 覆盖 `kbSourceRegister.read`；线上 `REQUIRE_KB_GOVERNANCE=1` Browser Harness 强校验通过 | 只读 SQLite 治理视图；不新增独立知识库 |
+| SCM-PRD-P2-002 | 已部署 | `GET /api/kb/cards` 返回 `quality_score`、四项分数、质量状态和复核状态；`smoke:p0` 覆盖 `kbCardQuality.score`；线上 `.kbScoreGrid = 80` | 质量分是治理排序信号，不替代 owner 认证 |
+| SCM-PRD-P2-003 | 已部署 | 新增 `GET /api/kb/stale-findings` 与 `.staleFindingsPanel`；线上 `/api/kb/quality-summary` 返回 `stale_findings=22` | stale 表示需要复核，不代表源规则错误 |
+| SCM-PRD-P2-007 | 已部署 | 新增 `GET /api/kb/crosswalk-matrix` 与 `.crosswalkMatrixTable`；线上返回 `mapped_metrics=88/139`、`metric_coverage_rate=0.6331` | 仅展示当前 `kb_crosswalks` 覆盖，不自动补写正本资产 |
 | SCM-PRD-P2-004 | 未开始 | 无 | 后续需建立问法样本、同义问法、拒答样本和冲突样本 |
 | SCM-PRD-P2-005 | 未开始 | 无 | 后续需将 AI 对话反馈转治理任务 |
 | SCM-PRD-P2-006 | 未开始 | 无 | 后续需从 ChatBI/AI chat 聚合可回答性覆盖 |

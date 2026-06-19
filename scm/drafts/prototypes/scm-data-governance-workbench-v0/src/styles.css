@@ -6400,3 +6400,455 @@ nav button strong,
     grid-template-columns: 1fr;
   }
 }
+
+.paginationBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 12px;
+  padding: 9px 10px;
+  border: 1px solid rgba(29, 29, 31, 0.08);
+  border-radius: 8px;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.76);
+  font-size: 12px;
+}
+
+.paginationBar.compact {
+  justify-content: flex-end;
+  padding: 7px 10px;
+  background: transparent;
+}
+
+.paginationBar > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+
+.paginationBar span {
+  color: var(--muted);
+}
+
+.paginationBar strong {
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.paginationControls {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.paginationControls button {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid rgba(0, 113, 227, 0.18);
+  border-radius: 999px;
+  color: var(--blue);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.paginationControls button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.rowIndexCol,
+.rowIndexCell {
+  min-width: 58px;
+  width: 58px;
+  color: var(--muted);
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.rowIndexCol {
+  left: 0;
+  z-index: 2;
+}
+
+.rowIndexCell {
+  color: var(--ink-2);
+  font-weight: 650;
+}
+
+.inlineIndex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  margin-right: 8px;
+  padding: 2px 6px;
+  border-radius: 999px;
+  color: var(--blue);
+  background: var(--blue-soft);
+  font-size: 11px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  vertical-align: 1px;
+}
+
+.kbCards {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: 16px;
+  align-items: stretch;
+}
+
+.knowledgeRuleCards {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
+  gap: 14px;
+}
+
+.kbCard,
+.knowledgeRuleCard {
+  align-content: start;
+  border-color: rgba(29, 29, 31, 0.1);
+  background: linear-gradient(180deg, #fff, rgba(250, 251, 253, 0.95));
+}
+
+.kbCard {
+  gap: 13px;
+  padding: 17px;
+  min-height: 420px;
+}
+
+.kbCardDomain {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.cardSerial {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 26px;
+  padding: 0 9px;
+  border: 1px solid rgba(0, 113, 227, 0.16);
+  border-radius: 999px;
+  color: var(--blue);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.kbCardTitleBlock {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.kbCardTitleBlock h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 17px;
+  line-height: 1.32;
+  font-weight: 650;
+  overflow-wrap: anywhere;
+}
+
+.kbCardTitleBlock p,
+.kbCard p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  color: var(--ink-2);
+  line-height: 1.58;
+}
+
+.kbScoreGrid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.kbScoreGrid span {
+  min-height: 58px;
+  align-content: center;
+  border-color: rgba(29, 29, 31, 0.08);
+  background: #fff;
+  text-align: center;
+}
+
+.termRow {
+  min-height: 31px;
+}
+
+.termRow span {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kbMeta {
+  padding: 10px 11px;
+  border: 1px solid rgba(29, 29, 31, 0.07);
+  border-radius: 8px;
+  background: rgba(245, 245, 247, 0.72);
+}
+
+.kbMeta span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.evidenceSnippets blockquote {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  max-height: 92px;
+  background: rgba(245, 245, 247, 0.78);
+}
+
+.kbCard .qualityActions,
+.knowledgeRuleCard .qualityActions {
+  justify-content: flex-start;
+  margin-top: auto;
+  padding-top: 2px;
+}
+
+.knowledgeRuleCard {
+  min-height: 286px;
+}
+
+.knowledgeRuleCard .ledgerItemHead strong {
+  line-height: 1.38;
+}
+
+.knowledgeRuleCard p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  min-height: 74px;
+}
+
+.ruleMetaGrid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ruleMetaGrid span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.findingList {
+  max-height: none;
+  overflow: visible;
+}
+
+.findingList article {
+  min-height: 138px;
+}
+
+.findingList p,
+.findingList small {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+}
+
+.findingList p {
+  -webkit-line-clamp: 2;
+}
+
+.findingList small {
+  -webkit-line-clamp: 2;
+}
+
+@media (max-width: 720px) {
+  .paginationBar,
+  .paginationBar > div {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .paginationControls {
+    justify-content: flex-start;
+  }
+
+  .kbScoreGrid,
+  .ruleMetaGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.workflowCards {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+  gap: 12px;
+}
+
+.workflowCard {
+  align-content: start;
+  min-height: 210px;
+}
+
+.workflowCard p,
+.workflowCard small,
+.candidateCard p,
+.candidateCard small {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+}
+
+.workflowCard p,
+.candidateCard p {
+  -webkit-line-clamp: 2;
+}
+
+.workflowCard small,
+.candidateCard small {
+  -webkit-line-clamp: 3;
+}
+
+.moduleContractList {
+  max-height: none;
+  overflow: visible;
+}
+
+.moduleContractTitle span {
+  display: inline-flex;
+  width: auto;
+  min-width: 62px;
+  height: 32px;
+  padding: 0 9px;
+  white-space: nowrap;
+}
+
+.moduleContractBody p,
+.handoffList p,
+.orchestrationTaskColumns small {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.auditFacets {
+  position: sticky;
+  top: 14px;
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+}
+
+.facetList {
+  max-height: 260px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.auditEventCard pre {
+  max-height: 92px;
+}
+
+.auditEventCard p,
+.auditEventCard small {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+}
+
+.auditEventCard p {
+  -webkit-line-clamp: 1;
+}
+
+.auditEventCard small {
+  -webkit-line-clamp: 2;
+}
+
+.roleQueueList,
+.playbookList,
+.providerPolicyList,
+.providerDecisionList,
+.promptVersionList,
+.providerCallAuditList,
+.platformReadinessList,
+.evalCaseList {
+  max-height: 360px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.roleQueueList strong,
+.roleQueueList small,
+.playbookList p,
+.playbookList small,
+.providerPolicyList p,
+.providerPolicyList small,
+.providerDecisionList p,
+.providerDecisionList small,
+.promptVersionList p,
+.promptVersionList small,
+.providerCallAuditList p,
+.providerCallAuditList small,
+.platformReadinessList p,
+.platformReadinessList small,
+.evalCaseList p,
+.evalCaseList small {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+}
+
+.roleQueueList strong {
+  -webkit-line-clamp: 2;
+}
+
+.roleQueueList small,
+.providerDecisionList small,
+.promptVersionList small,
+.providerCallAuditList small,
+.platformReadinessList small,
+.evalCaseList small {
+  -webkit-line-clamp: 2;
+}
+
+.playbookList p,
+.providerPolicyList p,
+.providerDecisionList p,
+.promptVersionList p,
+.providerCallAuditList p,
+.platformReadinessList p,
+.evalCaseList p {
+  -webkit-line-clamp: 3;
+}
+
+.roleBatchSelector {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+}
+
+.roleBatchSelector label {
+  min-height: 86px;
+}
+
+.roleBatchSelector strong,
+.roleBatchSelector small {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+}
+
+.roleBatchSelector strong {
+  -webkit-line-clamp: 2;
+}
+
+.roleBatchSelector small {
+  -webkit-line-clamp: 2;
+}

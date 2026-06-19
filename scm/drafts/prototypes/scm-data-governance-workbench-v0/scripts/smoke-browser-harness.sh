@@ -98,6 +98,7 @@ if positions != sorted(positions):
 
 results = []
 feature_checks = []
+layout_reports = []
 for label in expected:
     clicked = js(f"""
     (() => {{
@@ -121,7 +122,7 @@ for label in expected:
               templateSteps: document.querySelectorAll('.templateStepper .templateStep').length
             }))()
             """)
-            if ready["lanes"] >= 6 and ready["moduleContracts"] >= 12 and ready["handoffs"] >= 5 and ready["templateButtons"] >= 5 and ready["templateSteps"] >= 4:
+            if ready["lanes"] >= 6 and ready["moduleContracts"] >= 4 and ready["handoffs"] >= 4 and ready["templateButtons"] >= 5 and ready["templateSteps"] >= 4:
                 break
             sleep(0.25)
     state = js("""
@@ -145,6 +146,35 @@ for label in expected:
     """)
     if layout["rootOverflow"] > 4 or layout["bodyOverflow"] > 4:
         raise SystemExit(f"Horizontal page overflow after opening {label}: {layout}")
+    page_layout = js("""
+    (() => {
+      const panel = document.querySelector('.panel');
+      const rect = (el) => el ? el.getBoundingClientRect() : { width: 0, height: 0 };
+      const cardSelectors = [
+        '.kbCard',
+        '.knowledgeRuleCard',
+        '.workflowCard',
+        '.candidateCard',
+        '.recommendationCard',
+        '.contextCard',
+        '.roleQueueGrid > article',
+        '.moduleGrid article'
+      ];
+      const visibleCards = cardSelectors.reduce((sum, selector) => sum + document.querySelectorAll(selector).length, 0);
+      return {
+        label: document.querySelector('header h1')?.textContent?.trim() || '',
+        documentHeight: Math.round(document.documentElement.scrollHeight),
+        viewportHeight: Math.round(window.innerHeight),
+        heightRatio: Number((document.documentElement.scrollHeight / Math.max(window.innerHeight, 1)).toFixed(2)),
+        panelHeight: Math.round(rect(panel).height),
+        paginationBars: document.querySelectorAll('.paginationBar').length,
+        indexedTables: document.querySelectorAll('.rowIndexCol').length,
+        visibleCards,
+        tables: document.querySelectorAll('.tableWrap').length
+      };
+    })()
+    """)
+    layout_reports.append(page_layout)
     operation_dock = js("""
     (() => ({
       panel: !!document.querySelector('.moduleOpsPanel'),
@@ -506,6 +536,34 @@ for label in expected:
             or kb["createRuleButtons"] < 1
         ):
           raise SystemExit(f"KB governance feature check failed: {kb}")
+        kb_layout = js("""
+        (() => {
+          const cards = Array.from(document.querySelectorAll('.kbCard'));
+          const heights = cards.map((card) => Math.round(card.getBoundingClientRect().height));
+          return {
+            paginationBars: document.querySelectorAll('.paginationBar').length,
+            indexedTables: document.querySelectorAll('.rowIndexCol').length,
+            cardSerials: document.querySelectorAll('.cardSerial').length,
+            inlineIndexes: document.querySelectorAll('.inlineIndex').length,
+            visibleCards: cards.length,
+            maxCardHeight: heights.length ? Math.max(...heights) : 0,
+            minCardWidth: cards.length ? Math.min(...cards.map((card) => Math.round(card.getBoundingClientRect().width))) : 0,
+            documentHeight: Math.round(document.documentElement.scrollHeight),
+            viewportHeight: Math.round(window.innerHeight),
+            heightRatio: Number((document.documentElement.scrollHeight / Math.max(window.innerHeight, 1)).toFixed(2))
+          };
+        })()
+        """)
+        if require_kb_governance and (
+            kb_layout["paginationBars"] < 4
+            or kb_layout["indexedTables"] < 2
+            or kb_layout["cardSerials"] < 1
+            or kb_layout["visibleCards"] > 6
+            or kb_layout["maxCardHeight"] > 620
+            or kb_layout["minCardWidth"] < 300
+        ):
+          raise SystemExit(f"KB pagination/layout check failed: {kb_layout}")
+        feature_checks.append({"kbPaginationLayout": kb_layout})
         feature_checks.append({"kbGovernance": kb})
     if label == "工作流编排台":
         orchestration = js("""
@@ -514,37 +572,39 @@ for label in expected:
           commandCards: document.querySelectorAll('.orchestrationCommandBar article').length,
           lanes: document.querySelectorAll('.orchestrationLaneCanvas .orchestrationLane').length,
           moduleMatrix: !!document.querySelector('.orchestrationModuleMatrix'),
-          moduleContracts: document.querySelectorAll('.moduleContractList article').length,
-          handoffPanel: !!document.querySelector('.handoffPanel'),
-          handoffs: document.querySelectorAll('.handoffList article').length,
-          taskPool: !!document.querySelector('.orchestrationTaskPool'),
-          templatePanel: !!document.querySelector('.workflowTemplatePanel'),
+	          moduleContracts: document.querySelectorAll('.moduleContractList article').length,
+	          handoffPanel: !!document.querySelector('.handoffPanel'),
+	          handoffs: document.querySelectorAll('.handoffList article').length,
+	          taskPool: !!document.querySelector('.orchestrationTaskPool'),
+	          templatePanel: !!document.querySelector('.workflowTemplatePanel'),
           templateButtons: document.querySelectorAll('.templateRail button').length,
           templateSteps: document.querySelectorAll('.templateStepper .templateStep').length,
           templateReviewButtons: document.querySelectorAll('.templateReviewButton').length,
-          createButtons: document.querySelectorAll('.orchestrationCreateButton').length,
-          exports: document.querySelectorAll('.exportActions a').length,
-          flow: !!document.querySelector('.workbenchFlowStrip'),
-          importTextVisible: document.body.innerText.includes('导入')
-        }))()
-        """)
+	          createButtons: document.querySelectorAll('.orchestrationCreateButton').length,
+	          exports: document.querySelectorAll('.exportActions a').length,
+	          flow: !!document.querySelector('.workbenchFlowStrip'),
+	          paginationBars: document.querySelectorAll('.paginationBar').length,
+	          importTextVisible: document.body.innerText.includes('导入')
+	        }))()
+	        """)
         if (
             not orchestration["workbench"]
             or orchestration["commandCards"] < 4
             or orchestration["lanes"] < 6
             or not orchestration["moduleMatrix"]
-            or orchestration["moduleContracts"] < 12
-            or not orchestration["handoffPanel"]
-            or orchestration["handoffs"] < 5
-            or not orchestration["taskPool"]
-            or not orchestration["templatePanel"]
-            or orchestration["templateButtons"] < 5
-            or orchestration["templateSteps"] < 4
+	            or orchestration["moduleContracts"] < 4
+	            or not orchestration["handoffPanel"]
+	            or orchestration["handoffs"] < 4
+	            or not orchestration["taskPool"]
+	            or not orchestration["templatePanel"]
+	            or orchestration["templateButtons"] < 5
+	            or orchestration["templateSteps"] < 4
             or orchestration["templateReviewButtons"] < 2
             or orchestration["createButtons"] < 1
-            or orchestration["exports"] < 2
-            or not orchestration["flow"]
-        ):
+	            or orchestration["exports"] < 2
+	            or not orchestration["flow"]
+	            or orchestration["paginationBars"] < 2
+	        ):
           raise SystemExit(f"Workflow orchestration feature check failed: {orchestration}")
         feature_checks.append({"workflowOrchestration": orchestration})
     if label == "AI 对话":
@@ -678,6 +738,7 @@ print({
     "moduleCount": len(results),
     "modules": results,
     "featureChecks": feature_checks,
+    "layoutReports": layout_reports,
     "responsive": responsive_results,
 })
 PY

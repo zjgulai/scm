@@ -1529,6 +1529,35 @@ textarea {
   font-weight: 720;
 }
 
+.kbGovernanceGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.kbGovernanceGrid article {
+  display: grid;
+  gap: 6px;
+  min-height: 112px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fff, #f7fafc);
+}
+
+.kbGovernanceGrid span,
+.kbGovernanceGrid small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.kbGovernanceGrid strong {
+  font-size: 28px;
+  letter-spacing: 0;
+}
+
 .domainGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1577,6 +1606,64 @@ textarea {
   -webkit-line-clamp: 2;
 }
 
+.kbOpsGrid,
+.kbDiagnosticsGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.sourceRegisterTable .tableWrap,
+.kbDomainQualityTable .tableWrap,
+.crosswalkMatrixTable .tableWrap {
+  max-height: 320px;
+}
+
+.findingList {
+  display: grid;
+  gap: 10px;
+  max-height: 360px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.findingList article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 7px 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.findingList strong,
+.findingList span,
+.findingList p,
+.findingList small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.findingList span,
+.findingList small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.findingList p {
+  grid-column: 1 / -1;
+  margin: 0;
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+
+.findingList small {
+  grid-column: 1 / -1;
+}
+
 .kbResultHeader {
   display: flex;
   justify-content: space-between;
@@ -1616,6 +1703,28 @@ textarea {
   margin: 0;
   color: var(--muted);
   line-height: 1.65;
+}
+
+.kbScoreGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.kbScoreGrid span {
+  display: grid;
+  gap: 2px;
+  padding: 8px;
+  border: 1px solid rgba(17, 24, 39, 0.07);
+  border-radius: 8px;
+  color: var(--muted);
+  background: #f8fafc;
+  font-size: 11px;
+}
+
+.kbScoreGrid strong {
+  color: var(--ink);
+  font-size: 14px;
 }
 
 .termRow {
@@ -2344,6 +2453,9 @@ tbody tr:hover td {
 	  .ontologySelector,
 	  .pathNarrative,
 	  .pathwayLayout,
+	  .kbGovernanceGrid,
+	  .kbOpsGrid,
+	  .kbDiagnosticsGrid,
 	  .decisionSummaryGrid,
 	  .qualitySummaryGrid,
 	  .qualityWorkbench,
@@ -2394,6 +2506,7 @@ tbody tr:hover td {
   .moduleGrid,
   .domainGrid,
   .kbCards,
+  .kbScoreGrid,
   nav {
     grid-template-columns: 1fr;
   }

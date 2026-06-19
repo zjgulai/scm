@@ -1771,14 +1771,158 @@ function inferRelatedAssets(text) {
   return related.slice(0, 18);
 }
 
+function clampScore(value) {
+  return Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+}
+
+function safeJsonArray(value) {
+  try {
+    const parsed = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function daysSince(value) {
+  const time = Date.parse(value || "");
+  if (!Number.isFinite(time)) return null;
+  return Math.max(0, Math.floor((Date.now() - time) / 86_400_000));
+}
+
+function averageNumber(rows, key) {
+  if (!rows.length) return 0;
+  return clampScore(rows.reduce((sum, row) => sum + Number(row[key] || 0), 0) / rows.length);
+}
+
+function scoreKbGovernance(row) {
+  const termCount = safeJsonArray(row.business_terms).length;
+  const chunkCount = Number(row.chunk_count || 0);
+  const crosswalkCount = Number(row.crosswalk_count || 0);
+  const usageCount = Number(row.usage_count || 0);
+  const summaryLength = normalizeText(row.summary).length;
+  const ageDays = daysSince(row.created_at || row.extracted_at);
+  const hasChecksum = Boolean(normalizeText(row.checksum));
+  const status = normalizeText(row.status, "active");
+  const completenessScore = clampScore(
+    16 +
+    (normalizeText(row.title).length >= 4 ? 14 : 0) +
+    (summaryLength >= 80 ? 24 : summaryLength >= 30 ? 14 : 0) +
+    (termCount >= 4 ? 18 : termCount >= 1 ? 10 : 0) +
+    (chunkCount >= 3 ? 16 : chunkCount >= 1 ? 9 : 0) +
+    (crosswalkCount >= 2 ? 12 : crosswalkCount === 1 ? 7 : 0)
+  );
+  const evidenceScore = clampScore(
+    20 +
+    (normalizeText(row.evidence_level).includes("local") ? 18 : 0) +
+    (normalizeText(row.evidence_level).includes("draft") ? 10 : 0) +
+    (hasChecksum ? 16 : 0) +
+    Math.min(chunkCount * 8, 28) +
+    Math.min(crosswalkCount * 6, 18)
+  );
+  const freshnessScore = clampScore(
+    ageDays === null ? 45 :
+      ageDays <= 14 ? 100 :
+        ageDays <= 45 ? 86 :
+          ageDays <= 90 ? 68 : 42
+  );
+  const usageScore = clampScore(32 + Math.min(usageCount * 14, 34) + Math.min(crosswalkCount * 8, 34));
+  const qualityScore = clampScore(
+    completenessScore * 0.34 +
+    evidenceScore * 0.30 +
+    freshnessScore * 0.20 +
+    usageScore * 0.16
+  );
+  const qualityStatus =
+    qualityScore >= 82 ? "certifiable" :
+      qualityScore >= 70 ? "usable" :
+        qualityScore >= 55 ? "needs_review" : "weak";
+  let staleStatus = "fresh";
+  let staleReason = "索引时间、证据片段和资产关联正常";
+  if (!["active", "indexed"].includes(status)) {
+    staleStatus = "status_attention";
+    staleReason = `状态为 ${status}`;
+  } else if (ageDays === null) {
+    staleStatus = "metadata_gap";
+    staleReason = "缺少可解析的索引或创建时间";
+  } else if (ageDays > 90) {
+    staleStatus = "stale";
+    staleReason = `距离最近索引 ${ageDays} 天`;
+  } else if (ageDays > 45) {
+    staleStatus = "review_due";
+    staleReason = `距离最近索引 ${ageDays} 天，建议复核`;
+  } else if (!chunkCount) {
+    staleStatus = "evidence_gap";
+    staleReason = "缺少证据片段";
+  } else if (!crosswalkCount) {
+    staleStatus = "crosswalk_gap";
+    staleReason = "尚未关联指标、本体对象或其他治理资产";
+  }
+  return {
+    quality_score: qualityScore,
+    completeness_score: completenessScore,
+    evidence_score: evidenceScore,
+    freshness_score: freshnessScore,
+    usage_score: usageScore,
+    quality_status: qualityStatus,
+    stale_status: staleStatus,
+    stale_reason: staleReason,
+    age_days: ageDays
+  };
+}
+
+function enrichKbCardGovernance(row) {
+  return {
+    ...row,
+    ...scoreKbGovernance(row)
+  };
+}
+
+function getKbGovernedCards(domainId = "") {
+  const params = [];
+  const where = [];
+  if (domainId) {
+    where.push("c.domain_id = ?");
+    params.push(domainId);
+  }
+  return all(
+    `
+      SELECT
+        c.*,
+        d.name AS domain_name,
+        s.title AS source_title,
+        s.source_path,
+        s.checksum,
+        s.extracted_at,
+        (SELECT COUNT(*) FROM kb_chunks ch WHERE ch.card_id = c.id) AS chunk_count,
+        (SELECT COUNT(*) FROM kb_crosswalks x WHERE x.card_id = c.id) AS crosswalk_count,
+        (SELECT COUNT(*) FROM ai_retrieval_evidence ev WHERE ev.card_id = c.id) AS usage_count
+      FROM kb_cards c
+      JOIN kb_domains d ON d.id = c.domain_id
+      JOIN kb_sources s ON s.id = c.source_id
+      ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+      ORDER BY c.created_at DESC, c.title
+    `,
+    params
+  ).map(enrichKbCardGovernance);
+}
+
 function getKnowledgeSummary() {
+  const cards = getKbGovernedCards();
   return {
     domains: tableCount("kb_domains"),
     sources: tableCount("kb_sources"),
     cards: tableCount("kb_cards"),
     chunks: tableCount("kb_chunks"),
     crosswalks: tableCount("kb_crosswalks"),
-    ftsEnabled: tableExists("kb_chunks_fts")
+    ftsEnabled: tableExists("kb_chunks_fts"),
+    quality: {
+      averageCardScore: averageNumber(cards, "quality_score"),
+      lowQualityCards: cards.filter((card) => card.quality_score < 55).length,
+      reviewCards: cards.filter((card) => ["needs_review", "weak"].includes(card.quality_status)).length,
+      staleFindings: cards.filter((card) => card.stale_status !== "fresh").length,
+      uncrosswalkedCards: cards.filter((card) => !Number(card.crosswalk_count || 0)).length
+    }
   };
 }
 
@@ -1891,11 +2035,79 @@ function getKbDomains() {
 
 function getKbSources(url) {
   const domainId = url.searchParams.get("domainId");
+  const status = url.searchParams.get("status");
+  const staleStatus = url.searchParams.get("staleStatus");
+  const query = normalizeText(url.searchParams.get("q")).toLowerCase();
   const limit = parseLimit(url, 100, 500);
+  const params = [];
+  const where = [];
   if (domainId) {
-    return all("SELECT * FROM kb_sources WHERE domain_id = ? ORDER BY source_path LIMIT ?", [domainId, limit]);
+    where.push("s.domain_id = ?");
+    params.push(domainId);
   }
-  return all("SELECT * FROM kb_sources ORDER BY domain_id, source_path LIMIT ?", [limit]);
+  if (status) {
+    where.push("s.status = ?");
+    params.push(status);
+  }
+  const governedCards = getKbGovernedCards(domainId || "");
+  const rows = all(
+    `
+      SELECT
+        s.*,
+        d.name AS domain_name,
+        d.source_scope,
+        (SELECT COUNT(*) FROM kb_cards c WHERE c.source_id = s.id) AS card_count,
+        (SELECT COUNT(*) FROM kb_chunks ch WHERE ch.source_id = s.id) AS chunk_count,
+        (
+          SELECT COUNT(*)
+          FROM kb_crosswalks x
+          JOIN kb_cards c ON c.id = x.card_id
+          WHERE c.source_id = s.id
+        ) AS crosswalk_count
+      FROM kb_sources s
+      JOIN kb_domains d ON d.id = s.domain_id
+      ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+      ORDER BY s.domain_id, s.source_path
+    `,
+    params
+  ).map((row) => {
+    const sourceCards = governedCards.filter((card) => card.source_id === row.id);
+    const quality = sourceCards.length ? averageNumber(sourceCards, "quality_score") : 0;
+    const staleCards = sourceCards.filter((card) => card.stale_status !== "fresh").length;
+    let stale_status = "fresh";
+    let stale_reason = "来源已索引且下游知识卡可追溯";
+    const ageDays = daysSince(row.extracted_at);
+    if (row.status !== "indexed") {
+      stale_status = "status_attention";
+      stale_reason = `来源状态为 ${row.status}`;
+    } else if (!row.checksum || ageDays === null) {
+      stale_status = "metadata_gap";
+      stale_reason = "缺少 checksum 或索引时间";
+    } else if (ageDays > 90) {
+      stale_status = "stale";
+      stale_reason = `距离最近索引 ${ageDays} 天`;
+    } else if (!Number(row.card_count || 0)) {
+      stale_status = "card_gap";
+      stale_reason = "来源尚未生成知识卡";
+    } else if (staleCards > 0) {
+      stale_status = "downstream_review";
+      stale_reason = `${staleCards} 张知识卡需要复核`;
+    }
+    return {
+      ...row,
+      avg_quality_score: quality,
+      quality_score: quality,
+      stale_status,
+      stale_reason,
+      owner: "knowledge_governance",
+      last_indexed_at: row.extracted_at,
+      age_days: ageDays
+    };
+  });
+  return rows
+    .filter((row) => !staleStatus || row.stale_status === staleStatus)
+    .filter((row) => !query || `${row.title} ${row.source_path} ${row.domain_name}`.toLowerCase().includes(query))
+    .slice(0, limit);
 }
 
 function extractQueryTerms(query) {
@@ -1958,23 +2170,7 @@ function getKbCards(url) {
     where.push("c.domain_id = ?");
     params.push(domainId);
   }
-  const rows = all(
-    `
-      SELECT
-        c.*,
-        d.name AS domain_name,
-        s.title AS source_title,
-        s.source_path,
-        (SELECT COUNT(*) FROM kb_chunks ch WHERE ch.card_id = c.id) AS chunk_count,
-        (SELECT COUNT(*) FROM kb_crosswalks x WHERE x.card_id = c.id) AS crosswalk_count
-      FROM kb_cards c
-      JOIN kb_domains d ON d.id = c.domain_id
-      JOIN kb_sources s ON s.id = c.source_id
-      ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
-      ORDER BY c.created_at DESC, c.title
-    `,
-    params
-  );
+  const rows = getKbGovernedCards(domainId);
   const scored = rows
     .map((row) => ({ ...row, score: scoreKbRow(row, terms) }))
     .filter((row) => !terms.length || row.score > 0 || bestEvidenceChunks(row.id, terms, 1).length > 0)
@@ -1997,9 +2193,163 @@ function getKbCard(id) {
   );
   if (!card) return null;
   return {
-    ...card,
+    ...enrichKbCardGovernance({
+      ...card,
+      chunk_count: scalar("SELECT COUNT(*) AS count FROM kb_chunks WHERE card_id = ?", [id]),
+      crosswalk_count: scalar("SELECT COUNT(*) AS count FROM kb_crosswalks WHERE card_id = ?", [id]),
+      usage_count: scalar("SELECT COUNT(*) AS count FROM ai_retrieval_evidence WHERE card_id = ?", [id])
+    }),
     chunks: all("SELECT * FROM kb_chunks WHERE card_id = ? ORDER BY chunk_index", [id]),
     crosswalks: all("SELECT * FROM kb_crosswalks WHERE card_id = ? ORDER BY asset_type, asset_id", [id])
+  };
+}
+
+function getKbQualitySummary(url = new URL("http://local/api/kb/quality-summary")) {
+  const domainId = url.searchParams.get("domainId") || "";
+  const cards = getKbGovernedCards(domainId);
+  const domains = getKbDomains()
+    .filter((domain) => !domainId || domain.id === domainId)
+    .map((domain) => {
+      const domainCards = cards.filter((card) => card.domain_id === domain.id);
+      return {
+        domain_id: domain.id,
+        domain_name: domain.name,
+        source_count: Number(domain.source_count || 0),
+        card_count: domainCards.length,
+        avg_quality_score: averageNumber(domainCards, "quality_score"),
+        low_quality_cards: domainCards.filter((card) => card.quality_score < 55).length,
+        review_cards: domainCards.filter((card) => ["needs_review", "weak"].includes(card.quality_status)).length,
+        stale_cards: domainCards.filter((card) => card.stale_status !== "fresh").length,
+        uncrosswalked_cards: domainCards.filter((card) => !Number(card.crosswalk_count || 0)).length,
+        crosswalk_count: domainCards.reduce((sum, card) => sum + Number(card.crosswalk_count || 0), 0)
+      };
+    });
+  return {
+    totals: getKnowledgeSummary(),
+    cards: {
+      total: cards.length,
+      average_quality_score: averageNumber(cards, "quality_score"),
+      certifiable: cards.filter((card) => card.quality_status === "certifiable").length,
+      usable: cards.filter((card) => card.quality_status === "usable").length,
+      needs_review: cards.filter((card) => card.quality_status === "needs_review").length,
+      weak: cards.filter((card) => card.quality_status === "weak").length,
+      stale_findings: cards.filter((card) => card.stale_status !== "fresh").length,
+      uncrosswalked: cards.filter((card) => !Number(card.crosswalk_count || 0)).length
+    },
+    domains
+  };
+}
+
+function staleSeverity(row) {
+  const statusRank = {
+    stale: 5,
+    status_attention: 5,
+    metadata_gap: 4,
+    evidence_gap: 4,
+    crosswalk_gap: 3,
+    downstream_review: 3,
+    review_due: 2,
+    card_gap: 2,
+    fresh: 0
+  };
+  return Number(statusRank[row.stale_status] || 0) * 20 + Math.max(0, 100 - Number(row.quality_score || row.avg_quality_score || 0));
+}
+
+function getKbStaleFindings(url) {
+  const domainId = url.searchParams.get("domainId") || "";
+  const limit = parseLimit(url, 50, 200);
+  const sourceUrl = new URL(`http://local/api/kb/sources?limit=500${domainId ? `&domainId=${encodeURIComponent(domainId)}` : ""}`);
+  const cardUrl = new URL(`http://local/api/kb/cards?limit=500${domainId ? `&domainId=${encodeURIComponent(domainId)}` : ""}`);
+  const sourceFindings = getKbSources(sourceUrl)
+    .filter((row) => row.stale_status !== "fresh" || Number(row.avg_quality_score || 0) < 70)
+    .map((row) => ({
+      id: `source:${row.id}`,
+      finding_type: "source",
+      domain_id: row.domain_id,
+      domain_name: row.domain_name,
+      asset_id: row.id,
+      title: row.title,
+      source_path: row.source_path,
+      quality_score: row.avg_quality_score,
+      stale_status: row.stale_status,
+      stale_reason: row.stale_reason,
+      owner: row.owner,
+      recommended_action: row.stale_status === "fresh" ? "复核知识卡完整性" : "复核来源索引状态与下游知识卡"
+    }));
+  const cardFindings = getKbCards(cardUrl)
+    .filter((row) => row.stale_status !== "fresh" || Number(row.quality_score || 0) < 70)
+    .map((row) => ({
+      id: `card:${row.id}`,
+      finding_type: "card",
+      domain_id: row.domain_id,
+      domain_name: row.domain_name,
+      asset_id: row.id,
+      title: row.title,
+      source_path: row.source_path,
+      quality_score: row.quality_score,
+      stale_status: row.stale_status,
+      stale_reason: row.stale_reason,
+      owner: "knowledge_governance",
+      recommended_action: !Number(row.crosswalk_count || 0)
+        ? "补齐指标、本体对象或决策场景 crosswalk"
+        : "复核摘要、术语、证据片段和 owner 认证"
+    }));
+  return [...sourceFindings, ...cardFindings]
+    .sort((a, b) => staleSeverity(b) - staleSeverity(a) || String(a.title).localeCompare(String(b.title)))
+    .slice(0, limit);
+}
+
+function getKbCrosswalkMatrix(url) {
+  const domainId = url.searchParams.get("domainId") || "";
+  const params = [];
+  const where = [];
+  if (domainId) {
+    where.push("c.domain_id = ?");
+    params.push(domainId);
+  }
+  const rows = all(
+    `
+      SELECT
+        c.domain_id,
+        d.name AS domain_name,
+        x.asset_type,
+        COUNT(*) AS crosswalk_count,
+        COUNT(DISTINCT x.card_id) AS card_count,
+        COUNT(DISTINCT x.asset_id) AS asset_count,
+        SUM(CASE WHEN x.asset_type = 'metric' THEN 1 ELSE 0 END) AS metric_count,
+        SUM(CASE WHEN x.asset_type = 'ontology_object' THEN 1 ELSE 0 END) AS object_count,
+        group_concat(DISTINCT x.asset_id) AS sample_assets
+      FROM kb_crosswalks x
+      JOIN kb_cards c ON c.id = x.card_id
+      JOIN kb_domains d ON d.id = c.domain_id
+      ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+      GROUP BY c.domain_id, d.name, x.asset_type
+      ORDER BY d.name, x.asset_type
+    `,
+    params
+  ).map((row) => ({
+    ...row,
+    sample_assets: String(row.sample_assets || "").split(",").filter(Boolean).slice(0, 8).join(" / ")
+  }));
+  const mappedMetrics = scalar(
+    `
+      SELECT COUNT(DISTINCT x.asset_id) AS count
+      FROM kb_crosswalks x
+      JOIN kb_cards c ON c.id = x.card_id
+      WHERE x.asset_type = 'metric' ${domainId ? "AND c.domain_id = ?" : ""}
+    `,
+    domainId ? [domainId] : []
+  );
+  const totalL3Metrics = scalar("SELECT COUNT(*) AS count FROM metrics WHERE level = 'L3'");
+  return {
+    summary: {
+      rows: rows.length,
+      crosswalks: rows.reduce((sum, row) => sum + Number(row.crosswalk_count || 0), 0),
+      mapped_metrics: mappedMetrics,
+      total_l3_metrics: totalL3Metrics,
+      metric_coverage_rate: totalL3Metrics ? Number((mappedMetrics / totalL3Metrics).toFixed(4)) : 0
+    },
+    rows
   };
 }
 
@@ -3306,6 +3656,9 @@ const server = createServer(async (req, res) => {
       if (req.method === "GET" && url.pathname === "/api/audit/summary") return json(res, getAuditSummary());
       if (req.method === "GET" && url.pathname === "/api/audit-events") return json(res, getAuditEvents(url));
       if (req.method === "GET" && url.pathname === "/api/kb/summary") return json(res, getKnowledgeSummary());
+      if (req.method === "GET" && url.pathname === "/api/kb/quality-summary") return json(res, getKbQualitySummary(url));
+      if (req.method === "GET" && url.pathname === "/api/kb/stale-findings") return json(res, getKbStaleFindings(url));
+      if (req.method === "GET" && url.pathname === "/api/kb/crosswalk-matrix") return json(res, getKbCrosswalkMatrix(url));
       if (req.method === "GET" && url.pathname === "/api/kb/domains") return json(res, getKbDomains());
       if (req.method === "GET" && url.pathname === "/api/kb/sources") return json(res, getKbSources(url));
       if (req.method === "GET" && url.pathname === "/api/kb/cards") return json(res, getKbCards(url));

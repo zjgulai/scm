@@ -3,7 +3,7 @@ title: "供应链治理工作台 E2E 验收矩阵"
 status: "draft"
 created_at: "2026-06-18"
 updated_at: "2026-06-19"
-scope: "P0 browser smoke, P1 workflow operations, workbench operation CRUD, ontology path, decision state machine, ChatBI certification, audit log smoke"
+scope: "P0 browser smoke, P1 workflow operations, P2 KB governance register and scoring, ontology path, decision state machine, ChatBI certification, audit log smoke"
 boundary: "test design and executable smoke scripts; no ERP/Jijia writeback; provider calls remain disabled"
 ---
 
@@ -13,7 +13,7 @@ boundary: "test design and executable smoke scripts; no ERP/Jijia writeback; pro
 
 | 命令 | 默认目标 | 写入边界 | 用途 |
 |---|---|---|---|
-| `npm run smoke:browser` | `https://scm.lute-tlz-dddd.top/` | 只读浏览器导航 | 使用 Browser Harness 打开真实 Chrome 标签页，验证 13 个模块可打开；本地 URL 或 `REQUIRE_WORKBENCH_OPERATIONS=1` 时强校验工作台操作入口 |
+| `npm run smoke:browser` | `https://scm.lute-tlz-dddd.top/` | 只读浏览器导航 | 使用 Browser Harness 打开真实 Chrome 标签页，验证 13 个模块可打开；本地 URL 或 `REQUIRE_WORKBENCH_OPERATIONS=1` 时强校验工作台操作入口；本地 URL 或 `REQUIRE_KB_GOVERNANCE=1` 时强校验 AI 知识库治理视图 |
 | `npm run smoke:workflows` | `http://127.0.0.1:5174` | 只写本项目治理台账 | 验证注解、评论、修订建议、候选资产流、Workflow Board、ChatBI 认证流、AI 本地证据问答、审计筛选 |
 | `npm run smoke:p0` | 临时本地 API/本地新 bundle + 线上浏览器导航 | 临时 SQLite 副本写入 + 线上只读导航 | 执行 build、SQLite 迁移、临时 API 工作流 smoke、本地 Browser Harness 导航 smoke、线上 Browser Harness 导航 smoke |
 
@@ -71,6 +71,11 @@ ALLOW_LEDGER_WRITE_SMOKE=1 SCM_WORKBENCH_URL=https://staging.example.com npm run
 | ChatBI certification rendering | Browser Harness DOM check | ChatBI 页有 summary 卡、上下文候选表单、筛选条和 dry-run 控件 |
 | AI supported/partial answer | `smoke-core-workflows.mjs` | 返回 evidence-backed answerability，不调用 provider |
 | AI insufficient/fail-closed | `smoke-core-workflows.mjs` | 对弱证据问题返回 insufficient 或 partial，不调用 provider |
+| KB source register read | `smoke-core-workflows.mjs` | `GET /api/kb/sources` 返回 source register，含 `avg_quality_score` 和 `stale_status` |
+| KB card quality score | `smoke-core-workflows.mjs` | `GET /api/kb/cards` 返回 `quality_score`、质量状态和复核状态 |
+| KB stale findings read | `smoke-core-workflows.mjs` | `GET /api/kb/stale-findings` 返回数组，支持复核发现列表 |
+| KB crosswalk matrix read | `smoke-core-workflows.mjs` | `GET /api/kb/crosswalk-matrix` 返回 crosswalk summary 和 rows |
+| KB governance rendering | Browser Harness DOM check | 本地新 bundle 中 AI 知识库页有 `.kbGovernanceGrid`、`.sourceRegisterTable`、`.kbDomainQualityTable`、`.staleFindingsPanel`、`.crosswalkMatrixTable` |
 | decision action state machine | `smoke-core-workflows.mjs` | 能创建 Action，并推进 `recommended -> pending_approval -> approved`，不触发 ERP 写回 |
 | decision summary read | `smoke-core-workflows.mjs` | 返回 `suggestion_approval_replay_only` 写回边界 |
 | audit summary read | `smoke-core-workflows.mjs` | 能读取审计事件总量、类型、资产和操作者聚合 |
@@ -81,6 +86,7 @@ ALLOW_LEDGER_WRITE_SMOKE=1 SCM_WORKBENCH_URL=https://staging.example.com npm run
 
 - 该矩阵先固化 P0 可重复验收，不代表完整 PRD 已完成。
 - 浏览器 smoke 是页面级导航验收；KPI 画布、质量工作台、ChatBI 认证台和审计日志页另有 DOM 交互检查。
+- AI 知识库治理 DOM 强校验仅在本地 URL 或显式 `REQUIRE_KB_GOVERNANCE=1` 下启用；线上部署前的只读导航不会被误判为新版功能已上线。
 - 工作流 smoke 默认只对本地服务执行台账写入；生产站点默认只做只读导航检查。
 - 工作台操作 CRUD 是治理型 CRUD：创建、查询、筛选、审核、批量审核和审计留痕；不包含对本体、指标字典、标签、维度、指标正本表的直接删除或覆盖。
 - 外部模型 provider 仍保持关闭。

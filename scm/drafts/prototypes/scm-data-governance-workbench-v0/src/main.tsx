@@ -78,8 +78,85 @@ type KbCard = {
   source_path: string;
   chunk_count: number;
   crosswalk_count: number;
+  quality_score?: number;
+  completeness_score?: number;
+  evidence_score?: number;
+  freshness_score?: number;
+  usage_score?: number;
+  quality_status?: string;
+  stale_status?: string;
+  stale_reason?: string;
   score?: number;
   evidence_chunks?: KbChunk[];
+};
+
+type KbSourceRegister = AnyRow & {
+  id: string;
+  domain_id: string;
+  domain_name: string;
+  source_type: string;
+  source_path: string;
+  title: string;
+  status: string;
+  card_count: number;
+  chunk_count: number;
+  crosswalk_count: number;
+  avg_quality_score: number;
+  quality_score: number;
+  stale_status: string;
+  stale_reason: string;
+  owner: string;
+  last_indexed_at: string;
+};
+
+type KbQualitySummary = {
+  totals: {
+    domains: number;
+    sources: number;
+    cards: number;
+    chunks: number;
+    crosswalks: number;
+    quality?: {
+      averageCardScore: number;
+      reviewCards: number;
+      staleFindings: number;
+      uncrosswalkedCards: number;
+    };
+  };
+  cards: {
+    total: number;
+    average_quality_score: number;
+    certifiable: number;
+    usable: number;
+    needs_review: number;
+    weak: number;
+    stale_findings: number;
+    uncrosswalked: number;
+  };
+  domains: Array<AnyRow>;
+};
+
+type KbStaleFinding = AnyRow & {
+  id: string;
+  finding_type: string;
+  domain_name: string;
+  title: string;
+  source_path: string;
+  quality_score: number;
+  stale_status: string;
+  stale_reason: string;
+  recommended_action: string;
+};
+
+type KbCrosswalkMatrix = {
+  summary: {
+    rows: number;
+    crosswalks: number;
+    mapped_metrics: number;
+    total_l3_metrics: number;
+    metric_coverage_rate: number;
+  };
+  rows: AnyRow[];
 };
 
 type AiEvidence = {
@@ -364,11 +441,31 @@ const columnLabels: Record<string, string> = {
   replay_note: "复盘说明",
   source_path: "来源路径",
   source_title: "来源标题",
+  source_type: "来源类型",
   domain_name: "主题域",
   evidence_level: "证据等级",
   business_terms: "业务术语",
   crosswalk_count: "关联资产",
   chunk_count: "证据片段",
+  card_count: "知识卡",
+  avg_quality_score: "平均质量分",
+  quality_score: "质量分",
+  completeness_score: "完整性",
+  evidence_score: "证据强度",
+  freshness_score: "时效性",
+  usage_score: "使用/关联",
+  stale_status: "复核状态",
+  stale_reason: "复核原因",
+  last_indexed_at: "最近索引",
+  finding_type: "发现类型",
+  recommended_action: "建议动作",
+  asset_count: "资产数",
+  metric_count: "指标关联",
+  object_count: "对象关联",
+  sample_assets: "样例资产",
+  mapped_metrics: "已映射指标",
+  total_l3_metrics: "L3 指标总数",
+  metric_coverage_rate: "指标覆盖率",
   candidate_type: "候选类型",
   candidate_code: "候选编码",
   candidate_name: "候选名称",
@@ -2290,6 +2387,21 @@ function parseTerms(value: string) {
   }
 }
 
+function toneFromKbQuality(status = ""): "neutral" | "good" | "warn" | "bad" | "blue" {
+  if (status === "certifiable") return "good";
+  if (status === "usable") return "blue";
+  if (status === "needs_review") return "warn";
+  if (status === "weak") return "bad";
+  return "neutral";
+}
+
+function toneFromKbStale(status = ""): "neutral" | "good" | "warn" | "bad" | "blue" {
+  if (status === "fresh") return "good";
+  if (["review_due", "crosswalk_gap", "downstream_review", "card_gap"].includes(status)) return "warn";
+  if (["stale", "status_attention", "metadata_gap", "evidence_gap"].includes(status)) return "bad";
+  return "neutral";
+}
+
 function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset: (asset: AssetRef) => void }) {
   const [query, setQuery] = useState("备货业务库存");
   const [selectedDomain, setSelectedDomain] = useState("");
@@ -2298,8 +2410,23 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
   const [reindexResult, setReindexResult] = useState<string>("");
   const domainPath = `/api/kb/domains?refresh=${refresh}`;
   const cardPath = `/api/kb/cards?limit=80${selectedDomain ? `&domainId=${encodeURIComponent(selectedDomain)}` : ""}${query ? `&q=${encodeURIComponent(query)}` : ""}&refresh=${refresh}`;
+  const qualityPath = `/api/kb/quality-summary${selectedDomain ? `?domainId=${encodeURIComponent(selectedDomain)}&` : "?"}refresh=${refresh}`;
+  const sourcePath = `/api/kb/sources?limit=80${selectedDomain ? `&domainId=${encodeURIComponent(selectedDomain)}` : ""}${query ? `&q=${encodeURIComponent(query)}` : ""}&refresh=${refresh}`;
+  const stalePath = `/api/kb/stale-findings?limit=40${selectedDomain ? `&domainId=${encodeURIComponent(selectedDomain)}` : ""}&refresh=${refresh}`;
+  const crosswalkPath = `/api/kb/crosswalk-matrix${selectedDomain ? `?domainId=${encodeURIComponent(selectedDomain)}&` : "?"}refresh=${refresh}`;
   const domains = useApi<KbDomain[]>(domainPath, []);
   const cards = useApi<KbCard[]>(cardPath, []);
+  const quality = useApi<KbQualitySummary>(qualityPath, {
+    totals: { domains: 0, sources: 0, cards: 0, chunks: 0, crosswalks: 0 },
+    cards: { total: 0, average_quality_score: 0, certifiable: 0, usable: 0, needs_review: 0, weak: 0, stale_findings: 0, uncrosswalked: 0 },
+    domains: []
+  });
+  const sources = useApi<KbSourceRegister[]>(sourcePath, []);
+  const staleFindings = useApi<KbStaleFinding[]>(stalePath, []);
+  const crosswalkMatrix = useApi<KbCrosswalkMatrix>(crosswalkPath, {
+    summary: { rows: 0, crosswalks: 0, mapped_metrics: 0, total_l3_metrics: 0, metric_coverage_rate: 0 },
+    rows: []
+  });
 
   async function reindex() {
     setReindexing(true);
@@ -2333,6 +2460,14 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
         business_terms: card.business_terms,
         crosswalk_count: card.crosswalk_count,
         chunk_count: card.chunk_count,
+        quality_score: card.quality_score || 0,
+        quality_status: card.quality_status || "",
+        completeness_score: card.completeness_score || 0,
+        evidence_score: card.evidence_score || 0,
+        freshness_score: card.freshness_score || 0,
+        usage_score: card.usage_score || 0,
+        stale_status: card.stale_status || "",
+        stale_reason: card.stale_reason || "",
         summary: card.summary
       },
       readOnly: true
@@ -2354,6 +2489,32 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
       {reindexResult ? <div className="kbNotice">{reindexResult}</div> : null}
       {domains.error ? <div className="error">{domains.error}</div> : null}
       {cards.error ? <div className="error">{cards.error}</div> : null}
+      {quality.error ? <div className="error">{quality.error}</div> : null}
+      {sources.error ? <div className="error">{sources.error}</div> : null}
+      {staleFindings.error ? <div className="error">{staleFindings.error}</div> : null}
+      {crosswalkMatrix.error ? <div className="error">{crosswalkMatrix.error}</div> : null}
+      <div className="kbGovernanceGrid">
+        <article>
+          <span>知识源台账</span>
+          <strong>{quality.data.totals.sources}</strong>
+          <small>{quality.data.totals.cards} cards / {quality.data.totals.chunks} chunks</small>
+        </article>
+        <article>
+          <span>卡片平均质量</span>
+          <strong>{quality.data.cards.average_quality_score}</strong>
+          <small>{quality.data.cards.certifiable + quality.data.cards.usable} usable / {quality.data.cards.total} total</small>
+        </article>
+        <article>
+          <span>复核发现</span>
+          <strong>{staleFindings.data.length}</strong>
+          <small>{quality.data.cards.stale_findings} stale / {quality.data.cards.uncrosswalked} no crosswalk</small>
+        </article>
+        <article>
+          <span>指标 Crosswalk</span>
+          <strong>{crosswalkMatrix.data.summary.mapped_metrics}</strong>
+          <small>{Math.round(Number(crosswalkMatrix.data.summary.metric_coverage_rate || 0) * 100)}% of L3 metrics</small>
+        </article>
+      </div>
       <div className="domainGrid">
         <button className={!selectedDomain ? "active" : ""} onClick={() => setSelectedDomain("")}>
           <strong>全部主题域</strong>
@@ -2366,6 +2527,74 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
             <small>{domain.description}</small>
           </button>
         ))}
+      </div>
+      <div className="kbOpsGrid">
+        <div className="surface sourceRegisterTable">
+          <div className="surfaceHead">
+            <div>
+              <p className="eyebrow">Source register</p>
+              <h3>知识源台账</h3>
+            </div>
+            <Badge>{sources.data.length} sources</Badge>
+          </div>
+          <DataTable
+            rows={sources.data}
+            columns={["domain_name", "title", "source_type", "status", "card_count", "chunk_count", "crosswalk_count", "avg_quality_score", "stale_status"]}
+            onSelectRow={(row) => onOpenAsset(makeAsset("kb_source", row, ["title"], ["domain_name", "source_path"], true))}
+          />
+        </div>
+        <div className="surface kbDomainQualityTable">
+          <div className="surfaceHead">
+            <div>
+              <p className="eyebrow">Quality by domain</p>
+              <h3>主题域质量</h3>
+            </div>
+            <Badge tone={quality.data.cards.average_quality_score >= 70 ? "good" : "warn"}>{quality.data.cards.average_quality_score} avg</Badge>
+          </div>
+          <DataTable
+            rows={quality.data.domains}
+            columns={["domain_name", "source_count", "card_count", "avg_quality_score", "low_quality_cards", "review_cards", "stale_cards", "uncrosswalked_cards", "crosswalk_count"]}
+          />
+        </div>
+      </div>
+      <div className="kbDiagnosticsGrid">
+        <div className="surface staleFindingsPanel">
+          <div className="surfaceHead">
+            <div>
+              <p className="eyebrow">Diagnostics</p>
+              <h3>复核与异常发现</h3>
+            </div>
+            <Badge tone={staleFindings.data.length ? "warn" : "good"}>{staleFindings.data.length} findings</Badge>
+          </div>
+          {staleFindings.data.length ? (
+            <div className="findingList">
+              {staleFindings.data.slice(0, 8).map((finding) => (
+                <article key={finding.id}>
+                  <div>
+                    <strong>{finding.title}</strong>
+                    <span>{finding.domain_name} / {finding.finding_type}</span>
+                  </div>
+                  <Badge tone={toneFromKbStale(finding.stale_status)}>{finding.stale_status}</Badge>
+                  <p>{finding.stale_reason}</p>
+                  <small>{finding.recommended_action}</small>
+                </article>
+              ))}
+            </div>
+          ) : <div className="empty compact">当前筛选范围内暂无复核发现。</div>}
+        </div>
+        <div className="surface crosswalkMatrixTable">
+          <div className="surfaceHead">
+            <div>
+              <p className="eyebrow">Crosswalk matrix</p>
+              <h3>知识库到治理资产映射</h3>
+            </div>
+            <Badge>{crosswalkMatrix.data.summary.crosswalks} links</Badge>
+          </div>
+          <DataTable
+            rows={crosswalkMatrix.data.rows}
+            columns={["domain_name", "asset_type", "crosswalk_count", "card_count", "asset_count", "metric_count", "object_count", "sample_assets"]}
+          />
+        </div>
       </div>
       <div className="kbResultHeader">
         <div>
@@ -2384,16 +2613,26 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
               <article className="kbCard" key={card.id}>
                 <div className="kbCardHead">
                   <Badge tone="blue">{card.domain_name}</Badge>
-                  <Badge>{card.evidence_level}</Badge>
+                  <div className="badgeCluster">
+                    <Badge tone={toneFromKbQuality(card.quality_status)}>{card.quality_score || 0}</Badge>
+                    <Badge tone={toneFromKbStale(card.stale_status)}>{card.stale_status || "fresh"}</Badge>
+                  </div>
                 </div>
                 <h3>{card.title}</h3>
                 <p>{card.summary}</p>
+                <div className="kbScoreGrid">
+                  <span>完整性 <strong>{card.completeness_score || 0}</strong></span>
+                  <span>证据 <strong>{card.evidence_score || 0}</strong></span>
+                  <span>时效 <strong>{card.freshness_score || 0}</strong></span>
+                  <span>关联 <strong>{card.usage_score || 0}</strong></span>
+                </div>
                 <div className="termRow">
                   {terms.slice(0, 6).map((term) => <span key={term}>{term}</span>)}
                 </div>
                 <div className="kbMeta">
                   <span>{card.source_path}</span>
-                  <span>{card.chunk_count} chunks / {card.crosswalk_count} links</span>
+                  <span>{card.evidence_level} / {card.chunk_count} chunks / {card.crosswalk_count} links</span>
+                  {card.stale_reason ? <span>{card.stale_reason}</span> : null}
                 </div>
                 {card.evidence_chunks?.length ? (
                   <div className="evidenceSnippets">

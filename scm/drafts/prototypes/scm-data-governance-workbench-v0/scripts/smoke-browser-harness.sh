@@ -24,6 +24,11 @@ require_operation_dock = (
     or base_url.startswith("http://127.0.0.1")
     or base_url.startswith("http://localhost")
 )
+require_kb_governance = (
+    os.environ.get("REQUIRE_KB_GOVERNANCE") == "1"
+    or base_url.startswith("http://127.0.0.1")
+    or base_url.startswith("http://localhost")
+)
 expected = [
     "治理链路总览",
     "对象本体工作台",
@@ -149,6 +154,26 @@ for label in expected:
         if audit["summaryCards"] < 4 or not audit["filters"] or not audit["timeline"]:
           raise SystemExit(f"Audit log feature check failed: {audit}")
         feature_checks.append({"auditLog": audit})
+    if label == "AI 知识库":
+        kb = js("""
+        (() => ({
+          governanceCards: document.querySelectorAll('.kbGovernanceGrid > article').length,
+          sourceRegister: !!document.querySelector('.sourceRegisterTable'),
+          domainQuality: !!document.querySelector('.kbDomainQualityTable'),
+          staleFindings: !!document.querySelector('.staleFindingsPanel'),
+          crosswalkMatrix: !!document.querySelector('.crosswalkMatrixTable'),
+          scoreBlocks: document.querySelectorAll('.kbScoreGrid').length
+        }))()
+        """)
+        if require_kb_governance and (
+            kb["governanceCards"] < 4
+            or not kb["sourceRegister"]
+            or not kb["domainQuality"]
+            or not kb["staleFindings"]
+            or not kb["crosswalkMatrix"]
+        ):
+          raise SystemExit(f"KB governance feature check failed: {kb}")
+        feature_checks.append({"kbGovernance": kb})
     results.append({"label": label, "header": state["h1"]})
 
 print({

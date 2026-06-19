@@ -3,7 +3,7 @@ title: "供应链数据开发治理工作台剩余 PRD 盘点与 TODO"
 status: "draft"
 created_at: "2026-06-18"
 updated_at: "2026-06-19"
-scope: "post-main-deploy PRD gap inventory, P1 workbench operation closure, and remaining roadmap"
+scope: "post-main-deploy PRD gap inventory, P1 workbench operation closure, P2 KB governance local implementation, and remaining roadmap"
 boundary: "status tracking; local ledger smoke only; no ERP/Jijia writeback; provider calls remain disabled"
 source_of_truth:
   - "drafts/prototypes/scm-data-governance-workbench-v0/docs/second-iteration-prd-20260618.md"
@@ -34,7 +34,7 @@ current_deploy:
 
 ### 1.2 当前推断
 
-当前版本已经完成 P0 工程验收闭环，并已完成三批 P1 交互闭环：候选资产流、统一 workflow board、owner/SLA/批量审核、对象图谱路径解释、决策闭环状态机、ChatBI 上下文认证流和审计日志操作页。2026-06-19 已新增并部署 `workbench_operations` 治理型 CRUD 基础版，13 个模块均具备创建操作请求、查询/筛选、批量审核、状态流转与审计留痕入口；该能力通过本地 `smoke:p0` 与线上 `REQUIRE_WORKBENCH_OPERATIONS=1` Browser Harness 强校验。下一阶段差距集中在知识库运营、AI 语义治理、问法样本质量评分和外部模型接入治理。
+当前版本已经完成 P0 工程验收闭环，并已完成三批 P1 交互闭环：候选资产流、统一 workflow board、owner/SLA/批量审核、对象图谱路径解释、决策闭环状态机、ChatBI 上下文认证流和审计日志操作页。2026-06-19 已新增并部署 `workbench_operations` 治理型 CRUD 基础版，13 个模块均具备创建操作请求、查询/筛选、批量审核、状态流转与审计留痕入口；该能力通过本地 `smoke:p0` 与线上 `REQUIRE_WORKBENCH_OPERATIONS=1` Browser Harness 强校验。P2 第一批知识库运营能力已在本地实现：知识源台账、知识卡质量评分、stale/复核发现和知识域到治理资产 crosswalk 矩阵已进入 `AI 知识库` 页面，并通过本地 `smoke:p0`。下一阶段差距集中在问法样本质量评分、AI 反馈闭环、外部模型接入治理和生产强验收。
 
 ### 1.3 当前不确定项
 
@@ -178,6 +178,19 @@ current_deploy:
 | SCM-PRD-P2-006 | ChatBI 可回答性评分页 | 展示每个主题/指标的 answerability、证据覆盖、拒答原因 | AI chat engine | 6h |
 | SCM-PRD-P2-007 | 知识域与指标体系 crosswalk 页 | 可查看知识卡支撑哪些指标/对象/规则 | kb_crosswalks | 8h |
 | SCM-PRD-P2-008 | AI 检索证据导出 | 对话证据链可导出为 Markdown/JSON | AI chat evidence | 4h |
+
+### 4.3.1 P2 执行状态更新（2026-06-19）
+
+| ID | 当前状态 | 新鲜证据 | 边界 |
+|---|---|---|---|
+| SCM-PRD-P2-001 | 本地完成，待线上强验收 | 新增 `GET /api/kb/sources` 增强字段与 `AI 知识库` 的 `.sourceRegisterTable`；`smoke:p0` 覆盖 `kbSourceRegister.read` | 只读 SQLite 治理视图；不新增独立知识库 |
+| SCM-PRD-P2-002 | 本地完成，待线上强验收 | `GET /api/kb/cards` 返回 `quality_score`、四项分数、质量状态和复核状态；`smoke:p0` 覆盖 `kbCardQuality.score` | 质量分是治理排序信号，不替代 owner 认证 |
+| SCM-PRD-P2-003 | 本地完成，待线上强验收 | 新增 `GET /api/kb/stale-findings` 与 `.staleFindingsPanel`；`smoke:p0` 覆盖 `kbStaleFindings.read` | stale 表示需要复核，不代表源规则错误 |
+| SCM-PRD-P2-007 | 本地完成，待线上强验收 | 新增 `GET /api/kb/crosswalk-matrix` 与 `.crosswalkMatrixTable`；`smoke:p0` 覆盖 `kbCrosswalkMatrix.read` | 仅展示当前 `kb_crosswalks` 覆盖，不自动补写正本资产 |
+| SCM-PRD-P2-004 | 未开始 | 无 | 后续需建立问法样本、同义问法、拒答样本和冲突样本 |
+| SCM-PRD-P2-005 | 未开始 | 无 | 后续需将 AI 对话反馈转治理任务 |
+| SCM-PRD-P2-006 | 未开始 | 无 | 后续需从 ChatBI/AI chat 聚合可回答性覆盖 |
+| SCM-PRD-P2-008 | 未开始 | 无 | 后续需提供 Markdown/JSON 导出 |
 
 ### 4.4 P3 TODO：外部模型、权限和高级能力
 

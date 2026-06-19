@@ -446,6 +446,33 @@ assert(
   aiInsufficient.result
 );
 
+const kbQuality = await request("/api/kb/quality-summary");
+assert(kbQuality.cards?.total >= 1, "KB quality summary missing cards", kbQuality);
+assert(Number.isFinite(Number(kbQuality.cards?.average_quality_score)), "KB quality average score missing", kbQuality);
+
+const kbSources = await request("/api/kb/sources?limit=5");
+assert(Array.isArray(kbSources) && kbSources.length >= 1, "KB source register missing sources", kbSources);
+assert(
+  kbSources.every((source) => source.stale_status && Number.isFinite(Number(source.avg_quality_score))),
+  "KB source governance fields missing",
+  kbSources
+);
+
+const kbCards = await request("/api/kb/cards?limit=5");
+assert(Array.isArray(kbCards) && kbCards.length >= 1, "KB cards missing", kbCards);
+assert(
+  kbCards.every((card) => Number.isFinite(Number(card.quality_score)) && card.stale_status),
+  "KB card quality fields missing",
+  kbCards
+);
+
+const kbStaleFindings = await request("/api/kb/stale-findings?limit=5");
+assert(Array.isArray(kbStaleFindings), "KB stale findings response is not an array", kbStaleFindings);
+
+const kbCrosswalkMatrix = await request("/api/kb/crosswalk-matrix");
+assert(kbCrosswalkMatrix.summary?.crosswalks >= 1, "KB crosswalk summary missing links", kbCrosswalkMatrix);
+assert(Array.isArray(kbCrosswalkMatrix.rows), "KB crosswalk matrix rows missing", kbCrosswalkMatrix);
+
 const actionTask = await request("/api/decision/action-task", {
   method: "POST",
   body: JSON.stringify({
@@ -542,6 +569,10 @@ console.log(
         "chatbi.dryRun",
         "aiChat.supportedOrPartial",
         "aiChat.failClosed",
+        "kbSourceRegister.read",
+        "kbCardQuality.score",
+        "kbStaleFindings.read",
+        "kbCrosswalkMatrix.read",
         "decisionAction.create",
         "decisionAction.transitionPendingApproval",
         "decisionAction.transitionApproved",

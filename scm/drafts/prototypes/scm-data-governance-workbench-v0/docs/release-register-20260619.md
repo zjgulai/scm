@@ -1,5 +1,5 @@
 ---
-title: "SCM Governance Workbench Release Register"
+title: "AIP-SCM Data Workbench Release Register"
 status: "draft"
 created_at: "2026-06-19"
 updated_at: "2026-06-19"
@@ -7,15 +7,15 @@ scope: "release/source-of-truth register for scm-data-governance-workbench-v0"
 boundary: "status register only; no deploy; no provider call; no ERP/Jijia writeback"
 ---
 
-# SCM Governance Workbench Release Register
+# AIP-SCM Data Workbench Release Register
 
 ## 1. Purpose
 
-This register is the release source of truth for the SCM governance workbench prototype. It separates verified live facts, local workspace facts, historical deployment notes, and unverified items.
+This register is the release source of truth for the AIP-SCM data workbench prototype. It separates verified live facts, local workspace facts, historical deployment notes, and unverified items.
 
 ## 2. Current Verified Snapshot
 
-Verified at: `2026-06-19T20:23:35+0800`
+Verified at: `2026-06-19T20:39:40+0800`
 
 | Field | Value | Evidence |
 |---|---|---|
@@ -26,8 +26,8 @@ Verified at: `2026-06-19T20:23:35+0800`
 | Static build | `true` | live `/api/deploy/health` |
 | Live DB path | `/app/data/governance_workbench.sqlite` | live `/api/deploy/health` |
 | Live DB persistence | Docker external named volume `scm_governance_workbench_scm-governance-data` mounted at `/app/data` | `docker inspect scm-governance-workbench --format '{{range .Mounts}}...'` |
-| Deployment release id | `scm-workbench-workflow-orchestration-d4ed266-20260619202127` | live `/api/deploy/health` |
-| Deployment git SHA | `d4ed266` | live `/api/deploy/health` |
+| Deployment release id | `scm-workbench-aip-brand-templates-add2b78-20260619203844` | live `/api/deploy/health` |
+| Deployment git SHA | `add2b78` | live `/api/deploy/health` |
 | Ontology objects | `14` | live `/api/deploy/health` |
 | Metrics | `178` | live `/api/deploy/health` |
 | Lineage edges | `278` | live `/api/deploy/health` |
@@ -43,20 +43,20 @@ Verified at: `2026-06-19T20:23:35+0800`
 | Provider calls | `false` | live `/api/deploy/health` |
 | ERP writeback | `false` | live `/api/deploy/health` |
 | ChatBI policy | `certified_metric_only` | live `/api/deploy/health` |
-| Active deployed commit | `d4ed266` | live `/api/deploy/health` and release package |
-| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-workflow-orchestration-d4ed266-20260619202127` | SSH deploy output |
-| Active deployment backup | `/opt/scm-governance-workbench/backups/20260619202207-before-workflow-orchestration` | SSH deploy output |
+| Active deployed commit | `add2b78` | live `/api/deploy/health` and release package |
+| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-aip-brand-templates-add2b78-20260619203844` | SSH deploy output |
+| Active deployment backup | `/opt/scm-governance-workbench/backups/*-before-scm-workbench-aip-brand-templates-add2b78-20260619203844` | SSH deploy output |
 
 ## 3. Local Workspace Snapshot
 
-Verified at: `2026-06-19T20:23:35+0800`
+Verified at: `2026-06-19T20:39:40+0800`
 
 | Field | Value |
 |---|---|
 | Git root | `/Users/pray/project/ecom_ana_overview` |
 | Working subdirectory | `/Users/pray/project/ecom_ana_overview/scm` |
 | Branch | `codex/scm-ledger-workbench` |
-| Local application HEAD | `d4ed266` before this docs-only release-register update |
+| Local application HEAD | `add2b78` before this docs-only release-register update |
 | Parent remote | `origin=https://github.com/zjgulai/data_analysis_expert.git` |
 | Scoped SCM remote | `scm=https://github.com/zjgulai/scm.git` |
 | Prototype path | `drafts/prototypes/scm-data-governance-workbench-v0` |
@@ -172,6 +172,46 @@ Boundary confirmed by local smoke:
 - `providerCalls=false`
 - `erpWriteback=false`
 - `SCM_SKIP_PUBLIC_BROWSER_SMOKE=1`, so no public production assertion is made for this batch.
+
+## 21. AIP-SCM Brand, Background, And Workflow Template Public Deployment Status
+
+Verified publicly at: `2026-06-19T20:39:40+0800`
+
+| Item | Status | Evidence |
+|---|---|---|
+| Git commits | `pushed` | `12a7bde` application change, `add2b78` smoke timing fix pushed to `scm/codex/scm-ledger-workbench` |
+| Release package | `deployed` | `/opt/scm-governance-workbench/releases/scm-workbench-aip-brand-templates-add2b78-20260619203844` |
+| Health release id | `passed_public` | `/api/deploy/health.deployment.releaseId = scm-workbench-aip-brand-templates-add2b78-20260619203844` |
+| Health git SHA | `passed_public` | `/api/deploy/health.deployment.gitSha = add2b78` |
+| Brand mark | `passed_public` | Browser Harness asserts `.brand span = SC` |
+| Brand title | `passed_public` | Browser Harness asserts `.brand strong = AIP-SCM` and old `SCM Governance` is absent from visible text |
+| Base background | `passed_public` | Browser Harness asserts `body.backgroundImage = none`; CSS `--paper = #f8f9f1` |
+| Workflow templates API | `passed_public` | `/api/workflow-orchestration/summary?limit=2` returned `templates=5`, `lanes=6` |
+| Workflow template UI | `passed_public` | Browser Harness: `templatePanel=true`, `templateButtons=5`, `templateSteps=5`, `templateReviewButtons=2` |
+| Public Browser Harness | `passed_public_read_only` | 15 modules checked at `1350x900`, `1024x900`, `768x900`, `390x900` |
+
+Verification commands:
+
+```bash
+node --check server/index.mjs
+node --check scripts/smoke-core-workflows.mjs
+bash -n scripts/smoke-browser-harness.sh
+npm run check
+npm run build
+REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm run smoke:p0
+REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser
+curl -fsS https://scm.lute-tlz-dddd.top/api/deploy/health
+curl -fsS 'https://scm.lute-tlz-dddd.top/api/workflow-orchestration/summary?limit=2'
+```
+
+Boundary:
+
+- public Browser Harness is read-only;
+- local P0 smoke writes only to a temporary SQLite database;
+- workflow template review creates local SQLite workbench operations only when explicitly triggered;
+- imports remain disabled;
+- no provider call;
+- no ERP/Jijia/WMS/TMS writeback.
 
 ## 12. Batch 5 Local Role Provider Governance Status
 

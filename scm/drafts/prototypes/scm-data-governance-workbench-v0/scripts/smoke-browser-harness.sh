@@ -100,6 +100,20 @@ for label in expected:
     if not clicked.get("ok"):
         raise SystemExit(clicked)
     sleep(0.25)
+    if label == "工作流编排台":
+        for _ in range(24):
+            ready = js("""
+            (() => ({
+              lanes: document.querySelectorAll('.orchestrationLaneCanvas .orchestrationLane').length,
+              moduleContracts: document.querySelectorAll('.moduleContractList article').length,
+              handoffs: document.querySelectorAll('.handoffList article').length,
+              templateButtons: document.querySelectorAll('.templateRail button').length,
+              templateSteps: document.querySelectorAll('.templateStepper .templateStep').length
+            }))()
+            """)
+            if ready["lanes"] >= 6 and ready["moduleContracts"] >= 12 and ready["handoffs"] >= 5 and ready["templateButtons"] >= 5 and ready["templateSteps"] >= 4:
+                break
+            sleep(0.25)
     state = js("""
     (() => ({
       h1: document.querySelector('header h1')?.textContent?.trim() || '',

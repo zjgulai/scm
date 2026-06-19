@@ -411,6 +411,33 @@ type OrchestrationModule = {
   exportPath: string;
 };
 
+type WorkflowTemplateStep = {
+  key: string;
+  name: string;
+  actor: string;
+  gate: string;
+  output: string;
+  state: string;
+};
+
+type WorkflowTemplate = {
+  id: string;
+  title: string;
+  appliesTo: string;
+  trigger: string;
+  owner: string;
+  defaultSla: string;
+  entryModuleId: string;
+  exitModuleId: string;
+  boundary: {
+    importAllowed: boolean;
+    providerCalls: boolean;
+    erpWriteback: boolean;
+    ledgerMode: string;
+  };
+  steps: WorkflowTemplateStep[];
+};
+
 type WorkflowOrchestrationSummary = {
   totals: Record<string, number>;
   lanes: OrchestrationLane[];
@@ -422,6 +449,7 @@ type WorkflowOrchestrationSummary = {
   };
   recentWorkflows: WorkflowInstance[];
   recentOperations: WorkbenchOperation[];
+  templates: WorkflowTemplate[];
   handoffs: Array<{ from: string; to: string; contract: string; status: string }>;
   boundary: {
     mode: string;
@@ -2506,6 +2534,7 @@ function WorkflowOrchestrationPanel({
     statusBuckets: { workflows: [], operations: [], sla: [] },
     recentWorkflows: [],
     recentOperations: [],
+    templates: [],
     handoffs: [],
     boundary: {
       mode: "local_sqlite_workflow_orchestration",
@@ -2517,9 +2546,11 @@ function WorkflowOrchestrationPanel({
   };
   const [refresh, setRefresh] = useState(0);
   const [selectedModuleId, setSelectedModuleId] = useState("workflow-orchestration");
+  const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [note, setNote] = useState("");
   const summary = useApi<WorkflowOrchestrationSummary>(`/api/workflow-orchestration/summary?limit=16&refresh=${refresh}`, emptySummary);
   const selectedModule = summary.data.moduleMap.find((item) => item.id === selectedModuleId) || summary.data.moduleMap[0];
+  const selectedTemplate = summary.data.templates.find((item) => item.id === selectedTemplateId) || summary.data.templates[0];
 
   async function createOrchestrationOperation(target?: OrchestrationModule) {
     const targetModule = target || selectedModule;
@@ -2556,6 +2587,43 @@ function WorkflowOrchestrationPanel({
     setRefresh((value) => value + 1);
   }
 
+  async function createTemplateOperation(template?: WorkflowTemplate) {
+    const targetTemplate = template || selectedTemplate;
+    if (!targetTemplate) return;
+    const result = await api<{ ok: boolean; operation: WorkbenchOperation }>("/api/workbench/operations", {
+      method: "POST",
+      body: JSON.stringify({
+        moduleId: "workflow-orchestration",
+        operationType: "workflow_template_review",
+        targetAssetType: "workflow_template",
+        targetAssetIds: [targetTemplate.id],
+        operationTitle: `${targetTemplate.title} 模板复核`,
+        operationSummary: `复核 ${targetTemplate.title} 的入口、出口、步骤门禁、产物和只读边界是否满足跨工作台流转要求。`,
+        operationPayload: {
+          templateId: targetTemplate.id,
+          appliesTo: targetTemplate.appliesTo,
+          trigger: targetTemplate.trigger,
+          owner: targetTemplate.owner,
+          defaultSla: targetTemplate.defaultSla,
+          entryModuleId: targetTemplate.entryModuleId,
+          exitModuleId: targetTemplate.exitModuleId,
+          boundary: targetTemplate.boundary,
+          steps: targetTemplate.steps,
+          importAllowed: false,
+          providerCalls: false,
+          erpWriteback: false
+        },
+        owner: targetTemplate.owner || "governance_pmo",
+        priority: targetTemplate.id.includes("metric") || targetTemplate.id.includes("chatbi") ? "P1" : "P2",
+        createdBy: "local_user"
+      })
+    });
+    setNote(`已创建模板复核操作 ${result.operation.id}，关联 workflow ${result.operation.workflow_id}`);
+    setSelectedTemplateId(targetTemplate.id);
+    setSelectedModuleId(targetTemplate.entryModuleId);
+    setRefresh((value) => value + 1);
+  }
+
   return (
     <section className="panel">
       <ModuleHeader module={module} />
@@ -2585,6 +2653,70 @@ function WorkflowOrchestrationPanel({
             <Badge tone="good">import off</Badge>
             <Badge tone="good">provider off</Badge>
             <Badge tone="good">ERP writeback off</Badge>
+          </div>
+        </div>
+
+        <div className="workflowTemplatePanel">
+          <div className="sectionHeader compactHeader">
+            <div>
+              <p className="eyebrow">Workflow templates</p>
+              <h2>标准工作流模板与步骤门禁</h2>
+            </div>
+            <button className="textButton templateReviewButton" onClick={() => createTemplateOperation()}>创建模板复核</button>
+          </div>
+          <div className="workflowTemplateLayout">
+            <div className="templateRail">
+              {summary.data.templates.map((template) => (
+                <button className={template.id === selectedTemplate?.id ? "active" : ""} key={template.id} onClick={() => setSelectedTemplateId(template.id)}>
+                  <strong>{template.title}</strong>
+                  <small>{template.appliesTo}</small>
+                  <span>{template.steps.length} steps / {template.defaultSla}</span>
+                </button>
+              ))}
+            </div>
+            {selectedTemplate ? (
+              <div className="templateDetail">
+                <div className="templateMetaGrid">
+                  <div>
+                    <span>Trigger</span>
+                    <strong>{selectedTemplate.trigger}</strong>
+                  </div>
+                  <div>
+                    <span>Owner</span>
+                    <strong>{selectedTemplate.owner}</strong>
+                  </div>
+                  <div>
+                    <span>Route</span>
+                    <strong>{selectedTemplate.entryModuleId} → {selectedTemplate.exitModuleId}</strong>
+                  </div>
+                  <div>
+                    <span>Boundary</span>
+                    <strong>{selectedTemplate.boundary.ledgerMode} / import off / provider off</strong>
+                  </div>
+                </div>
+                <div className="templateStepper">
+                  {selectedTemplate.steps.map((step, index) => (
+                    <article className="templateStep" key={step.key}>
+                      <div className="templateStepIndex">{index + 1}</div>
+                      <div>
+                        <span>{step.state}</span>
+                        <h3>{step.name}</h3>
+                        <p><b>Actor</b>{step.actor}</p>
+                        <p><b>Gate</b>{step.gate}</p>
+                        <p><b>Output</b>{step.output}</p>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+                <div className="qualityActions templateActions">
+                  <button className="textButton" onClick={() => onSelect(selectedTemplate.entryModuleId)}>进入入口工作台</button>
+                  <button className="textButton" onClick={() => onSelect(selectedTemplate.exitModuleId)}>进入出口工作台</button>
+                  <button className="textButton templateReviewButton" onClick={() => createTemplateOperation(selectedTemplate)}>创建此模板复核</button>
+                </div>
+              </div>
+            ) : (
+              <div className="empty compact">暂无工作流模板。</div>
+            )}
           </div>
         </div>
 
@@ -6503,9 +6635,9 @@ function Sidebar({ modules, active, onSelect }: { modules: WorkbenchModule[]; ac
   return (
     <aside className="sidebar">
       <div className="brand">
-        <span>G</span>
+        <span>SC</span>
         <div>
-          <strong>SCM Governance</strong>
+          <strong>AIP-SCM</strong>
           <small>Data Workbench</small>
         </div>
       </div>

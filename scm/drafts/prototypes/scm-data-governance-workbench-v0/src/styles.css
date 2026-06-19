@@ -4,7 +4,7 @@
   --muted: #6f7a86;
   --line: #e3e7ec;
   --line-strong: #c7d0da;
-  --paper: #f5f3ef;
+  --paper: #f8f9f1;
   --panel: #ffffff;
   --panel-soft: #fbfcfd;
   --blue: #214f80;
@@ -32,11 +32,8 @@ html {
 body {
   margin: 0;
   color: var(--ink);
-  background:
-    linear-gradient(rgba(215, 213, 207, 0.34) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(215, 213, 207, 0.28) 1px, transparent 1px),
-    var(--paper);
-  background-size: 48px 48px;
+  background: var(--paper);
+  background-size: auto;
 }
 
 button,
@@ -105,13 +102,15 @@ h3 {
 }
 
 .brand span {
-  width: 42px;
-  height: 42px;
+  width: 46px;
+  height: 46px;
   display: grid;
   place-items: center;
   border-radius: 8px;
   color: #fff;
+  font-size: 17px;
   font-weight: 820;
+  letter-spacing: 0;
   background: linear-gradient(135deg, var(--blue), var(--teal));
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
@@ -1945,7 +1944,8 @@ textarea {
 .orchestrationLane,
 .orchestrationModuleMatrix,
 .handoffPanel,
-.orchestrationTaskPool {
+.orchestrationTaskPool,
+.workflowTemplatePanel {
   min-width: 0;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -1965,7 +1965,12 @@ textarea {
 .moduleContractBody p,
 .moduleContractStats span,
 .handoffList p,
-.orchestrationTaskColumns small {
+.orchestrationTaskColumns small,
+.templateRail small,
+.templateRail span,
+.templateMetaGrid span,
+.templateStep span,
+.templateStep p {
   color: var(--muted);
   line-height: 1.45;
 }
@@ -1986,6 +1991,149 @@ textarea {
 
 .orchestrationBoundary h3 {
   margin: 2px 0 0;
+}
+
+.workflowTemplatePanel {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+}
+
+.workflowTemplateLayout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.32fr) minmax(0, 1fr);
+  gap: 14px;
+  min-width: 0;
+}
+
+.templateRail {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  min-width: 0;
+}
+
+.templateRail button {
+  display: grid;
+  gap: 6px;
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  color: inherit;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.templateRail button.active {
+  border-color: rgba(0, 94, 184, 0.42);
+  background: linear-gradient(180deg, var(--blue-soft), #fff);
+  box-shadow: 0 10px 24px rgba(0, 94, 184, 0.08);
+}
+
+.templateRail strong,
+.templateMetaGrid strong,
+.templateStep h3 {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.templateRail span {
+  font-size: 12px;
+}
+
+.templateDetail {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.templateMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.templateMetaGrid > div {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.78);
+}
+
+.templateMetaGrid strong {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.templateStepper {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.templateStep {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+}
+
+.templateStep:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: 22px;
+  right: -6px;
+  width: 12px;
+  height: 12px;
+  border-top: 2px solid rgba(47, 143, 152, 0.34);
+  border-right: 2px solid rgba(47, 143, 152, 0.34);
+  transform: rotate(45deg);
+  background: #fff;
+}
+
+.templateStepIndex {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  color: #fff;
+  background: var(--teal);
+  font-size: 12px;
+  font-weight: 820;
+}
+
+.templateStep h3 {
+  margin: 2px 0 8px;
+  font-size: 14px;
+}
+
+.templateStep p {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 8px;
+  margin: 0 0 6px;
+  overflow-wrap: anywhere;
+}
+
+.templateStep b {
+  color: var(--ink);
+}
+
+.templateActions {
+  justify-content: flex-end;
 }
 
 .orchestrationLaneCanvas {
@@ -4600,6 +4748,7 @@ tbody tr:hover td {
 .decisionWorkbench,
 .orchestrationDetailGrid,
 .orchestrationTaskColumns,
+.workflowTemplateLayout,
 .qualitySplit {
   min-width: 0;
   max-width: 100%;
@@ -4631,7 +4780,9 @@ tbody tr:hover td {
 .roleQueueGrid,
 .roleSlaShiftGrid,
 .orchestrationCommandBar,
-.orchestrationLaneCanvas {
+.orchestrationLaneCanvas,
+.templateMetaGrid,
+.templateStepper {
   min-width: 0;
   max-width: 100%;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));

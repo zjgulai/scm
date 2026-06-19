@@ -64,9 +64,18 @@ summary = js("""
   title: document.title,
   url: location.href,
   labels: Array.from(document.querySelectorAll('aside button')).map((button) => button.textContent.trim()),
+  brandMark: document.querySelector('.brand span')?.textContent?.trim() || '',
+  brandTitle: document.querySelector('.brand strong')?.textContent?.trim() || '',
+  bodyBackgroundImage: getComputedStyle(document.body).backgroundImage,
+  bodyBackgroundColor: getComputedStyle(document.body).backgroundColor,
   visibleText: document.body.innerText.slice(0, 5000)
 }))()
 """)
+
+if summary["brandMark"] != "SC" or summary["brandTitle"] != "AIP-SCM" or "SCM Governance" in summary["visibleText"]:
+    raise SystemExit(f"Brand check failed: {summary}")
+if summary["bodyBackgroundImage"] != "none":
+    raise SystemExit(f"Body background should not use grid/image background: {summary['bodyBackgroundImage']}")
 
 missing = [label for label in expected if not any(label in text for text in summary["labels"])]
 if missing:
@@ -382,6 +391,10 @@ for label in expected:
           handoffPanel: !!document.querySelector('.handoffPanel'),
           handoffs: document.querySelectorAll('.handoffList article').length,
           taskPool: !!document.querySelector('.orchestrationTaskPool'),
+          templatePanel: !!document.querySelector('.workflowTemplatePanel'),
+          templateButtons: document.querySelectorAll('.templateRail button').length,
+          templateSteps: document.querySelectorAll('.templateStepper .templateStep').length,
+          templateReviewButtons: document.querySelectorAll('.templateReviewButton').length,
           createButtons: document.querySelectorAll('.orchestrationCreateButton').length,
           exports: document.querySelectorAll('.exportActions a').length,
           flow: !!document.querySelector('.workbenchFlowStrip'),
@@ -397,6 +410,10 @@ for label in expected:
             or not orchestration["handoffPanel"]
             or orchestration["handoffs"] < 5
             or not orchestration["taskPool"]
+            or not orchestration["templatePanel"]
+            or orchestration["templateButtons"] < 5
+            or orchestration["templateSteps"] < 4
+            or orchestration["templateReviewButtons"] < 2
             or orchestration["createButtons"] < 1
             or orchestration["exports"] < 2
             or not orchestration["flow"]

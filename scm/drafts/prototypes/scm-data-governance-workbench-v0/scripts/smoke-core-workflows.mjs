@@ -78,7 +78,7 @@ assert(
   "Excel export content type is wrong",
   { contentType: excelExport.response.headers.get("content-type") }
 );
-assert(excelExport.text.includes("<table") && excelExport.text.includes("SCM Governance Export"), "Excel export missing table markup");
+assert(excelExport.text.includes("<table") && excelExport.text.includes("AIP-SCM Export"), "Excel export missing table markup");
 
 const canvasNodes = await request("/api/kpi-canvas/nodes?limit=20");
 assert(Array.isArray(canvasNodes) && canvasNodes.length > 0, "KPI canvas nodes are not available");
@@ -326,6 +326,12 @@ assert(orchestrationSummary.boundary?.erpWriteback === false, "workflow orchestr
 assert(Array.isArray(orchestrationSummary.lanes) && orchestrationSummary.lanes.length >= 6, "workflow orchestration lanes missing", orchestrationSummary);
 assert(Array.isArray(orchestrationSummary.moduleMap) && orchestrationSummary.moduleMap.some((item) => item.id === "role-workbench"), "workflow orchestration module map missing role workbench", orchestrationSummary.moduleMap);
 assert(Array.isArray(orchestrationSummary.handoffs) && orchestrationSummary.handoffs.length >= 5, "workflow orchestration handoff contracts missing", orchestrationSummary.handoffs);
+assert(Array.isArray(orchestrationSummary.templates) && orchestrationSummary.templates.length >= 5, "workflow orchestration templates missing", orchestrationSummary.templates);
+assert(
+  orchestrationSummary.templates.every((template) => Array.isArray(template.steps) && template.steps.length >= 4 && template.boundary?.importAllowed === false && template.boundary?.providerCalls === false),
+  "workflow orchestration template steps or boundaries are incomplete",
+  orchestrationSummary.templates
+);
 
 const orchestrationOperation = await request("/api/workbench/operations", {
   method: "POST",
@@ -350,10 +356,36 @@ const orchestrationOperation = await request("/api/workbench/operations", {
 assert(orchestrationOperation.operation?.id, "workflow orchestration operation was not created", orchestrationOperation);
 assert(orchestrationOperation.operation?.workflow_id, "workflow orchestration operation workflow was not created", orchestrationOperation);
 
+const templateForSmoke = orchestrationSummary.templates.find((template) => template.id === "template_metric_certification") || orchestrationSummary.templates[0];
+const templateOperation = await request("/api/workbench/operations", {
+  method: "POST",
+  body: JSON.stringify({
+    moduleId: "workflow-orchestration",
+    operationType: "workflow_template_review",
+    targetAssetType: "workflow_template",
+    targetAssetIds: [templateForSmoke.id],
+    operationTitle: `P1 smoke workflow template ${Date.now()}`,
+    operationSummary: "P1 smoke validates workflow template review stays in local ledger.",
+    operationPayload: {
+      templateId: templateForSmoke.id,
+      steps: templateForSmoke.steps,
+      importAllowed: false,
+      providerCalls: false,
+      erpWriteback: false
+    },
+    owner: "governance_pmo_smoke",
+    priority: "P1",
+    createdBy: "p1_orchestration_smoke"
+  })
+});
+assert(templateOperation.operation?.id, "workflow template operation was not created", templateOperation);
+assert(templateOperation.operation?.workflow_id, "workflow template operation workflow was not created", templateOperation);
+
 const orchestrationExport = await request("/api/export/workflow-orchestration?format=json");
 assert(orchestrationExport.boundary?.mode === "read_only_export", "workflow orchestration export is not read-only", orchestrationExport.boundary);
 assert(orchestrationExport.boundary?.importAllowed === false, "workflow orchestration export unexpectedly allows import", orchestrationExport.boundary);
 assert(orchestrationExport.payload?.lanes?.length >= 6, "workflow orchestration export missing lanes", orchestrationExport.payload);
+assert(orchestrationExport.payload?.templates?.length >= 5, "workflow orchestration export missing templates", orchestrationExport.payload);
 
 const qualityRule = await request("/api/quality/rules", {
   method: "POST",
@@ -1045,6 +1077,7 @@ console.log(
         "workbenchOperation.summary",
         "workflowOrchestration.summary",
         "workflowOrchestration.operation",
+        "workflowOrchestration.templateReview",
         "workflowOrchestration.exportJson",
         "ontologyPath.read",
         "kpiCanvasNode.read",

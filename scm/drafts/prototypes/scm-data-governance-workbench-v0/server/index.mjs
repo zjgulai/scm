@@ -1497,6 +1497,106 @@ function countRowsBy(rows, keyField, valueField = "count") {
   }, {});
 }
 
+function getWorkflowTemplates() {
+  const sharedBoundary = {
+    importAllowed: false,
+    providerCalls: false,
+    erpWriteback: false,
+    ledgerMode: "local_sqlite"
+  };
+  return [
+    {
+      id: "template_metric_certification",
+      title: "指标认证发布流程",
+      appliesTo: "metric-engineering -> metric-dictionary -> chatbi",
+      trigger: "P0/P1 指标完成公式、粒度、字段映射或口径修订后触发。",
+      owner: "metric_owner",
+      defaultSla: "5 business days",
+      entryModuleId: "metric-engineering",
+      exitModuleId: "chatbi",
+      boundary: sharedBoundary,
+      steps: [
+        { key: "intake", name: "指标候选登记", actor: "指标工程 Owner", gate: "公式、粒度、方向、适用对象齐全", output: "metric_candidate", state: "draft" },
+        { key: "mapping", name: "字段与维度映射", actor: "数仓开发 / BI", gate: "物理字段、可用维度、血缘边齐全", output: "lineage_edges + metric_dimensions", state: "mapped" },
+        { key: "review", name: "Owner 口径审核", actor: "业务 Owner", gate: "口径、异常处理、业务边界确认", output: "review_note", state: "reviewed" },
+        { key: "certify", name: "语义认证发布", actor: "语义治理 Owner", gate: "通过质量规则和可答性检查", output: "certified_metric_context", state: "certified" },
+        { key: "replay", name: "审计复盘入账", actor: "治理 PMO", gate: "证据链、导出快照、审批记录可回看", output: "audit_event", state: "active" }
+      ]
+    },
+    {
+      id: "template_tag_dimension_mapping",
+      title: "标签/维度适配流程",
+      appliesTo: "tags -> dimensions -> ontology",
+      trigger: "新增标签、维度层级、分析口径或适用对象变更时触发。",
+      owner: "master_data_owner",
+      defaultSla: "4 business days",
+      entryModuleId: "tags",
+      exitModuleId: "dimensions",
+      boundary: sharedBoundary,
+      steps: [
+        { key: "intake", name: "规则草案登记", actor: "运营策略 / AI", gate: "标签类型、适用对象、规则表达式清楚", output: "tag_candidate", state: "draft" },
+        { key: "object_fit", name: "对象适配校验", actor: "对象本体 Owner", gate: "对象主键、状态、关系不冲突", output: "object_fit_report", state: "mapped" },
+        { key: "dimension_fit", name: "维度层级校验", actor: "主数据 Owner", gate: "维度层级、枚举值、历史版本可追踪", output: "dimension_mapping", state: "reviewed" },
+        { key: "publish", name: "发布到工作台账本", actor: "治理 PMO", gate: "仅发布规则定义和证据，不导入生产数据", output: "ledger_rule", state: "active" }
+      ]
+    },
+    {
+      id: "template_object_graph_revision",
+      title: "对象图谱修订建议流程",
+      appliesTo: "ontology -> lineage-quality -> workflow-orchestration",
+      trigger: "对象属性、对象关系、关键实例或指标作用对象存在疑点时触发。",
+      owner: "ontology_owner",
+      defaultSla: "6 business days",
+      entryModuleId: "ontology",
+      exitModuleId: "workflow-orchestration",
+      boundary: sharedBoundary,
+      steps: [
+        { key: "observe", name: "对象证据定位", actor: "供应链分析师", gate: "定位对象、关系、指标或质量证据", output: "object_evidence_pack", state: "draft" },
+        { key: "proposal", name: "修订建议创建", actor: "AI / 分析师", gate: "提出明确当前值、建议值、原因和证据", output: "revision_proposal", state: "mapped" },
+        { key: "impact", name: "血缘影响评估", actor: "数据架构", gate: "识别影响指标、维度、ChatBI 上下文", output: "impact_assessment", state: "reviewed" },
+        { key: "decision", name: "Owner 裁决", actor: "对象 Owner", gate: "批准、拒绝或退回补证", output: "review_decision", state: "certified" },
+        { key: "audit", name: "审计留痕", actor: "治理 PMO", gate: "不改生产对象，只记录建议和裁决", output: "audit_event", state: "active" }
+      ]
+    },
+    {
+      id: "template_chatbi_answerability",
+      title: "ChatBI 可答性治理流程",
+      appliesTo: "ai-chat -> chatbi -> metric-dictionary",
+      trigger: "AI 问答出现无法证明、未认证指标、证据不足或用户负反馈时触发。",
+      owner: "chatbi_owner",
+      defaultSla: "3 business days",
+      entryModuleId: "ai-chat",
+      exitModuleId: "chatbi",
+      boundary: sharedBoundary,
+      steps: [
+        { key: "question", name: "问题样本登记", actor: "业务用户 / AI", gate: "保存问法、意图、证据片段和拒答原因", output: "question_sample", state: "draft" },
+        { key: "context", name: "认证上下文匹配", actor: "ChatBI Owner", gate: "只匹配 certified 指标、维度、对象和知识卡", output: "chatbi_context", state: "mapped" },
+        { key: "evidence", name: "证据链复核", actor: "指标 Owner / 知识库维护人", gate: "指标口径、来源、数据状态可追溯", output: "evidence_review", state: "reviewed" },
+        { key: "dry_run", name: "拒答/回答 dry-run", actor: "语义治理 Owner", gate: "未认证内容必须返回拒答原因", output: "dry_run_result", state: "certified" },
+        { key: "feedback", name: "反馈入池", actor: "治理 PMO", gate: "用户反馈生成可追踪治理任务", output: "feedback_task", state: "active" }
+      ]
+    },
+    {
+      id: "template_role_decision_loop",
+      title: "角色行动闭环流程",
+      appliesTo: "role-workbench -> decision-loop -> audit-log",
+      trigger: "计划、采购、库存、物流、成本角色生成 L1 行动草稿时触发。",
+      owner: "operation_owner",
+      defaultSla: "7 business days",
+      entryModuleId: "role-workbench",
+      exitModuleId: "decision-loop",
+      boundary: sharedBoundary,
+      steps: [
+        { key: "queue", name: "角色队列入池", actor: "角色 Agent / 业务 Owner", gate: "对象、风险、指标和建议来源明确", output: "role_queue_item", state: "draft" },
+        { key: "draft", name: "行动草稿生成", actor: "AI 角色", gate: "不调用 provider，不写回业务系统", output: "l1_action_draft", state: "mapped" },
+        { key: "approval", name: "人工审批", actor: "业务负责人", gate: "确认阈值、风险、执行边界和负责人", output: "approval_record", state: "reviewed" },
+        { key: "task", name: "任务跟踪", actor: "执行 Owner", gate: "任务状态、结果、异常说明可回填", output: "action_task", state: "active" },
+        { key: "replay", name: "复盘沉淀", actor: "治理 PMO", gate: "记录结果、收益、偏差和下轮规则修订", output: "decision_log", state: "active" }
+      ]
+    }
+  ];
+}
+
 function getWorkflowOrchestrationSummary(url = new URL("http://local/api/workflow-orchestration/summary")) {
   const modules = getWorkbenchModules();
   const workflowRows = all(`
@@ -1617,6 +1717,7 @@ function getWorkflowOrchestrationSummary(url = new URL("http://local/api/workflo
     },
     recentWorkflows: getWorkflowInstances(new URL(`http://local/api/workflows?limit=${parseLimit(url, 12, 80)}`)),
     recentOperations: getWorkbenchOperations(new URL(`http://local/api/workbench/operations?limit=${parseLimit(url, 12, 80)}`)),
+    templates: getWorkflowTemplates(),
     handoffs: [
       { from: "ai-knowledge", to: "chatbi", contract: "知识卡/证据片段 -> 可回答性样本与认证上下文", status: "active" },
       { from: "ontology", to: "metric-engineering", contract: "对象主键/关系 -> 指标粒度、作用对象与字段映射", status: "mapped" },
@@ -6430,7 +6531,7 @@ function renderExcelHtml(moduleExport) {
   </style>
 </head>
 <body>
-  <h1>${escapeHtml(moduleExport.module.title)} - SCM Governance Export</h1>
+  <h1>${escapeHtml(moduleExport.module.title)} - AIP-SCM Export</h1>
   ${tables}
 </body>
 </html>`;

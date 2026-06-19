@@ -184,7 +184,7 @@ Verified locally at: `2026-06-19`
 | Role export | `passed_local` | Workflow smoke `roleWorkbench.exportJson`, `roleWorkbench.exportExcel` |
 | Role UI | `passed_local` | Browser Harness `.roleWorkbench`, `.roleSummaryGrid`, `.roleRail`, `.roleQueueGrid`, `.providerPolicyPanel`, `.evalCasePanel`, `.roleActionDraftButton` |
 | Responsive gate | `passed_local` | Browser Harness checked all 14 modules at `1350x900`, `1024x900`, `768x900`, `390x900` |
-| Public deployment | `not_done_yet` | Public site has not been updated for Batch 5 in this local verification section |
+| Public deployment | `passed_public` | Public release `scm-workbench-batch5-role-provider-291931d-20260619181343`; Browser Harness passed against `https://scm.lute-tlz-dddd.top/` |
 
 Verification commands:
 
@@ -204,6 +204,35 @@ Boundary:
 - no DeepSeek/Kimi/provider call;
 - no ERP/Jijia/WMS/TMS writeback;
 - role action draft only writes local SQLite governance ledger.
+
+## 13. Batch 5 Public Deployment Status
+
+Deployed at: `2026-06-19`
+
+| Item | Status | Evidence |
+|---|---|---|
+| Release directory | `active_public` | `/opt/scm-governance-workbench/releases/scm-workbench-batch5-role-provider-291931d-20260619181343` |
+| Backup directory | `created` | `/opt/scm-governance-workbench/backups/20260619181343-before-batch5-role-provider` |
+| Deployed application commit | `291931d` | `feat(scm): add role provider governance workbench` |
+| Docker build | `passed_public` | `docker compose -f docker-compose.yml -f docker-compose.tencent.yml up -d --build` |
+| Public role summary | `passed_public` | `/api/roles/summary`: `roles=5`, `rolePlaybooks=5`, `evalCases=5`, `providerPolicies=2`, `disabledProviders=2` |
+| Public provider policies | `passed_public` | `/api/provider-gateway/policies`: DeepSeek/Kimi both `disabled` |
+| Public agent eval cases | `passed_public` | `/api/agent-evals`: 5 role-bound eval cases |
+| Public modules | `passed_public` | `/api/workbench/modules`: 14 modules, including `role-workbench` |
+| Public Browser Harness | `passed_public` | 14 modules checked; role workbench DOM passed; responsive checked at `1350x900`, `1024x900`, `768x900`, `390x900` |
+
+Public verification command:
+
+```bash
+REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser
+```
+
+Public boundary:
+
+- `productionWrites=false`;
+- `providerCalls=false`;
+- `erpWriteback=false`;
+- public Browser Harness did not create ledger writes.
 
 ## 12. Batch 4 Public Deployment And Acceptance
 

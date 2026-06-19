@@ -91,13 +91,13 @@ docker compose -p scm_governance_workbench -f docker-compose.yml -f docker-compo
 
 ## SQLite 备份与迁移
 
-SQLite 台账通过 Docker named volume 持久化，默认 volume 名称为：
+SQLite 台账通过 Docker external named volume 持久化，默认 volume 名称为：
 
 ```text
 scm_governance_workbench_scm-governance-data
 ```
 
-首次切换到 volume 或部署前建议先执行 volume 准备脚本。脚本会优先从正在运行的 `scm-governance-workbench` 容器复制 `/app/data/governance_workbench.sqlite`，如果 volume 已有数据库则默认不覆盖：
+首次切换到 volume 或部署前必须先执行 volume 准备脚本。脚本会优先从正在运行的 `scm-governance-workbench` 容器复制 `/app/data/governance_workbench.sqlite`，如果 volume 已有数据库则默认不覆盖。Compose 将该 volume 视为 external，避免后续 `down -v` 误删台账：
 
 ```bash
 cd /opt/scm-governance-workbench/current

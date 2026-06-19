@@ -96,7 +96,7 @@ node -e "const { DatabaseSync } = require('node:sqlite'); const db = new Databas
 
 ## 6. 恢复
 
-生产部署使用 Docker named volume 保存 SQLite 台账，默认 volume 名为：
+生产部署使用 Docker external named volume 保存 SQLite 台账，默认 volume 名为：
 
 ```text
 scm_governance_workbench_scm-governance-data

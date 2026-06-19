@@ -22,7 +22,8 @@ services:
 
 volumes:
   scm-governance-data:
-    driver: local
+    external: true
+    name: scm_governance_workbench_scm-governance-data
 
 networks:
   scm-governance-net:

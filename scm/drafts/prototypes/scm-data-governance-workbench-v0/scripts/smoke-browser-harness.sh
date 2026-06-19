@@ -276,6 +276,13 @@ for label in expected:
           promptVersionList: !!document.querySelector('.promptVersionList'),
           providerCallAuditList: !!document.querySelector('.providerCallAuditList'),
           providerDryRunButton: !!document.querySelector('.providerDryRunButton'),
+          platformReadinessPanel: !!document.querySelector('.platformReadinessPanel'),
+          platformReadinessStats: document.querySelectorAll('.platformReadinessStats > div').length,
+          platformReadinessColumns: document.querySelectorAll('.platformReadinessGrid > div').length,
+          rbacPolicyCards: document.querySelectorAll('.rbacPolicyList article').length,
+          postgresTriggerCards: document.querySelectorAll('.postgresTriggerList article').length,
+          postgresFindingCards: document.querySelectorAll('.postgresFindingList article').length,
+          writebackRiskCards: document.querySelectorAll('.writebackRiskList article').length,
           evalCasePanel: !!document.querySelector('.evalCasePanel'),
           actionButton: !!document.querySelector('.roleActionDraftButton'),
           slaPanel: !!document.querySelector('.roleSlaPanel'),
@@ -285,7 +292,8 @@ for label in expected:
           batchActionButton: !!document.querySelector('.roleBatchActionButton'),
           exports: document.querySelectorAll('.exportActions a').length,
           flow: !!document.querySelector('.workbenchFlowStrip'),
-          providerOffText: document.body.innerText.includes('provider off') || document.body.innerText.includes('default off')
+          providerOffText: document.body.innerText.includes('provider off') || document.body.innerText.includes('default off'),
+          platformBoundaryText: document.body.innerText.includes('login off') && document.body.innerText.includes('writeback disabled')
         }))()
         """)
         if (
@@ -305,6 +313,13 @@ for label in expected:
             or not role["promptVersionList"]
             or not role["providerCallAuditList"]
             or not role["providerDryRunButton"]
+            or not role["platformReadinessPanel"]
+            or role["platformReadinessStats"] < 4
+            or role["platformReadinessColumns"] < 4
+            or role["rbacPolicyCards"] < 3
+            or role["postgresTriggerCards"] < 5
+            or role["postgresFindingCards"] < 5
+            or role["writebackRiskCards"] < 4
             or not role["evalCasePanel"]
             or not role["actionButton"]
             or not role["slaPanel"]
@@ -315,6 +330,7 @@ for label in expected:
             or role["exports"] < 2
             or not role["flow"]
             or not role["providerOffText"]
+            or not role["platformBoundaryText"]
         ):
           raise SystemExit(f"Role workbench feature check failed: {role}")
         feature_checks.append({"roleWorkbench": role})

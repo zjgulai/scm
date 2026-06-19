@@ -564,8 +564,10 @@ REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm
 - [x] AIP-B5-009 prompt version 表
 - [x] AIP-B5-010 provider call audit
 - [x] AIP-B5-011 Agent eval cases
-- [ ] AIP-B5-012 future RBAC 设计
-- [ ] AIP-B5-013 SQLite -> Postgres 触发条件
+- [x] AIP-B5-012 future RBAC 设计
+- [x] AIP-B5-013 SQLite -> Postgres 触发条件
+- [x] AIP-B5-014 Postgres schema compatibility review
+- [x] AIP-B5-015 受控 write-back 评估
 
 Batch 5 第一片已完成：
 
@@ -583,9 +585,13 @@ Batch 5 第三片已完成：
 - smoke 覆盖 5 个角色域的画像、workstream、筛选、库存角色 JSON/Excel 导出；
 - 仍不启用排班系统，当前班次/SLA 是工作流提示，不是人力排班。
 
-仍未完成：
+Batch 5 第四片已完成：
 
-- B5-012 到 B5-015 的 RBAC、Postgres 迁移和 write-back 风险评估。
+- 已建立 `access_policy_drafts`、`postgres_migration_triggers`、`postgres_compatibility_findings`、`writeback_risk_assessments` 四张平台就绪度治理账本；
+- RBAC 只记录未来权限草案，当前仍不启用登录；
+- SQLite -> Postgres 只记录触发条件和 schema compatibility finding，当前仍使用 SQLite 治理账本；
+- write-back 只记录风险评估、审批门槛和回滚计划，所有外部业务系统写回仍为 `disabled` 或 `review_required`，不执行 ERP/Jijia/TMS 写入；
+- 角色工作台新增平台就绪度面板，并支持随 `role-workbench` JSON/Excel 只读导出。
 
 Batch 5 第二片已完成：
 

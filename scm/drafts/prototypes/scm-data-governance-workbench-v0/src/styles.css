@@ -4371,6 +4371,7 @@ tbody tr:hover td {
 .roleActionPanel,
 .roleBatchActionPanel,
 .roleSlaShiftGrid > section,
+.platformReadinessPanel,
 .roleSupportingGrid > section {
   min-width: 0;
   border: 1px solid var(--line);
@@ -4731,6 +4732,88 @@ tbody tr:hover td {
   font-size: 18px;
 }
 
+.platformReadinessPanel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  grid-column: 1 / -1;
+}
+
+.platformReadinessStats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.platformReadinessStats div {
+  min-width: 0;
+  padding: 12px;
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.platformReadinessStats span,
+.platformReadinessStats strong,
+.platformReadinessStats small {
+  display: block;
+  min-width: 0;
+}
+
+.platformReadinessStats span,
+.platformReadinessStats small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.platformReadinessStats strong {
+  margin: 5px 0 3px;
+  color: var(--ink);
+  font-size: 22px;
+}
+
+.platformReadinessGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.platformReadinessGrid > div {
+  min-width: 0;
+}
+
+.platformReadinessList {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.platformReadinessList article {
+  min-width: 0;
+  padding: 12px;
+  color: var(--ink);
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.platformReadinessList p {
+  margin: 7px 0;
+  color: var(--ink-2);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.platformReadinessList small {
+  display: block;
+  color: var(--muted);
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
 .providerGovernanceGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -4897,6 +4980,8 @@ tbody tr:hover td {
 .roleSummaryGrid,
 .roleQueueGrid,
 .roleSlaShiftGrid,
+.platformReadinessStats,
+.platformReadinessGrid,
 .orchestrationCommandBar,
 .orchestrationLaneCanvas,
 .templateMetaGrid,
@@ -5381,6 +5466,7 @@ input::placeholder {
     .roleQueueGrid,
     .roleSlaShiftGrid,
     .roleSupportingGrid,
+    .platformReadinessGrid,
     .providerGovernanceGrid {
 	    grid-template-columns: 1fr;
 	  }
@@ -5442,6 +5528,8 @@ input::placeholder {
   .roleSlaShiftGrid,
   .roleSupportingGrid,
   .providerReadinessStats,
+  .platformReadinessStats,
+  .platformReadinessGrid,
   .providerGovernanceGrid,
   .objectSignalGrid,
   .recommendationCards,

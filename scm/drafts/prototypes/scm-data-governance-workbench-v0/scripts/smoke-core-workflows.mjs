@@ -59,6 +59,11 @@ assert(health.database?.roleProviderGovernance?.boundary?.providerCalls === fals
 assert(health.database?.providerGateway?.decisionRecords >= 2, "Provider gateway decision records missing", health.database?.providerGateway);
 assert(health.database?.providerGateway?.promptVersions >= 3, "Provider gateway prompt versions missing", health.database?.providerGateway);
 assert(health.database?.providerGateway?.boundary?.providerCalls === false, "Provider gateway boundary changed", health.database?.providerGateway);
+assert(health.database?.platformReadiness?.summary?.rbacPolicies >= 3, "Platform readiness RBAC policies missing", health.database?.platformReadiness);
+assert(health.database?.platformReadiness?.summary?.postgresTriggers >= 5, "Platform readiness Postgres triggers missing", health.database?.platformReadiness);
+assert(health.database?.platformReadiness?.summary?.writebackAssessments >= 4, "Platform readiness writeback assessments missing", health.database?.platformReadiness);
+assert(health.database?.platformReadiness?.boundary?.loginEnabled === false, "Platform login boundary changed", health.database?.platformReadiness);
+assert(health.database?.platformReadiness?.boundary?.erpWriteback === false, "Platform writeback boundary changed", health.database?.platformReadiness);
 
 const modules = await request("/api/workbench/modules");
 assert(Array.isArray(modules) && modules.length === 15, "expected 15 workbench modules", { count: modules.length });
@@ -1040,6 +1045,26 @@ assert(providerBlockedDryRun.callAudit?.call_status === "blocked_disabled", "Pro
 const providerCallAudits = await request("/api/provider-gateway/call-audits?providerCode=deepseek");
 assert(Array.isArray(providerCallAudits) && providerCallAudits.some((audit) => audit.id === providerBlockedDryRun.callAudit.id), "Provider call audit filter failed", providerCallAudits);
 
+const platformReadiness = await request("/api/platform-readiness/summary");
+assert(platformReadiness.summary?.rbacPolicies >= 3, "Platform readiness summary missing RBAC policies", platformReadiness);
+assert(platformReadiness.summary?.loginEnabled === false, "Platform readiness login boundary changed", platformReadiness);
+assert(platformReadiness.summary?.enabledWritebacks === 0, "Platform readiness unexpectedly enabled writeback", platformReadiness);
+assert(platformReadiness.boundary?.postgresMigrationActive === false, "Platform readiness Postgres migration unexpectedly active", platformReadiness.boundary);
+
+const rbacPolicies = await request("/api/platform-readiness/rbac-policies");
+assert(Array.isArray(rbacPolicies) && rbacPolicies.length >= 3, "RBAC policy drafts missing", rbacPolicies);
+assert(rbacPolicies.every((policy) => policy.login_required === false), "RBAC policies should keep login disabled in current phase", rbacPolicies);
+
+const postgresTriggers = await request("/api/platform-readiness/postgres-triggers");
+assert(Array.isArray(postgresTriggers) && postgresTriggers.some((trigger) => trigger.status === "ready"), "Postgres migration triggers missing ready trigger", postgresTriggers);
+
+const postgresFindings = await request("/api/platform-readiness/postgres-findings");
+assert(Array.isArray(postgresFindings) && postgresFindings.some((finding) => finding.risk_level === "high"), "Postgres compatibility findings missing high risk finding", postgresFindings);
+
+const writebackAssessments = await request("/api/platform-readiness/writeback-assessments");
+assert(Array.isArray(writebackAssessments) && writebackAssessments.length >= 4, "Writeback risk assessments missing", writebackAssessments);
+assert(writebackAssessments.every((item) => item.status !== "enabled"), "Writeback assessment should not enable external writeback", writebackAssessments);
+
 const agentEvalCases = await request("/api/agent-evals");
 assert(Array.isArray(agentEvalCases) && agentEvalCases.length >= 5, "Agent eval cases missing", agentEvalCases);
 assert(agentEvalCases.some((item) => item.role_id === "role_inventory" && item.scenario_type === "negative_available_inventory"), "Inventory eval case missing", agentEvalCases);
@@ -1047,6 +1072,7 @@ assert(agentEvalCases.some((item) => item.role_id === "role_inventory" && item.s
 const roleWorkbenchExport = await request("/api/export/role-workbench?format=json");
 assert(roleWorkbenchExport.boundary?.mode === "read_only_export", "Role workbench JSON export is not read-only", roleWorkbenchExport.boundary);
 assert(roleWorkbenchExport.payload?.roles?.some((role) => role.id === "role_inventory"), "Role workbench JSON export missing inventory role", roleWorkbenchExport.payload);
+assert(roleWorkbenchExport.payload?.platformReadiness?.summary?.rbacPolicies >= 3, "Role workbench export missing platform readiness", roleWorkbenchExport.payload);
 
 const roleWorkbenchExcelExport = await requestRaw("/api/export/role-workbench?format=excel");
 assert(
@@ -1178,6 +1204,11 @@ console.log(
         "promptVersion.createDraftDisabled",
         "providerCallAudit.blockedDryRun",
         "providerCallAudit.filter",
+        "platformReadiness.summary",
+        "platformReadiness.rbacPolicies",
+        "platformReadiness.postgresTriggers",
+        "platformReadiness.postgresFindings",
+        "platformReadiness.writebackAssessments",
         "agentEvalCases.read",
         "roleWorkbench.exportJson",
         "roleWorkbench.exportExcel",

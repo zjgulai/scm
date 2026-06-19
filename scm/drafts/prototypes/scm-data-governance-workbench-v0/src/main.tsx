@@ -840,6 +840,89 @@ type ProviderGatewaySummary = {
   };
 };
 
+type AccessPolicyDraft = {
+  id: string;
+  role_code: string;
+  policy_name: string;
+  subject_role: string;
+  allowed_actions: unknown[];
+  object_scope: Record<string, unknown>;
+  approval_required: boolean;
+  login_required: boolean;
+  status: string;
+  owner: string;
+  risk_level: string;
+  evidence_refs: unknown[];
+};
+
+type PostgresMigrationTrigger = {
+  id: string;
+  trigger_code: string;
+  trigger_name: string;
+  threshold_value: number;
+  current_value: number;
+  unit: string;
+  status: string;
+  recommendation: string;
+  owner: string;
+  evidence_refs: unknown[];
+};
+
+type PostgresCompatibilityFinding = {
+  id: string;
+  table_name: string;
+  finding_type: string;
+  risk_level: string;
+  finding_detail: string;
+  postgres_recommendation: string;
+  status: string;
+  owner: string;
+  evidence_refs: unknown[];
+};
+
+type WritebackRiskAssessment = {
+  id: string;
+  target_system: string;
+  action_tier: string;
+  api_surface: string;
+  use_case: string;
+  risk_level: string;
+  approval_gate: string;
+  rollback_plan: string;
+  status: string;
+  evidence_refs: unknown[];
+};
+
+type PlatformReadinessPayload = {
+  summary: {
+    rbacPolicies: number;
+    loginEnabled: boolean;
+    loginRequiredPolicies: number;
+    approvalRequiredPolicies: number;
+    postgresTriggers: number;
+    readyTriggers: number;
+    watchTriggers: number;
+    postgresFindings: number;
+    highRiskFindings: number;
+    writebackAssessments: number;
+    enabledWritebacks: number;
+    disabledWritebacks: number;
+    reviewRequiredWritebacks: number;
+  };
+  rbacPolicies: AccessPolicyDraft[];
+  postgresTriggers: PostgresMigrationTrigger[];
+  postgresFindings: PostgresCompatibilityFinding[];
+  writebackAssessments: WritebackRiskAssessment[];
+  boundary: {
+    loginEnabled: boolean;
+    postgresMigrationActive: boolean;
+    providerCalls: boolean;
+    erpWriteback: boolean;
+    importAllowed: boolean;
+    writebackPolicy: string;
+  };
+};
+
 type RoleWorkbenchDetail = {
   role: RoleWorkbench;
   domainProfile: RoleDomainProfile;
@@ -862,6 +945,7 @@ type RoleWorkbenchDetail = {
   promptVersions: PromptVersion[];
   providerCallAudits: ProviderCallAudit[];
   providerGatewaySummary: ProviderGatewaySummary;
+  platformReadiness: PlatformReadinessPayload;
   actionBoundary: AnyRow;
 };
 
@@ -875,6 +959,7 @@ type RoleGovernanceSummary = {
   providerDecisionRecords: number;
   promptVersions: number;
   providerCallAudits: number;
+  platformReadiness?: PlatformReadinessPayload["summary"];
   roleQueues: Array<{ id: string; roleName: string; owner: string; counts?: RoleWorkbench["counts"] }>;
   boundary: {
     providerCalls: boolean;
@@ -5509,6 +5594,36 @@ function RecommendationQueuePanel({ onOpenAsset }: { onOpenAsset: (asset: AssetR
   );
 }
 
+const emptyPlatformReadiness: PlatformReadinessPayload = {
+  summary: {
+    rbacPolicies: 0,
+    loginEnabled: false,
+    loginRequiredPolicies: 0,
+    approvalRequiredPolicies: 0,
+    postgresTriggers: 0,
+    readyTriggers: 0,
+    watchTriggers: 0,
+    postgresFindings: 0,
+    highRiskFindings: 0,
+    writebackAssessments: 0,
+    enabledWritebacks: 0,
+    disabledWritebacks: 0,
+    reviewRequiredWritebacks: 0
+  },
+  rbacPolicies: [],
+  postgresTriggers: [],
+  postgresFindings: [],
+  writebackAssessments: [],
+  boundary: {
+    loginEnabled: false,
+    postgresMigrationActive: false,
+    providerCalls: false,
+    erpWriteback: false,
+    importAllowed: false,
+    writebackPolicy: "assessment_only_all_external_writeback_disabled_or_review_required"
+  }
+};
+
 const emptyRoleDetail: RoleWorkbenchDetail = {
   role: {
     id: "",
@@ -5583,6 +5698,7 @@ const emptyRoleDetail: RoleWorkbenchDetail = {
       policy: "dry_run_audit_only_until_provider_enabled_with_owner_approval_eval_and_budget"
     }
   },
+  platformReadiness: emptyPlatformReadiness,
   actionBoundary: {}
 };
 
@@ -5596,6 +5712,7 @@ const emptyRoleSummary: RoleGovernanceSummary = {
   providerDecisionRecords: 0,
   promptVersions: 0,
   providerCallAudits: 0,
+  platformReadiness: emptyPlatformReadiness.summary,
   roleQueues: [],
   boundary: {
     providerCalls: false,
@@ -5649,6 +5766,7 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
   const roles = useApi<RoleWorkbench[]>(`/api/roles/workbenches?refresh=${refresh}`, []);
   const detail = useApi<RoleWorkbenchDetail>(`/api/roles/workbenches/${encodeURIComponent(selectedRoleId)}?${roleFilterQuery.toString()}`, emptyRoleDetail);
   const activeRole = detail.data.role;
+  const platformReadiness = detail.data.platformReadiness || emptyPlatformReadiness;
   const roleDomain = detail.data.domainProfile;
   const firstObject = detail.data.objects[0];
   const firstEvent = detail.data.events[0];
@@ -6158,6 +6276,99 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
                       {providerDryRun ? "记录中..." : "记录 blocked dry-run"}
                     </button>
                     {providerAuditNote ? <div className="kbNotice compact">{providerAuditNote}</div> : null}
+                  </div>
+                </div>
+              </section>
+              <section className="platformReadinessPanel">
+                <div className="surfaceHead">
+                  <div>
+                    <h3>平台就绪度</h3>
+                    <p className="muted">RBAC、SQLite/Postgres、schema 兼容性和 write-back 只进入治理账本；当前保持本地 SQLite、无登录、无业务系统写回。</p>
+                  </div>
+                  <div className="badgeCluster">
+                    <Badge tone="good">login off</Badge>
+                    <Badge tone="good">writeback disabled</Badge>
+                    <Badge tone="blue">SQLite ledger</Badge>
+                  </div>
+                </div>
+                <div className="platformReadinessStats">
+                  <div><span>RBAC 草案</span><strong>{platformReadiness.summary.rbacPolicies}</strong><small>{platformReadiness.summary.approvalRequiredPolicies} approval gated</small></div>
+                  <div><span>Postgres 触发器</span><strong>{platformReadiness.summary.postgresTriggers}</strong><small>{platformReadiness.summary.readyTriggers} ready / {platformReadiness.summary.watchTriggers} watch</small></div>
+                  <div><span>兼容性发现</span><strong>{platformReadiness.summary.postgresFindings}</strong><small>{platformReadiness.summary.highRiskFindings} high risk</small></div>
+                  <div><span>Write-back 评估</span><strong>{platformReadiness.summary.writebackAssessments}</strong><small>{platformReadiness.summary.disabledWritebacks} disabled / {platformReadiness.summary.reviewRequiredWritebacks} review</small></div>
+                </div>
+                <div className="platformReadinessGrid">
+                  <div>
+                    <div className="sectionLabel">
+                      <span>RBAC</span>
+                      <strong>未来权限草案</strong>
+                    </div>
+                    <div className="platformReadinessList rbacPolicyList">
+                      {platformReadiness.rbacPolicies.map((policy) => (
+                        <article key={policy.id}>
+                          <div className="ledgerItemHead">
+                            <strong>{policy.policy_name}</strong>
+                            <Badge tone={toneFromStatus(policy.risk_level)}>{policy.status}</Badge>
+                          </div>
+                          <p>{policy.subject_role} / {policy.role_code}</p>
+                          <small>{cellValue(policy.allowed_actions)} · login {policy.login_required ? "required" : "off"}</small>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="sectionLabel">
+                      <span>Postgres</span>
+                      <strong>迁移触发条件</strong>
+                    </div>
+                    <div className="platformReadinessList postgresTriggerList">
+                      {platformReadiness.postgresTriggers.map((trigger) => (
+                        <article key={trigger.id}>
+                          <div className="ledgerItemHead">
+                            <strong>{trigger.trigger_name}</strong>
+                            <Badge tone={toneFromStatus(trigger.status)}>{trigger.status}</Badge>
+                          </div>
+                          <p>{trigger.current_value}/{trigger.threshold_value} {trigger.unit}</p>
+                          <small>{trigger.recommendation}</small>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="sectionLabel">
+                      <span>Schema</span>
+                      <strong>兼容性审计</strong>
+                    </div>
+                    <div className="platformReadinessList postgresFindingList">
+                      {platformReadiness.postgresFindings.map((finding) => (
+                        <article key={finding.id}>
+                          <div className="ledgerItemHead">
+                            <strong>{finding.table_name}</strong>
+                            <Badge tone={toneFromStatus(finding.risk_level)}>{finding.finding_type}</Badge>
+                          </div>
+                          <p>{finding.finding_detail}</p>
+                          <small>{finding.postgres_recommendation}</small>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="sectionLabel">
+                      <span>Write-back</span>
+                      <strong>受控写回评估</strong>
+                    </div>
+                    <div className="platformReadinessList writebackRiskList">
+                      {platformReadiness.writebackAssessments.map((item) => (
+                        <article key={item.id}>
+                          <div className="ledgerItemHead">
+                            <strong>{item.target_system}</strong>
+                            <Badge tone={toneFromStatus(item.status)}>{item.status}</Badge>
+                          </div>
+                          <p>{item.use_case}</p>
+                          <small>{item.approval_gate}</small>
+                        </article>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </section>

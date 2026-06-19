@@ -3,7 +3,7 @@ title: "供应链治理工作台 E2E 验收矩阵"
 status: "draft"
 created_at: "2026-06-18"
 updated_at: "2026-06-19"
-scope: "P0 browser smoke, P1 workflow operations, P2 KB governance, P2 AI question samples and feedback, PRD v2.0 AIP Phase 1 acceptance gates, ontology path, decision state machine, ChatBI certification, audit log smoke"
+scope: "P0 browser smoke, P1 workflow operations, P2 KB governance, P2 AI question samples and feedback, PRD v2.0 AIP Phase 1 acceptance gates, ontology path, decision state machine, ChatBI certification, audit log smoke, platform readiness governance"
 boundary: "test design and executable smoke scripts; no ERP/Jijia writeback; provider calls remain disabled"
 ---
 
@@ -120,6 +120,8 @@ ALLOW_LEDGER_WRITE_SMOKE=1 SCM_WORKBENCH_URL=https://staging.example.com npm run
 | 断货风险 | `REQUIRE_AIP_SCENARIOS=1` Browser Harness + local workflow smoke | 能展示 SKU -> Listing -> PO/Shipment/InventoryBatch 路径和补货/调拨行动卡 |
 | 库龄/超储 | `REQUIRE_AIP_SCENARIOS=1` Browser Harness + local workflow smoke | 能展示 InventoryBatch/Warehouse/SKU 健康分和调拨/清仓/促销行动卡 |
 | 角色域工作台 | `smoke-core-workflows.mjs` + Browser Harness DOM check | 计划、采购、库存、物流、成本 5 个角色均有 domainProfile、workstream、筛选、行动草稿和只读导出 |
+| 平台就绪度治理 | `smoke-core-workflows.mjs` + Browser Harness DOM check | `/api/platform-readiness/summary` 返回 RBAC 草案、Postgres 触发条件、兼容性发现和 write-back 评估；角色工作台存在 `.platformReadinessPanel`，并显示 `login off`、`writeback disabled` |
+| 平台就绪度导出 | `smoke-core-workflows.mjs` | `role-workbench` JSON/Excel 只读导出包含 `platformReadiness`，不允许导入、provider call 或 ERP/Jijia write-back |
 
 ## 4. 当前限制
 

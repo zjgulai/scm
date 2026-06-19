@@ -58,6 +58,7 @@ ensureAipPhase1Schema();
 ensureKnowledgeRulesSchema();
 ensureRoleProviderGovernanceSchema();
 ensureProviderGatewayReadinessSchema();
+ensurePlatformReadinessSchema();
 
 function json(res, payload, status = 200) {
   const body = JSON.stringify(payload);
@@ -696,6 +697,7 @@ seedKbDomains();
 seedAipPhase1Data();
 seedRoleProviderGovernanceData();
 seedProviderGatewayReadinessData();
+seedPlatformReadinessData();
 
 function writeAudit(eventType, assetType, assetId, payload, actor = "local_user") {
   const id = makeId("audit");
@@ -2301,6 +2303,80 @@ function ensureProviderGatewayReadinessSchema() {
   `);
 }
 
+function ensurePlatformReadinessSchema() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS access_policy_drafts (
+      id TEXT PRIMARY KEY,
+      role_code TEXT NOT NULL DEFAULT '',
+      policy_name TEXT NOT NULL,
+      subject_role TEXT NOT NULL DEFAULT '',
+      allowed_actions TEXT NOT NULL DEFAULT '[]',
+      object_scope TEXT NOT NULL DEFAULT '{}',
+      approval_required INTEGER NOT NULL DEFAULT 1,
+      login_required INTEGER NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'draft',
+      owner TEXT NOT NULL DEFAULT 'platform_governance_owner',
+      risk_level TEXT NOT NULL DEFAULT 'medium',
+      evidence_refs TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_access_policy_drafts_role ON access_policy_drafts(role_code, status, risk_level);
+    CREATE INDEX IF NOT EXISTS idx_access_policy_drafts_subject ON access_policy_drafts(subject_role, approval_required, login_required);
+
+    CREATE TABLE IF NOT EXISTS postgres_migration_triggers (
+      id TEXT PRIMARY KEY,
+      trigger_code TEXT NOT NULL UNIQUE,
+      trigger_name TEXT NOT NULL,
+      threshold_value REAL NOT NULL DEFAULT 0,
+      current_value REAL NOT NULL DEFAULT 0,
+      unit TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'watch',
+      recommendation TEXT NOT NULL DEFAULT '',
+      owner TEXT NOT NULL DEFAULT 'platform_governance_owner',
+      evidence_refs TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_postgres_migration_triggers_status ON postgres_migration_triggers(status, trigger_code);
+
+    CREATE TABLE IF NOT EXISTS postgres_compatibility_findings (
+      id TEXT PRIMARY KEY,
+      table_name TEXT NOT NULL,
+      finding_type TEXT NOT NULL DEFAULT '',
+      risk_level TEXT NOT NULL DEFAULT 'medium',
+      finding_detail TEXT NOT NULL DEFAULT '',
+      postgres_recommendation TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'review_pending',
+      owner TEXT NOT NULL DEFAULT 'platform_governance_owner',
+      evidence_refs TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_postgres_compatibility_findings_table ON postgres_compatibility_findings(table_name, risk_level, status);
+
+    CREATE TABLE IF NOT EXISTS writeback_risk_assessments (
+      id TEXT PRIMARY KEY,
+      target_system TEXT NOT NULL DEFAULT '',
+      action_tier TEXT NOT NULL DEFAULT 'L3',
+      api_surface TEXT NOT NULL DEFAULT '',
+      use_case TEXT NOT NULL DEFAULT '',
+      risk_level TEXT NOT NULL DEFAULT 'high',
+      approval_gate TEXT NOT NULL DEFAULT '',
+      rollback_plan TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'disabled',
+      evidence_refs TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_writeback_risk_assessments_status ON writeback_risk_assessments(status, risk_level, target_system);
+  `);
+}
+
 function parseJsonValue(value, fallback) {
   if (value && typeof value === "object") return value;
   try {
@@ -2397,6 +2473,44 @@ function rowToPromptVersion(row) {
 }
 
 function rowToProviderCallAudit(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    evidence_refs: parseJsonValue(row.evidence_refs, [])
+  };
+}
+
+function rowToAccessPolicyDraft(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    approval_required: Boolean(row.approval_required),
+    login_required: Boolean(row.login_required),
+    allowed_actions: parseJsonValue(row.allowed_actions, []),
+    object_scope: parseJsonValue(row.object_scope, {}),
+    evidence_refs: parseJsonValue(row.evidence_refs, [])
+  };
+}
+
+function rowToPostgresMigrationTrigger(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    threshold_value: Number(row.threshold_value || 0),
+    current_value: Number(row.current_value || 0),
+    evidence_refs: parseJsonValue(row.evidence_refs, [])
+  };
+}
+
+function rowToPostgresCompatibilityFinding(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    evidence_refs: parseJsonValue(row.evidence_refs, [])
+  };
+}
+
+function rowToWritebackRiskAssessment(row) {
   if (!row) return null;
   return {
     ...row,
@@ -3065,6 +3179,331 @@ function seedProviderGatewayReadinessData() {
       seededAt
     ]
   );
+}
+
+function seedPlatformReadinessData() {
+  if (!tableExists("access_policy_drafts")) return;
+  const seededAt = nowIso();
+  let inserted = false;
+  const rbacPolicies = [
+    {
+      id: "rbac_platform_admin_draft",
+      role_code: "platform_admin",
+      policy_name: "平台治理管理员草案",
+      subject_role: "data_governance_admin",
+      allowed_actions: ["view_all", "export_json", "export_excel", "review_task", "manage_policy_draft"],
+      object_scope: { modules: ["all"], objects: ["governance_ledger", "knowledge_base", "role_workbench"] },
+      approval_required: 1,
+      login_required: 0,
+      status: "future_design",
+      owner: "平台治理 Owner",
+      risk_level: "medium",
+      evidence_refs: ["prd_v2:governance_lifecycle", "decision:user_no_login_for_now"]
+    },
+    {
+      id: "rbac_owner_reviewer_draft",
+      role_code: "owner_reviewer",
+      policy_name: "Owner 审核者草案",
+      subject_role: "metric_or_object_owner",
+      allowed_actions: ["view_assigned", "comment", "review_task", "approve_l1_action", "export_evidence"],
+      object_scope: { modules: ["metric-dictionary", "role-workbench", "decision-loop"], objects: ["assigned_owner_assets"] },
+      approval_required: 1,
+      login_required: 0,
+      status: "future_design",
+      owner: "供应链数据治理 Owner",
+      risk_level: "medium",
+      evidence_refs: ["prd_v2:owner_signoff", "workflow:workbench_operations"]
+    },
+    {
+      id: "rbac_viewer_export_draft",
+      role_code: "viewer_export",
+      policy_name: "只读查看与导出草案",
+      subject_role: "business_viewer",
+      allowed_actions: ["view_certified", "export_json", "export_excel"],
+      object_scope: { modules: ["overview", "ai-knowledge", "kpi-system"], objects: ["certified_or_draft_visible_assets"] },
+      approval_required: 0,
+      login_required: 0,
+      status: "future_design",
+      owner: "平台治理 Owner",
+      risk_level: "low",
+      evidence_refs: ["acceptance:json_excel_export", "boundary:import_disabled"]
+    }
+  ];
+  rbacPolicies.forEach((item) => {
+    const result = run(
+      `INSERT OR IGNORE INTO access_policy_drafts
+        (id, role_code, policy_name, subject_role, allowed_actions, object_scope, approval_required,
+         login_required, status, owner, risk_level, evidence_refs, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        item.id,
+        item.role_code,
+        item.policy_name,
+        item.subject_role,
+        JSON.stringify(item.allowed_actions),
+        JSON.stringify(item.object_scope),
+        item.approval_required,
+        item.login_required,
+        item.status,
+        item.owner,
+        item.risk_level,
+        JSON.stringify(item.evidence_refs),
+        seededAt,
+        seededAt
+      ]
+    );
+    inserted = inserted || result.changes > 0;
+  });
+
+  const migrationTriggers = [
+    {
+      id: "pg_trigger_db_size",
+      trigger_code: "sqlite_file_size_mb",
+      trigger_name: "SQLite 文件体积",
+      threshold_value: 1024,
+      current_value: 48,
+      unit: "MB",
+      status: "watch",
+      recommendation: "低于 1GB 时继续 SQLite；接近阈值后启动 Postgres staging migration rehearsal。",
+      owner: "平台治理 Owner",
+      evidence_refs: ["deploy:sqlite_volume", "ops:backup_snapshot"]
+    },
+    {
+      id: "pg_trigger_concurrent_users",
+      trigger_code: "concurrent_governance_users",
+      trigger_name: "并发治理用户",
+      threshold_value: 15,
+      current_value: 1,
+      unit: "users",
+      status: "watch",
+      recommendation: "多人同时编辑、审核和导出前，先引入登录、行级权限和 Postgres transaction isolation。",
+      owner: "平台治理 Owner",
+      evidence_refs: ["decision:no_login_for_now", "workflow:owner_review"]
+    },
+    {
+      id: "pg_trigger_write_rate",
+      trigger_code: "ledger_writes_per_day",
+      trigger_name: "治理台账日写入量",
+      threshold_value: 5000,
+      current_value: 120,
+      unit: "rows/day",
+      status: "watch",
+      recommendation: "高频 action、feedback、audit 写入前，拆分 audit/event 表并规划 Postgres 分区。",
+      owner: "平台治理 Owner",
+      evidence_refs: ["tables:audit_events", "tables:workbench_operations"]
+    },
+    {
+      id: "pg_trigger_rpo",
+      trigger_code: "backup_rpo_minutes",
+      trigger_name: "备份 RPO 要求",
+      threshold_value: 15,
+      current_value: 1440,
+      unit: "minutes",
+      status: "ready",
+      recommendation: "一旦要求 15 分钟以内恢复点，SQLite 文件备份不足，需要 Postgres 自动备份与 PITR。",
+      owner: "运维 Owner",
+      evidence_refs: ["ops:tencent_lighthouse", "deploy:docker_volume"]
+    },
+    {
+      id: "pg_trigger_query_latency",
+      trigger_code: "analytics_query_latency_ms",
+      trigger_name: "复杂分析查询延迟",
+      threshold_value: 1500,
+      current_value: 260,
+      unit: "ms",
+      status: "watch",
+      recommendation: "对象图谱、血缘路径和全文检索查询持续超阈值后再切换 Postgres + FTS/vector sidecar。",
+      owner: "平台治理 Owner",
+      evidence_refs: ["api:workbench_modules", "api:ai_chat_local"]
+    }
+  ];
+  migrationTriggers.forEach((item) => {
+    const result = run(
+      `INSERT OR IGNORE INTO postgres_migration_triggers
+        (id, trigger_code, trigger_name, threshold_value, current_value, unit, status,
+         recommendation, owner, evidence_refs, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        item.id,
+        item.trigger_code,
+        item.trigger_name,
+        item.threshold_value,
+        item.current_value,
+        item.unit,
+        item.status,
+        item.recommendation,
+        item.owner,
+        JSON.stringify(item.evidence_refs),
+        seededAt,
+        seededAt
+      ]
+    );
+    inserted = inserted || result.changes > 0;
+  });
+
+  const compatibilityFindings = [
+    {
+      id: "pg_find_json_text_columns",
+      table_name: "workbench_operations",
+      finding_type: "json_text",
+      risk_level: "medium",
+      finding_detail: "SQLite 中以 TEXT 保存 operation_payload、target_asset_ids；迁移到 Postgres 时应转为 jsonb 并补 GIN 索引。",
+      postgres_recommendation: "将 JSON TEXT 字段映射为 jsonb，保留兼容 view 或 adapter。",
+      status: "review_pending",
+      owner: "平台治理 Owner",
+      evidence_refs: ["table:workbench_operations", "api:workflow_orchestration"]
+    },
+    {
+      id: "pg_find_boolean_integer",
+      table_name: "provider_gateway_policies",
+      finding_type: "boolean_integer",
+      risk_level: "low",
+      finding_detail: "SQLite 用 0/1 表达 evidence_required、approval_required 等布尔字段；Postgres 应使用 boolean。",
+      postgres_recommendation: "迁移脚本显式 CAST，接口层继续返回 boolean。",
+      status: "review_pending",
+      owner: "平台治理 Owner",
+      evidence_refs: ["table:provider_gateway_policies", "table:access_policy_drafts"]
+    },
+    {
+      id: "pg_find_datetime_text",
+      table_name: "audit_events",
+      finding_type: "datetime_text",
+      risk_level: "medium",
+      finding_detail: "created_at/updated_at 当前为 ISO TEXT；Postgres 应使用 timestamptz，避免跨时区排序和 SLA 计算误差。",
+      postgres_recommendation: "统一 timestamptz DEFAULT now()，导入时保留原始 created_at。",
+      status: "review_pending",
+      owner: "运维 Owner",
+      evidence_refs: ["table:audit_events", "acceptance:e2e_matrix"]
+    },
+    {
+      id: "pg_find_fts_gap",
+      table_name: "kb_cards",
+      finding_type: "search_index",
+      risk_level: "medium",
+      finding_detail: "本地知识库检索仍以 LIKE/轻量扫描为主；Postgres 后应补全文检索或向量 sidecar。",
+      postgres_recommendation: "先建 tsvector/GIN，再评估 pgvector；ChatBI 仍通过认证语义层读取。",
+      status: "review_pending",
+      owner: "AI Governance Owner",
+      evidence_refs: ["api:ai_chat_local", "boundary:no_free_nl2sql"]
+    },
+    {
+      id: "pg_find_foreign_key_gap",
+      table_name: "ontology_links",
+      finding_type: "referential_integrity",
+      risk_level: "high",
+      finding_detail: "对象、指标、血缘、workflow 的部分关系只靠业务约定；Postgres 迁移时应补外键或延迟约束。",
+      postgres_recommendation: "先做 orphan audit，再分阶段补 FK/unique constraints，避免破坏现有 draft 数据。",
+      status: "review_pending",
+      owner: "平台治理 Owner",
+      evidence_refs: ["table:ontology_links", "table:lineage_edges", "table:kpi_canvas_nodes"]
+    }
+  ];
+  compatibilityFindings.forEach((item) => {
+    const result = run(
+      `INSERT OR IGNORE INTO postgres_compatibility_findings
+        (id, table_name, finding_type, risk_level, finding_detail, postgres_recommendation,
+         status, owner, evidence_refs, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        item.id,
+        item.table_name,
+        item.finding_type,
+        item.risk_level,
+        item.finding_detail,
+        item.postgres_recommendation,
+        item.status,
+        item.owner,
+        JSON.stringify(item.evidence_refs),
+        seededAt,
+        seededAt
+      ]
+    );
+    inserted = inserted || result.changes > 0;
+  });
+
+  const writebackAssessments = [
+    {
+      id: "wb_jijia_inventory_adjustment",
+      target_system: "Jijia ERP / WMS",
+      action_tier: "L3",
+      api_surface: "inventory adjustment / batch status",
+      use_case: "负可用库存排查后的库存修正写回",
+      risk_level: "critical",
+      approval_gate: "必须有库存 Owner、财务/成本 Owner、运维 Owner 三方审批和 staging replay。",
+      rollback_plan: "保留原始库存快照、调整流水和反向调整单；失败时仅人工回滚。",
+      status: "disabled",
+      evidence_refs: ["scenario:negative_available_inventory", "boundary:no_erp_writeback"]
+    },
+    {
+      id: "wb_purchase_plan_update",
+      target_system: "Jijia ERP / Purchase",
+      action_tier: "L3",
+      api_surface: "purchase plan / PO suggestion",
+      use_case: "断货风险识别后的补货计划写回",
+      risk_level: "high",
+      approval_gate: "计划 Owner 与采购 Owner 批准后才允许生成外部系统待办，不直接改 PO。",
+      rollback_plan: "保留计划版本、审批记录和差异说明；任何 PO 变更必须在源系统人工确认。",
+      status: "review_required",
+      evidence_refs: ["scenario:stockout_risk", "role:planner", "role:buyer"]
+    },
+    {
+      id: "wb_logistics_eta_update",
+      target_system: "TMS / Logistics",
+      action_tier: "L3",
+      api_surface: "shipment ETA update",
+      use_case: "货件 ETA 延迟后的运输状态更新",
+      risk_level: "high",
+      approval_gate: "物流 Owner 确认承运商证据，平台只生成建议和复盘，不替代 TMS 更新。",
+      rollback_plan: "保留原 ETA、新 ETA、证据来源和人工确认人。",
+      status: "review_required",
+      evidence_refs: ["object:obj_shipment_202606_us_eta", "metric:eta_deviation_days"]
+    },
+    {
+      id: "wb_dingtalk_task_sync",
+      target_system: "DingTalk",
+      action_tier: "L2",
+      api_surface: "task/comment notification",
+      use_case: "治理行动审批后的任务通知同步",
+      risk_level: "medium",
+      approval_gate: "仅同步任务摘要和本地链接，不传原始 ERP 明细或敏感数据。",
+      rollback_plan: "本地 audit_events 保留通知记录；撤回通过 DingTalk 任务状态人工处理。",
+      status: "future_candidate",
+      evidence_refs: ["workflow:decision_loop", "audit:workbench_operations"]
+    }
+  ];
+  writebackAssessments.forEach((item) => {
+    const result = run(
+      `INSERT OR IGNORE INTO writeback_risk_assessments
+        (id, target_system, action_tier, api_surface, use_case, risk_level, approval_gate,
+         rollback_plan, status, evidence_refs, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        item.id,
+        item.target_system,
+        item.action_tier,
+        item.api_surface,
+        item.use_case,
+        item.risk_level,
+        item.approval_gate,
+        item.rollback_plan,
+        item.status,
+        JSON.stringify(item.evidence_refs),
+        seededAt,
+        seededAt
+      ]
+    );
+    inserted = inserted || result.changes > 0;
+  });
+
+  if (inserted) {
+    writeAudit("platform_readiness.seeded", "platform_readiness", "platform_readiness_seed", {
+      rbacPolicies: rbacPolicies.length,
+      postgresTriggers: migrationTriggers.length,
+      postgresFindings: compatibilityFindings.length,
+      writebackAssessments: writebackAssessments.length,
+      boundary: "planning ledger only; login disabled; postgres migration inactive; no ERP writeback"
+    }, "system");
+  }
 }
 
 function getAipObjects(url) {
@@ -4040,6 +4479,146 @@ function getProviderGatewaySummary() {
   };
 }
 
+function getAccessPolicyDrafts(url = new URL("http://local/api/platform-readiness/rbac-policies")) {
+  const clauses = [];
+  const params = [];
+  const status = url.searchParams.get("status");
+  const roleCode = url.searchParams.get("roleCode") || url.searchParams.get("role_code");
+  const q = url.searchParams.get("q");
+  if (status) {
+    clauses.push("status = ?");
+    params.push(status);
+  }
+  if (roleCode) {
+    clauses.push("role_code = ?");
+    params.push(roleCode);
+  }
+  if (q) {
+    clauses.push("(policy_name LIKE ? OR subject_role LIKE ? OR allowed_actions LIKE ? OR object_scope LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 80, 200));
+  return all(`SELECT * FROM access_policy_drafts ${where} ORDER BY risk_level DESC, role_code, policy_name LIMIT ?`, params).map(rowToAccessPolicyDraft);
+}
+
+function getPostgresMigrationTriggers(url = new URL("http://local/api/platform-readiness/postgres-triggers")) {
+  const clauses = [];
+  const params = [];
+  const status = url.searchParams.get("status");
+  const q = url.searchParams.get("q");
+  if (status) {
+    clauses.push("status = ?");
+    params.push(status);
+  }
+  if (q) {
+    clauses.push("(trigger_code LIKE ? OR trigger_name LIKE ? OR recommendation LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 80, 200));
+  return all(
+    `SELECT * FROM postgres_migration_triggers ${where}
+     ORDER BY CASE status WHEN 'ready' THEN 0 WHEN 'watch' THEN 1 ELSE 2 END, trigger_code LIMIT ?`,
+    params
+  ).map(rowToPostgresMigrationTrigger);
+}
+
+function getPostgresCompatibilityFindings(url = new URL("http://local/api/platform-readiness/postgres-findings")) {
+  const clauses = [];
+  const params = [];
+  const riskLevel = url.searchParams.get("riskLevel") || url.searchParams.get("risk_level");
+  const status = url.searchParams.get("status");
+  const q = url.searchParams.get("q");
+  if (riskLevel) {
+    clauses.push("risk_level = ?");
+    params.push(riskLevel);
+  }
+  if (status) {
+    clauses.push("status = ?");
+    params.push(status);
+  }
+  if (q) {
+    clauses.push("(table_name LIKE ? OR finding_type LIKE ? OR finding_detail LIKE ? OR postgres_recommendation LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 100, 300));
+  return all(
+    `SELECT * FROM postgres_compatibility_findings ${where}
+     ORDER BY CASE risk_level WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
+       table_name, finding_type LIMIT ?`,
+    params
+  ).map(rowToPostgresCompatibilityFinding);
+}
+
+function getWritebackRiskAssessments(url = new URL("http://local/api/platform-readiness/writeback-assessments")) {
+  const clauses = [];
+  const params = [];
+  const status = url.searchParams.get("status");
+  const targetSystem = url.searchParams.get("targetSystem") || url.searchParams.get("target_system");
+  const q = url.searchParams.get("q");
+  if (status) {
+    clauses.push("status = ?");
+    params.push(status);
+  }
+  if (targetSystem) {
+    clauses.push("target_system = ?");
+    params.push(targetSystem);
+  }
+  if (q) {
+    clauses.push("(target_system LIKE ? OR api_surface LIKE ? OR use_case LIKE ? OR approval_gate LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 100, 300));
+  return all(
+    `SELECT * FROM writeback_risk_assessments ${where}
+     ORDER BY CASE risk_level WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
+       status, target_system LIMIT ?`,
+    params
+  ).map(rowToWritebackRiskAssessment);
+}
+
+function getPlatformReadinessSummary() {
+  const rbacPolicies = tableExists("access_policy_drafts") ? getAccessPolicyDrafts() : [];
+  const postgresTriggers = tableExists("postgres_migration_triggers") ? getPostgresMigrationTriggers() : [];
+  const postgresFindings = tableExists("postgres_compatibility_findings") ? getPostgresCompatibilityFindings() : [];
+  const writebackAssessments = tableExists("writeback_risk_assessments") ? getWritebackRiskAssessments() : [];
+  const disabledWritebacks = writebackAssessments.filter((item) => item.status === "disabled");
+  const reviewRequiredWritebacks = writebackAssessments.filter((item) => item.status === "review_required");
+  const highRiskFindings = postgresFindings.filter((item) => ["critical", "high"].includes(item.risk_level));
+  return {
+    summary: {
+      rbacPolicies: rbacPolicies.length,
+      loginEnabled: false,
+      loginRequiredPolicies: rbacPolicies.filter((policy) => policy.login_required).length,
+      approvalRequiredPolicies: rbacPolicies.filter((policy) => policy.approval_required).length,
+      postgresTriggers: postgresTriggers.length,
+      readyTriggers: postgresTriggers.filter((item) => item.status === "ready").length,
+      watchTriggers: postgresTriggers.filter((item) => item.status === "watch").length,
+      postgresFindings: postgresFindings.length,
+      highRiskFindings: highRiskFindings.length,
+      writebackAssessments: writebackAssessments.length,
+      enabledWritebacks: writebackAssessments.filter((item) => item.status === "enabled").length,
+      disabledWritebacks: disabledWritebacks.length,
+      reviewRequiredWritebacks: reviewRequiredWritebacks.length
+    },
+    rbacPolicies,
+    postgresTriggers,
+    postgresFindings,
+    writebackAssessments,
+    boundary: {
+      loginEnabled: false,
+      postgresMigrationActive: false,
+      providerCalls: false,
+      erpWriteback: false,
+      importAllowed: false,
+      writebackPolicy: "assessment_only_all_external_writeback_disabled_or_review_required"
+    }
+  };
+}
+
 function getAgentEvalCases(url = new URL("http://local/api/agent-evals")) {
   const clauses = [];
   const params = [];
@@ -4132,6 +4711,7 @@ function getRoleWorkbenchDetail(id, url = new URL("http://local/api/roles/workbe
     promptVersions: getPromptVersions(new URL(`http://local/api/provider-gateway/prompt-versions?roleId=${encodeURIComponent(role.id)}&limit=100`)),
     providerCallAudits: getProviderCallAudits(),
     providerGatewaySummary: getProviderGatewaySummary(),
+    platformReadiness: getPlatformReadinessSummary(),
     actionBoundary: {
       mode: "role_action_draft_only",
       actionTier: "L1",
@@ -4197,6 +4777,7 @@ function getRoleGovernanceSummary() {
     providerDecisionRecords: tableExists("provider_decision_records") ? tableCount("provider_decision_records") : 0,
     promptVersions: tableExists("prompt_versions") ? tableCount("prompt_versions") : 0,
     providerCallAudits: tableExists("provider_call_audits") ? tableCount("provider_call_audits") : 0,
+    platformReadiness: getPlatformReadinessSummary().summary,
     roleQueues: roles.map((role) => ({
       id: role.id,
       roleName: role.role_name,
@@ -6666,6 +7247,7 @@ function getWorkbenchModule(id) {
       providerDecisionRecords: getProviderDecisionRecords(),
       promptVersions: getPromptVersions(),
       providerCallAudits: getProviderCallAudits(),
+      platformReadiness: getPlatformReadinessSummary(),
       evalCases: getAgentEvalCases(new URL("http://local/api/agent-evals?limit=100")),
       operations: operationsForModule()
     }),
@@ -6832,7 +7414,8 @@ function getDeployHealth() {
       aiChat: getAiChatSummary(),
       aipPhase1: getAipPhase1Summary(),
       roleProviderGovernance: getRoleGovernanceSummary(),
-      providerGateway: getProviderGatewaySummary()
+      providerGateway: getProviderGatewaySummary(),
+      platformReadiness: getPlatformReadinessSummary()
     },
     boundary: {
       productionWrites: false,
@@ -7617,6 +8200,11 @@ const server = createServer(async (req, res) => {
         const body = await readBody(req);
         return json(res, { ok: true, callAudit: createProviderBlockedDryRun(body) }, 201);
       }
+      if (req.method === "GET" && url.pathname === "/api/platform-readiness/summary") return json(res, getPlatformReadinessSummary());
+      if (req.method === "GET" && url.pathname === "/api/platform-readiness/rbac-policies") return json(res, getAccessPolicyDrafts(url));
+      if (req.method === "GET" && url.pathname === "/api/platform-readiness/postgres-triggers") return json(res, getPostgresMigrationTriggers(url));
+      if (req.method === "GET" && url.pathname === "/api/platform-readiness/postgres-findings") return json(res, getPostgresCompatibilityFindings(url));
+      if (req.method === "GET" && url.pathname === "/api/platform-readiness/writeback-assessments") return json(res, getWritebackRiskAssessments(url));
       if (req.method === "GET" && url.pathname === "/api/agent-evals") return json(res, getAgentEvalCases(url));
       if (req.method === "GET" && url.pathname === "/api/workbench/modules") return json(res, getWorkbenchModules());
       if (req.method === "GET" && url.pathname === "/api/workflow-orchestration/summary") return json(res, getWorkflowOrchestrationSummary(url));

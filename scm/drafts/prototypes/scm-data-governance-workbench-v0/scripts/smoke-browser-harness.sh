@@ -139,11 +139,14 @@ for label in expected:
           moduleCards: document.querySelectorAll('.moduleLaunchGrid button').length,
           assetProgress: document.querySelectorAll('.assetProgressPanel .assetProgressItem').length,
           taskCenter: !!document.querySelector('.taskCenterPanel'),
+          releaseStatus: !!document.querySelector('.releaseStatusPanel'),
+          releaseFields: document.querySelectorAll('.releaseStatusPanel .releaseMetaItem').length,
+          releaseBoundary: document.querySelector('.releaseStatusPanel')?.innerText.includes('ERP writeback off') || false,
           flow: !!document.querySelector('.workbenchFlowStrip'),
           exports: document.querySelectorAll('.exportActions a').length
         }))()
         """)
-        if not cockpit["cockpit"] or not cockpit["aiSearch"] or cockpit["moduleCards"] < 4 or cockpit["assetProgress"] < 4 or not cockpit["taskCenter"] or not cockpit["flow"] or cockpit["exports"] < 2:
+        if not cockpit["cockpit"] or not cockpit["aiSearch"] or cockpit["moduleCards"] < 4 or cockpit["assetProgress"] < 4 or not cockpit["taskCenter"] or not cockpit["releaseStatus"] or cockpit["releaseFields"] < 4 or not cockpit["releaseBoundary"] or not cockpit["flow"] or cockpit["exports"] < 2:
           raise SystemExit(f"Overview cockpit feature check failed: {cockpit}")
         feature_checks.append({"overviewCockpit": cockpit})
         workflow = js("""

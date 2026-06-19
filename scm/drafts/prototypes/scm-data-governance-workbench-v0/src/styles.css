@@ -274,7 +274,8 @@ nav button.active span {
 .workflowSummaryGrid,
 .workflowFilters,
 .moduleHeaderStack,
-.kpiWorkbench {
+.kpiWorkbench,
+.releaseStatusPanel {
   min-width: 0;
   max-width: 100%;
 }
@@ -342,7 +343,8 @@ nav button.active span {
 
 .cockpitSearch,
 .assetProgressPanel,
-.taskCenterPanel {
+.taskCenterPanel,
+.releaseStatusPanel {
   min-width: 0;
   display: grid;
   gap: 12px;
@@ -653,6 +655,76 @@ nav button.active span {
 .taskStatusList span {
   min-width: 0;
   color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+.releaseStatusHeader {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: space-between;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.releaseStatusHeader span {
+  min-width: 0;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.releaseMetaGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 132px), 1fr));
+  gap: 8px;
+  min-width: 0;
+}
+
+.releaseMetaItem {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-soft);
+}
+
+.releaseMetaItem span {
+  min-width: 0;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.releaseMetaItem strong {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.releaseBoundaryLine {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.releaseBoundaryLine span {
+  min-width: 0;
+  padding: 5px 8px;
+  border: 1px solid rgba(33, 79, 128, 0.14);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 760;
   overflow-wrap: anywhere;
 }
 

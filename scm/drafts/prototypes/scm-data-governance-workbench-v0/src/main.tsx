@@ -561,6 +561,29 @@ type AipSummary = {
   policyTiers: AnyRow[];
 };
 
+type DeployHealth = {
+  ok: boolean;
+  service: string;
+  runtime: string;
+  host: string;
+  port: number;
+  launchedAt: string;
+  staticBuild: boolean;
+  deployment: {
+    releaseId: string;
+    gitSha: string;
+    dataMountType: string;
+    dataVolumeName: string;
+    dataMountPath: string;
+  };
+  boundary: {
+    productionWrites: boolean;
+    providerCalls: boolean;
+    erpWriteback: boolean;
+    chatbiPolicy: string;
+  };
+};
+
 type AipScenario = {
   id: string;
   title: string;
@@ -1868,6 +1891,28 @@ function MissionHero({
   const [result, setResult] = useState<AiChatResult | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
+  const deploy = useApi<DeployHealth>("/api/deploy/health", {
+    ok: false,
+    service: "scm-data-governance-workbench",
+    runtime: "--",
+    host: "--",
+    port: 0,
+    launchedAt: "",
+    staticBuild: false,
+    deployment: {
+      releaseId: "loading",
+      gitSha: "unknown",
+      dataMountType: "unknown",
+      dataVolumeName: "",
+      dataMountPath: ""
+    },
+    boundary: {
+      productionWrites: false,
+      providerCalls: false,
+      erpWriteback: false,
+      chatbiPolicy: "certified_metric_only"
+    }
+  });
   const aip = useApi<AipSummary>("/api/aip/summary", {
     schemaReady: false,
     objectInstances: 0,
@@ -1913,6 +1958,10 @@ function MissionHero({
     { label: "知识证据", value: overview.counts.kbCards || 0, total: Math.max(overview.counts.kbCards || 0, 295), note: `${overview.counts.kbSources || 0} sources` },
     { label: "治理任务", value: taskDone, total: Math.max(1, taskTotal), note: `${taskProgress}% closed` }
   ];
+  const releaseId = deploy.data.deployment.releaseId || "unknown";
+  const gitSha = deploy.data.deployment.gitSha || "unknown";
+  const shortSha = gitSha === "unknown" ? gitSha : gitSha.slice(0, 7);
+  const mountName = deploy.data.deployment.dataVolumeName || deploy.data.deployment.dataMountPath || "--";
 
   return (
     <section className="missionHero aipCommandCenter">
@@ -2034,6 +2083,40 @@ function MissionHero({
               </div>
             ))}
             {!overview.tasks.length ? <div><span>暂无任务</span><strong>0</strong></div> : null}
+          </div>
+        </div>
+        <div className="releaseStatusPanel">
+          <div className="sectionLabel">
+            <span>Operations</span>
+            <strong>部署与数据账本状态</strong>
+          </div>
+          <div className="releaseStatusHeader">
+            <Badge tone={deploy.data.ok ? "good" : "warn"}>{deploy.loading ? "checking" : deploy.data.ok ? "healthy" : "unverified"}</Badge>
+            <span>{deploy.data.service}</span>
+          </div>
+          {deploy.error ? <div className="error compact">{deploy.error}</div> : null}
+          <div className="releaseMetaGrid">
+            <div className="releaseMetaItem">
+              <span>release</span>
+              <strong>{releaseId}</strong>
+            </div>
+            <div className="releaseMetaItem">
+              <span>git SHA</span>
+              <strong>{shortSha}</strong>
+            </div>
+            <div className="releaseMetaItem">
+              <span>data mount</span>
+              <strong>{deploy.data.deployment.dataMountType}</strong>
+            </div>
+            <div className="releaseMetaItem">
+              <span>ledger volume</span>
+              <strong>{mountName}</strong>
+            </div>
+          </div>
+          <div className="releaseBoundaryLine">
+            <span>provider {deploy.data.boundary.providerCalls ? "on" : "off"}</span>
+            <span>ERP writeback {deploy.data.boundary.erpWriteback ? "on" : "off"}</span>
+            <span>{deploy.data.boundary.chatbiPolicy}</span>
           </div>
         </div>
         <div className="moduleLaunchGrid">

@@ -14,6 +14,13 @@ const distPath = resolve(root, "dist");
 const port = Number(process.env.PORT || 5174);
 const host = process.env.HOST || "127.0.0.1";
 const launchedAt = new Date().toISOString();
+const deploymentMetadata = {
+  releaseId: process.env.SCM_RELEASE_ID || "local-dev",
+  gitSha: process.env.SCM_GIT_SHA || "unknown",
+  dataMountType: process.env.SCM_DATA_MOUNT_TYPE || "local_path",
+  dataVolumeName: process.env.SCM_DATA_VOLUME_NAME || "",
+  dataMountPath: dirname(dbPath)
+};
 
 if (!existsSync(dbPath)) {
   console.error(`SQLite database not found: ${dbPath}`);
@@ -6280,6 +6287,7 @@ function getDeployHealth() {
     host,
     port,
     launchedAt,
+    deployment: deploymentMetadata,
     staticBuild: existsSync(distPath),
     database: {
       path: dbPath,

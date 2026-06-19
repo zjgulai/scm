@@ -45,6 +45,10 @@ function assert(condition, message, detail) {
 
 const health = await request("/api/deploy/health");
 assert(health.ok === true, "deploy health is not ok", health);
+assert(typeof health.deployment?.releaseId === "string" && health.deployment.releaseId.length > 0, "deployment release id missing", health.deployment);
+assert(typeof health.deployment?.gitSha === "string" && health.deployment.gitSha.length > 0, "deployment git sha missing", health.deployment);
+assert(typeof health.deployment?.dataMountType === "string" && health.deployment.dataMountType.length > 0, "deployment data mount type missing", health.deployment);
+assert("dataVolumeName" in (health.deployment || {}), "deployment data volume field missing", health.deployment);
 assert(health.boundary?.providerCalls === false, "provider call boundary changed", health.boundary);
 assert(health.boundary?.erpWriteback === false, "ERP writeback boundary changed", health.boundary);
 assert(health.database?.aipPhase1?.schemaReady === true, "AIP Phase 1 schema is not ready", health.database?.aipPhase1);

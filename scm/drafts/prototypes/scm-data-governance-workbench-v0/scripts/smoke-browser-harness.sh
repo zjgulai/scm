@@ -433,16 +433,20 @@ if os.environ.get("SCM_SKIP_RESPONSIVE_BROWSER_SMOKE") != "1":
                 """)
                 if not clicked.get("ok"):
                     raise SystemExit({**clicked, "viewport": spec})
-                sleep(0.1)
-                layout = js("""
-                (() => ({
-                  h1: document.querySelector('header h1')?.textContent?.trim() || '',
-                  rootOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-                  bodyOverflow: document.body.scrollWidth - document.body.clientWidth,
-                  viewport: document.documentElement.clientWidth,
-                  scrollWidth: document.documentElement.scrollWidth
-                }))()
-                """)
+                layout = {}
+                for _ in range(20):
+                    sleep(0.1)
+                    layout = js("""
+                    (() => ({
+                      h1: document.querySelector('header h1')?.textContent?.trim() || '',
+                      rootOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+                      bodyOverflow: document.body.scrollWidth - document.body.clientWidth,
+                      viewport: document.documentElement.clientWidth,
+                      scrollWidth: document.documentElement.scrollWidth
+                    }))()
+                    """)
+                    if label in layout["h1"]:
+                        break
                 if label not in layout["h1"]:
                     raise SystemExit(f"Responsive navigation failed for {label} at {spec}: {layout}")
                 if layout["rootOverflow"] > 4 or layout["bodyOverflow"] > 4:

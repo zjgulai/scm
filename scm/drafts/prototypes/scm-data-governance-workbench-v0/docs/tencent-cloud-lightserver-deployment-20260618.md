@@ -64,7 +64,7 @@ source: human+ai
 cd /opt/scm-governance-workbench/current
 chmod +x deploy/prepare-sqlite-volume.sh
 ./deploy/prepare-sqlite-volume.sh
-docker compose -p scm_governance_workbench -f docker-compose.yml -f docker-compose.tencent.yml up -d --build
+SCM_RELEASE_ID=scm-workbench-YYYYMMDDHHMMSS SCM_GIT_SHA=abcdef0 docker compose -p scm_governance_workbench -f docker-compose.yml -f docker-compose.tencent.yml up -d --build
 ```
 
 ## 本地启动验证
@@ -81,10 +81,24 @@ docker exec ai_video_nginx getent hosts scm-governance-workbench
 curl http://127.0.0.1:5174/api/deploy/health
 ```
 
+`/api/deploy/health` 必须返回 deployment 元数据，用于区分代码版本和 SQLite 持久化状态：
+
+```json
+{
+  "deployment": {
+    "releaseId": "scm-workbench-...",
+    "gitSha": "abcdef0",
+    "dataMountType": "docker_external_volume",
+    "dataVolumeName": "scm_governance_workbench_scm-governance-data",
+    "dataMountPath": "/app/data"
+  }
+}
+```
+
 ## Docker Compose 启停
 
 ```bash
-docker compose -p scm_governance_workbench -f docker-compose.yml -f docker-compose.tencent.yml up -d --build
+SCM_RELEASE_ID=scm-workbench-YYYYMMDDHHMMSS SCM_GIT_SHA=abcdef0 docker compose -p scm_governance_workbench -f docker-compose.yml -f docker-compose.tencent.yml up -d --build
 docker compose -p scm_governance_workbench -f docker-compose.yml -f docker-compose.tencent.yml logs --tail=80
 docker compose -p scm_governance_workbench -f docker-compose.yml -f docker-compose.tencent.yml down
 ```

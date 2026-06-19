@@ -15,7 +15,7 @@ This register is the release source of truth for the SCM governance workbench pr
 
 ## 2. Current Verified Snapshot
 
-Verified at: `2026-06-19T16:12:48+0800`
+Verified at: `2026-06-19T17:34:00+0800`
 
 | Field | Value | Evidence |
 |---|---|---|
@@ -31,21 +31,27 @@ Verified at: `2026-06-19T16:12:48+0800`
 | Governance tasks | `110` | live `/api/deploy/health` |
 | KPI canvas nodes | `178` | live `/api/deploy/health` |
 | KB domains/sources/cards/chunks/crosswalks | `6 / 295 / 295 / 945 / 1918` | live `/api/deploy/health` |
+| AIP Phase 1 schema | `schemaReady=true` | live `/api/deploy/health` |
+| AIP objects/events/traces/recommendations | `10 / 4 / 1 / 1` | live `/api/deploy/health` |
+| Knowledge rules | `0` | live `/api/knowledge-rules/summary`; UI/API ready, no certified rule assets yet |
 | Production writes | `false` | live `/api/deploy/health` |
 | Provider calls | `false` | live `/api/deploy/health` |
 | ERP writeback | `false` | live `/api/deploy/health` |
 | ChatBI policy | `certified_metric_only` | live `/api/deploy/health` |
+| Active deployed commit | `65069da` | release package and `scm/codex/scm-ledger-workbench` push |
+| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-batch4-knowledge-rules-65069da-20260619173240` | SSH deploy output |
+| Active deployment backup | `/opt/scm-governance-workbench/backups/20260619173302-before-batch4-demo-card` | SSH deploy output |
 
 ## 3. Local Workspace Snapshot
 
-Verified at: `2026-06-19T16:12:48+0800`
+Verified at: `2026-06-19T17:34:00+0800`
 
 | Field | Value |
 |---|---|
 | Git root | `/Users/pray/project/ecom_ana_overview` |
 | Working subdirectory | `/Users/pray/project/ecom_ana_overview/scm` |
 | Branch | `codex/scm-ledger-workbench` |
-| Local HEAD | `e984371` |
+| Local HEAD | `65069da` |
 | Parent remote | `origin=https://github.com/zjgulai/data_analysis_expert.git` |
 | Scoped SCM remote | `scm=https://github.com/zjgulai/scm.git` |
 | Prototype path | `drafts/prototypes/scm-data-governance-workbench-v0` |
@@ -59,8 +65,8 @@ Existing documents contain multiple deployment identifiers:
 | Source | Recorded value | Status |
 |---|---|---|
 | `docs/remaining-prd-inventory-and-todo-20260618.md` | `75494ae`, `ee30914` | historical document record; not live-verified in this pass |
-| `docs/tencent-cloud-lightserver-deployment-20260618.md` | `ccb554a` | historical document record; not live-verified in this pass |
-| live `/api/deploy/health` | no git SHA field | verified limitation |
+| `docs/tencent-cloud-lightserver-deployment-20260618.md` | `65069da` | current document record after Batch 4 deploy |
+| live `/api/deploy/health` | no git SHA field | verified limitation; active SHA recorded in this release register |
 
 Action: add a deployment revision field in a later implementation pass, or write the active release SHA into this register after each deployment.
 
@@ -148,7 +154,7 @@ Verified locally at: `2026-06-19T17:02:56+0800`
 | Recommendation Card UI | `implemented_local` | Decision loop page Browser Harness check: 1 `.recommendationCard`, `.actionTierBadge`, `.recommendationReviewControl`, 2 export links |
 | Recommendation Card export | `implemented_local` | Workflow smoke validated `aipRecommendation.exportJson` and `aipRecommendation.exportExcel` |
 | Responsive gate | `passed_local` | Browser Harness checked all 13 modules at `1350x900`, `1024x900`, `768x900`, `390x900` |
-| Public deployment | `not_done_in_this_batch` | `https://scm.lute-tlz-dddd.top/` was not deployed in this pass |
+| Public deployment | `passed_public` | deployed release `scm-workbench-batch4-knowledge-rules-65069da-20260619173240`; public Browser Harness passed |
 
 Verification command:
 
@@ -161,6 +167,57 @@ Boundary confirmed by local smoke:
 - `providerCalls=false`
 - `erpWriteback=false`
 - `SCM_SKIP_PUBLIC_BROWSER_SMOKE=1`, so no public production assertion is made for this batch.
+
+## 12. Batch 4 Public Deployment And Acceptance
+
+Verified publicly at: `2026-06-19T17:34:00+0800`
+
+| Item | Status | Evidence |
+|---|---|---|
+| Git commit | `pushed` | `65069da` pushed to `scm/codex/scm-ledger-workbench` |
+| Release package | `deployed` | `/opt/scm-governance-workbench/releases/scm-workbench-batch4-knowledge-rules-65069da-20260619173240` |
+| Pre-deploy backup | `created` | `/opt/scm-governance-workbench/backups/20260619173302-before-batch4-demo-card` |
+| Container | `healthy` | `curl -fsS http://127.0.0.1:5174/api/deploy/health` on server |
+| Public URL | `passed_public` | `https://scm.lute-tlz-dddd.top/` |
+| Public Browser Harness | `passed_public_read_only` | `REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser` |
+| Public responsive gate | `passed_public` | `1350x900`, `1024x900`, `768x900`, `390x900`; all 13 modules checked |
+| Public AIP recommendations | `passed_public` | `/api/aip/recommendations?limit=5` returned seed demo card `rec_seed_negative_available` |
+| Public knowledge rules export | `passed_public` | `/api/export/knowledge-rules?format=json` returned read-only export boundary |
+
+Public API evidence:
+
+```json
+{
+  "aipPhase1": {
+    "schemaReady": true,
+    "objectInstances": 10,
+    "objectEvents": 4,
+    "traces": 1,
+    "traceSteps": 4,
+    "recommendations": 1,
+    "recommendationTransitions": 1,
+    "providerCalls": false,
+    "erpWriteback": false
+  },
+  "knowledgeRules": {
+    "total": 0,
+    "providerCalls": false,
+    "erpWriteback": false
+  },
+  "boundary": {
+    "productionWrites": false,
+    "providerCalls": false,
+    "erpWriteback": false
+  }
+}
+```
+
+Important boundary:
+
+- the public seed recommendation is a demo governance asset for read-only acceptance, not a real business action;
+- no provider call was made;
+- no ERP/Jijia writeback was made;
+- public Browser Harness was read-only.
 
 ## 10. Batch 3 Local Scenario Status
 

@@ -23,14 +23,16 @@ source: human+ai
 ## 当前发布快照
 
 - 线上地址：`https://scm.lute-tlz-dddd.top/`
-- 当前部署追溯 SHA：`ccb554a`，分支 `codex/scm-ledger-workbench`
-- 当前响应式修复 release：`/opt/scm-governance-workbench/releases/scm-workbench-responsive-ccb554a-202606191502`
-- 当前响应式修复部署备份：`/opt/scm-governance-workbench/backups/202606191502-before-responsive/governance_workbench.sqlite`
-- 当前响应式修复 release 来自远端仓库 `zjgulai/scm` 的 `codex/scm-ledger-workbench` 分支 `ccb554a` 提交。
+- 当前部署追溯 SHA：`65069da`，分支 `codex/scm-ledger-workbench`
+- 当前 Batch 4 knowledge rules release：`/opt/scm-governance-workbench/releases/scm-workbench-batch4-knowledge-rules-65069da-20260619173240`
+- 当前 Batch 4 部署备份：`/opt/scm-governance-workbench/backups/20260619173302-before-batch4-demo-card`
+- 当前 release 来自远端仓库 `zjgulai/scm` 的 `codex/scm-ledger-workbench` 分支 `65069da` 提交。
 - 容器名：`scm-governance-workbench`
 - 内部端口：`127.0.0.1:5174`
 - 模块数量：13 个工作台模块
 - 关键边界：`productionWrites=false`、`providerCalls=false`、`erpWriteback=false`
+- AIP Phase 1 线上只读验收：`schemaReady=true`、`objectInstances=10`、`objectEvents=4`、`traces=1`、`recommendations=1`
+- 知识规则线上只读验收：UI/API/export 已就绪，当前 `knowledge_rules.total=0`，尚无认证规则资产。
 
 13 个模块为：
 

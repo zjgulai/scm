@@ -96,6 +96,16 @@ for label in expected:
         raise SystemExit(f"Navigation failed for {label}: active header={state['h1']!r}")
     if "Application error" in state["body"] or "Unhandled Runtime Error" in state["body"]:
         raise SystemExit(f"Visible app error after opening {label}")
+    layout = js("""
+    (() => ({
+      rootOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      bodyOverflow: document.body.scrollWidth - document.body.clientWidth,
+      viewport: document.documentElement.clientWidth,
+      scrollWidth: document.documentElement.scrollWidth
+    }))()
+    """)
+    if layout["rootOverflow"] > 4 or layout["bodyOverflow"] > 4:
+        raise SystemExit(f"Horizontal page overflow after opening {label}: {layout}")
     operation_dock = js("""
     (() => ({
       panel: !!document.querySelector('.moduleOpsPanel'),
@@ -240,6 +250,55 @@ for label in expected:
         feature_checks.append({"aiFeedbackGovernance": ai})
     results.append({"label": label, "header": state["h1"]})
 
+responsive_results = []
+if os.environ.get("SCM_SKIP_RESPONSIVE_BROWSER_SMOKE") != "1":
+    viewport_specs = os.environ.get("SCM_BROWSER_VIEWPORTS", "1350x900,1024x900,768x900,390x900")
+    try:
+        for spec in [item.strip() for item in viewport_specs.split(",") if item.strip()]:
+            width_text, height_text = spec.lower().split("x", 1)
+            width = int(width_text)
+            height = int(height_text)
+            cdp(
+                "Emulation.setDeviceMetricsOverride",
+                width=width,
+                height=height,
+                deviceScaleFactor=1,
+                mobile=width < 720,
+            )
+            new_tab(base_url)
+            wait_for_load()
+            sleep(0.2)
+            checked = 0
+            for label in expected:
+                clicked = js(f"""
+                (() => {{
+                  const button = Array.from(document.querySelectorAll('aside button')).find((el) => el.textContent.includes({label!r}));
+                  if (!button) return {{ ok: false, label: {label!r}, reason: 'nav button not found' }};
+                  button.click();
+                  return {{ ok: true, label: {label!r} }};
+                }})()
+                """)
+                if not clicked.get("ok"):
+                    raise SystemExit({**clicked, "viewport": spec})
+                sleep(0.1)
+                layout = js("""
+                (() => ({
+                  h1: document.querySelector('header h1')?.textContent?.trim() || '',
+                  rootOverflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+                  bodyOverflow: document.body.scrollWidth - document.body.clientWidth,
+                  viewport: document.documentElement.clientWidth,
+                  scrollWidth: document.documentElement.scrollWidth
+                }))()
+                """)
+                if label not in layout["h1"]:
+                    raise SystemExit(f"Responsive navigation failed for {label} at {spec}: {layout}")
+                if layout["rootOverflow"] > 4 or layout["bodyOverflow"] > 4:
+                    raise SystemExit(f"Responsive horizontal overflow after opening {label} at {spec}: {layout}")
+                checked += 1
+            responsive_results.append({"viewport": spec, "checkedModules": checked})
+    finally:
+        cdp("Emulation.clearDeviceMetricsOverride")
+
 print({
     "ok": True,
     "baseUrl": base_url,
@@ -247,5 +306,6 @@ print({
     "moduleCount": len(results),
     "modules": results,
     "featureChecks": feature_checks,
+    "responsive": responsive_results,
 })
 PY

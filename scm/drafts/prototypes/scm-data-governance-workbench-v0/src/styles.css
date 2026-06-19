@@ -257,11 +257,31 @@ nav button.active span {
 .stack {
   display: grid;
   gap: 16px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.stack > *,
+.content,
+.panel,
+.railPanel,
+.missionHero,
+.overviewControlBar,
+.workbenchFlowStrip,
+.moduleOpsPanel,
+.moduleGrid,
+.readinessGrid,
+.workflowSummaryGrid,
+.workflowFilters,
+.moduleHeaderStack,
+.kpiWorkbench {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .missionHero {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(340px, 0.85fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 360px), 1fr));
   gap: 18px;
   align-items: start;
   padding: clamp(18px, 2vw, 28px);
@@ -413,7 +433,7 @@ nav button.active span {
 
 .moduleLaunchGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
   gap: 10px;
 }
 
@@ -564,7 +584,7 @@ nav button.active span {
 
 .moduleGrid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr));
   gap: 12px;
 }
 
@@ -616,7 +636,7 @@ nav button.active span {
 
 .readinessGrid {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
   gap: 12px;
 }
 
@@ -690,7 +710,7 @@ nav button.active span {
 
 .overviewControlBar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(240px, 0.26fr);
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr));
   gap: 14px;
   align-items: stretch;
 }
@@ -712,7 +732,7 @@ nav button.active span {
 
 .flowMeta {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
   gap: 10px;
 }
 
@@ -744,7 +764,7 @@ nav button.active span {
 
 .flowSteps {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 170px), 1fr));
   gap: 10px;
 }
 
@@ -1134,6 +1154,9 @@ textarea {
 }
 
 .kpiCanvasWrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow: auto;
   max-height: 620px;
   margin-bottom: 12px;
@@ -1144,6 +1167,7 @@ textarea {
     linear-gradient(90deg, rgba(205, 216, 228, 0.35) 1px, transparent 1px),
     #fbfcfe;
   background-size: 28px 28px;
+  contain: inline-size;
 }
 
 .kpiCanvasSpacer {
@@ -1581,6 +1605,8 @@ textarea {
   gap: 8px;
   align-items: center;
   min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
 }
 
 .checkRow strong {
@@ -2101,7 +2127,7 @@ textarea {
 
 .kbCards {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
   gap: 12px;
 }
 
@@ -2115,11 +2141,25 @@ textarea {
   background: #fff;
 }
 
+.kbCard > * {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
 .kbCardHead {
   display: flex;
   justify-content: space-between;
   gap: 10px;
   align-items: center;
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.kbCardHead > * {
+  min-width: 0;
+  max-width: 100%;
 }
 
 .kbCard h3 {
@@ -2134,13 +2174,16 @@ textarea {
 
 .kbScoreGrid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 68px), 1fr));
   gap: 6px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .kbScoreGrid span {
   display: grid;
   gap: 2px;
+  min-width: 0;
   padding: 8px;
   border: 1px solid rgba(17, 24, 39, 0.07);
   border-radius: 8px;
@@ -2158,6 +2201,8 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .termRow span {
@@ -2172,28 +2217,36 @@ textarea {
 .kbMeta {
   display: grid;
   gap: 4px;
+  min-width: 0;
+  max-width: 100%;
   color: var(--muted);
   font-size: 12px;
   line-height: 1.5;
 }
 
 .kbMeta span {
+  min-width: 0;
   overflow-wrap: anywhere;
 }
 
 .evidenceSnippets {
   display: grid;
   gap: 8px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .evidenceSnippets blockquote {
   margin: 0;
+  min-width: 0;
+  max-width: 100%;
   padding: 10px 12px;
   border-left: 3px solid var(--teal);
   border-radius: 0 8px 8px 0;
   color: var(--ink-2);
   background: #f5f8fb;
   line-height: 1.62;
+  overflow-wrap: anywhere;
 }
 
 .aiChatLayout {
@@ -2566,6 +2619,7 @@ textarea {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  max-width: 100%;
   min-height: 26px;
   padding: 3px 9px;
   border-radius: 999px;
@@ -2573,6 +2627,7 @@ textarea {
   font-weight: 760;
   line-height: 1;
   white-space: nowrap;
+  overflow-wrap: anywhere;
   color: var(--muted);
   background: #eef2f6;
 }
@@ -2612,15 +2667,21 @@ textarea {
 }
 
 .tableWrap {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow: auto;
   max-height: 70vh;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #fff;
+  contain: inline-size;
+  overscroll-behavior-inline: contain;
 }
 
 table {
-  width: 100%;
+  width: max-content;
+  min-width: 100%;
   border-collapse: collapse;
   font-size: 13px;
 }
@@ -2633,6 +2694,7 @@ td {
   text-align: left;
   vertical-align: top;
   line-height: 1.48;
+  overflow-wrap: anywhere;
 }
 
 th {
@@ -2935,6 +2997,92 @@ tbody tr:hover td {
   color: var(--blue);
   border-color: rgba(0, 94, 184, 0.28);
   background: var(--blue-soft);
+}
+
+.split,
+.chatSplit,
+.chatbiWorkbench,
+.auditWorkbench,
+.qualityWorkbench,
+.candidateLayout,
+.moduleOpsBody,
+.kbOpsGrid,
+.kbDiagnosticsGrid,
+.aiChatLayout,
+.aiGovernanceWorkbench,
+.decisionWorkbench,
+.qualitySplit {
+  min-width: 0;
+  max-width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+}
+
+.chatbiFilters,
+.auditFilters,
+.workflowFilters,
+.compactFilters,
+.formGrid,
+.workflowMetaGrid,
+.ontologySelector,
+.pathNarrative,
+.pathwayLayout,
+.decisionSummaryGrid,
+.qualitySummaryGrid,
+.chatbiSummaryGrid,
+.auditSummaryGrid,
+.kbGovernanceGrid,
+.domainGrid,
+.kbScoreGrid,
+.aiGovernanceGrid,
+.aiFeedbackActions {
+  min-width: 0;
+  max-width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+}
+
+.kbCards {
+  min-width: 0;
+  max-width: 100%;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+}
+
+.topbar,
+.moduleHeader,
+.toolbar,
+.sectionHeader,
+.surfaceHead,
+.moduleOpsSummary,
+.ledgerItemHead,
+.bulkActionBar,
+.canvasToolbar,
+.canvasHint {
+  min-width: 0;
+  max-width: 100%;
+  flex-wrap: wrap;
+}
+
+.topbar > *,
+.moduleHeader > *,
+.sectionHeader > *,
+.surfaceHead > *,
+.moduleOpsSummary > *,
+.toolbar > *,
+.bulkActionBar > *,
+.canvasToolbar > *,
+.canvasHint > * {
+  min-width: 0;
+}
+
+h1,
+h2,
+h3,
+p,
+strong,
+small,
+span,
+button,
+a {
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 1180px) {

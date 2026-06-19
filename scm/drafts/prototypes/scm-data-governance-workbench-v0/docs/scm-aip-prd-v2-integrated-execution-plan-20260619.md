@@ -553,7 +553,7 @@ REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm
 
 ### P3：后续规划
 
-- [ ] AIP-B5-001 角色工作台 shell
+- [x] AIP-B5-001 角色工作台 shell
 - [ ] AIP-B5-002 计划员工作台
 - [ ] AIP-B5-003 采购员工作台
 - [ ] AIP-B5-004 仓库库存工作台
@@ -561,6 +561,21 @@ REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm
 - [ ] AIP-B5-007 provider decision record
 - [ ] AIP-B5-012 future RBAC 设计
 - [ ] AIP-B5-013 SQLite -> Postgres 触发条件
+
+Batch 5 第一片已完成：
+
+- `role-workbench` 作为第 14 个工作台模块接入导航、导出、工作流指引和工作台操作闭环；
+- 已建立计划、采购、库存、物流、成本 5 个角色队列的基础版；
+- 已建立 `role_workbenches`、`role_playbooks`、`provider_gateway_policies`、`agent_eval_cases` 四张治理账本；
+- DeepSeek/Kimi 仅作为 provider policy 进入账本，状态保持 `disabled`，不调用外部模型；
+- 角色页支持基于对象/事件/playbook 创建 L1 行动草稿，只写 `workbench_operations`。
+
+仍未完成：
+
+- B5-002 到 B5-005 的独立角色应用深水区，例如角色专属筛选、批量动作、SLA 和排班；
+- B5-007 的 provider 选型决策文档；
+- B5-009 到 B5-010 的 prompt version 和 provider call audit；
+- B5-012 到 B5-015 的 RBAC、Postgres 迁移和 write-back 风险评估。
 
 ## 12. 验收矩阵
 

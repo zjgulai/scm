@@ -3810,6 +3810,237 @@ tbody tr:hover td {
   background: var(--blue-soft);
 }
 
+.roleWorkbench {
+  display: grid;
+  gap: 18px;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.roleSummaryGrid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.roleSummaryGrid article,
+.roleMissionPanel,
+.roleQueueGrid > article,
+.roleActionPanel,
+.roleSupportingGrid > section {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  box-shadow: var(--shadow);
+}
+
+.roleSummaryGrid article {
+  padding: 16px;
+}
+
+.roleSummaryGrid span,
+.roleSummaryGrid small {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.roleSummaryGrid strong {
+  display: block;
+  margin: 8px 0 4px;
+  font-size: 26px;
+  color: var(--ink);
+}
+
+.roleWorkbenchLayout {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.26fr) minmax(0, 1fr);
+  gap: 16px;
+  min-width: 0;
+}
+
+.roleRail {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  min-width: 0;
+}
+
+.roleRail button {
+  display: grid;
+  gap: 5px;
+  width: 100%;
+  min-width: 0;
+  padding: 13px;
+  color: var(--ink);
+  text-align: left;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.roleRail button.active {
+  border-color: rgba(33, 79, 128, 0.42);
+  background: linear-gradient(135deg, rgba(237, 244, 251, 0.95), #fff);
+  box-shadow: inset 3px 0 0 var(--blue);
+}
+
+.roleRail span {
+  color: var(--blue);
+  font-size: 12px;
+  font-weight: 760;
+  text-transform: uppercase;
+}
+
+.roleRail small {
+  color: var(--muted);
+}
+
+.roleWorkbenchMain {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+}
+
+.roleMissionPanel,
+.roleActionPanel {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px;
+}
+
+.roleMissionPanel p,
+.roleActionPanel p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.roleMissionMeta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+}
+
+.roleObjectChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.roleObjectChips span {
+  padding: 6px 9px;
+  color: var(--ink-2);
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-size: 12px;
+}
+
+.roleObjectChips .metricChip {
+  color: var(--blue);
+  background: var(--blue-soft);
+  border-color: rgba(33, 79, 128, 0.16);
+}
+
+.roleQueueGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.roleQueueGrid > article,
+.roleSupportingGrid > section {
+  padding: 14px;
+}
+
+.roleQueueList,
+.playbookList,
+.providerPolicyList,
+.evalCaseList {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.roleQueueList button,
+.playbookList article,
+.providerPolicyList article,
+.evalCaseList article {
+  min-width: 0;
+  width: 100%;
+  padding: 12px;
+  color: var(--ink);
+  text-align: left;
+  background: var(--panel-soft);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.roleQueueList button {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.roleQueueList strong,
+.roleQueueList small,
+.playbookList strong,
+.providerPolicyList strong,
+.evalCaseList strong,
+.playbookList small,
+.providerPolicyList small,
+.evalCaseList small {
+  display: block;
+  min-width: 0;
+}
+
+.roleQueueList small,
+.playbookList small,
+.providerPolicyList small,
+.evalCaseList small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.roleActionDraftButton {
+  flex: 0 0 auto;
+  padding: 12px 16px;
+  color: #fff;
+  background: var(--blue);
+  border: 1px solid var(--blue);
+  border-radius: 8px;
+  font-weight: 760;
+  cursor: pointer;
+}
+
+.roleActionDraftButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+}
+
+.roleSupportingGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  min-width: 0;
+}
+
+.roleMetricsPanel {
+  grid-column: 1 / -1;
+}
+
 .split,
 .chatSplit,
 .chatbiWorkbench,
@@ -3849,7 +4080,9 @@ tbody tr:hover td {
 .kbScoreGrid,
 .ruleMetaGrid,
 .aiGovernanceGrid,
-.aiFeedbackActions {
+.aiFeedbackActions,
+.roleSummaryGrid,
+.roleQueueGrid {
   min-width: 0;
   max-width: 100%;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
@@ -3975,7 +4208,10 @@ a {
 	  .chatbiFilters,
 	  .auditSummaryGrid,
 	  .auditWorkbench,
-	  .auditFilters {
+	  .auditFilters,
+    .roleWorkbenchLayout,
+    .roleQueueGrid,
+    .roleSupportingGrid {
 	    grid-template-columns: 1fr;
 	  }
 
@@ -4001,6 +4237,8 @@ a {
 
 	  .topbar,
 	  .moduleHeader,
+    .roleMissionPanel,
+    .roleActionPanel,
 	  .objectHeroCard,
 	  .toolbar,
 	  .promptActions,
@@ -4029,6 +4267,9 @@ a {
   .moduleLaunchGrid,
   .scenarioGrid,
   .scenarioSignals,
+  .roleSummaryGrid,
+  .roleQueueGrid,
+  .roleSupportingGrid,
   .objectSignalGrid,
   .recommendationCards,
   .navGroup {

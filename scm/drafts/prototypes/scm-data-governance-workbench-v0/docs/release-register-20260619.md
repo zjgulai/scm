@@ -168,6 +168,43 @@ Boundary confirmed by local smoke:
 - `erpWriteback=false`
 - `SCM_SKIP_PUBLIC_BROWSER_SMOKE=1`, so no public production assertion is made for this batch.
 
+## 12. Batch 5 Local Role Provider Governance Status
+
+Verified locally at: `2026-06-19`
+
+| Batch 5 first-slice item | Status | Evidence |
+|---|---|---|
+| Role workbench module | `implemented_local` | `/api/workbench/modules` returns `14` modules and includes `role-workbench` |
+| Role governance schema | `implemented_local` | `scripts/migrations/009_role_provider_governance.sql`; `npm run migrate` applied `009_role_provider_governance.sql` to local DB |
+| Role queues | `passed_local` | `/api/roles/summary` returns `roles=5`, `rolePlaybooks=5`, `evalCases=5` |
+| Inventory role detail | `passed_local` | Workflow smoke `roleWorkbench.inventoryDetail` validates negative inventory object, event, playbook and eval case |
+| Role action draft | `passed_local` | Workflow smoke `roleWorkbench.actionDraft` creates `workbench_operations.module_id=role-workbench` |
+| Provider policy boundary | `passed_local` | `/api/provider-gateway/policies` returns DeepSeek/Kimi with `status=disabled` |
+| Agent eval cases | `passed_local` | `/api/agent-evals` returns at least 5 role-bound eval cases |
+| Role export | `passed_local` | Workflow smoke `roleWorkbench.exportJson`, `roleWorkbench.exportExcel` |
+| Role UI | `passed_local` | Browser Harness `.roleWorkbench`, `.roleSummaryGrid`, `.roleRail`, `.roleQueueGrid`, `.providerPolicyPanel`, `.evalCasePanel`, `.roleActionDraftButton` |
+| Responsive gate | `passed_local` | Browser Harness checked all 14 modules at `1350x900`, `1024x900`, `768x900`, `390x900` |
+| Public deployment | `not_done_yet` | Public site has not been updated for Batch 5 in this local verification section |
+
+Verification commands:
+
+```bash
+node --check server/index.mjs
+node --check scripts/smoke-core-workflows.mjs
+bash -n scripts/smoke-browser-harness.sh
+npm run check
+npm run migrate
+REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm run smoke:p0
+git diff --check -- drafts/prototypes/scm-data-governance-workbench-v0
+```
+
+Boundary:
+
+- provider gateway policies are ledger records only and remain disabled;
+- no DeepSeek/Kimi/provider call;
+- no ERP/Jijia/WMS/TMS writeback;
+- role action draft only writes local SQLite governance ledger.
+
 ## 12. Batch 4 Public Deployment And Acceptance
 
 Verified publicly at: `2026-06-19T17:34:00+0800`

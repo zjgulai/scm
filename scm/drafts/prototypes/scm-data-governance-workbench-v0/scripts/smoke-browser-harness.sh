@@ -50,6 +50,7 @@ expected = [
     "血缘与质量工作台",
     "ChatBI 语义治理台",
     "AI 知识库",
+    "角色工作台",
     "决策闭环工作台",
     "审计日志工作台",
 ]
@@ -215,6 +216,37 @@ for label in expected:
         ):
           raise SystemExit(f"AIP Object 360 feature check failed: {object360}")
         feature_checks.append({"aipObject360": object360})
+    if label == "角色工作台":
+        role = js("""
+        (() => ({
+          roleWorkbench: !!document.querySelector('.roleWorkbench'),
+          summaryCards: document.querySelectorAll('.roleSummaryGrid > article').length,
+          roleButtons: document.querySelectorAll('.roleRail button').length,
+          roleQueueGrid: !!document.querySelector('.roleQueueGrid'),
+          queueColumns: document.querySelectorAll('.roleQueueGrid > article').length,
+          providerPolicyPanel: !!document.querySelector('.providerPolicyPanel'),
+          evalCasePanel: !!document.querySelector('.evalCasePanel'),
+          actionButton: !!document.querySelector('.roleActionDraftButton'),
+          exports: document.querySelectorAll('.exportActions a').length,
+          flow: !!document.querySelector('.workbenchFlowStrip'),
+          providerOffText: document.body.innerText.includes('provider off') || document.body.innerText.includes('default off')
+        }))()
+        """)
+        if (
+            not role["roleWorkbench"]
+            or role["summaryCards"] < 4
+            or role["roleButtons"] < 5
+            or not role["roleQueueGrid"]
+            or role["queueColumns"] < 3
+            or not role["providerPolicyPanel"]
+            or not role["evalCasePanel"]
+            or not role["actionButton"]
+            or role["exports"] < 2
+            or not role["flow"]
+            or not role["providerOffText"]
+        ):
+          raise SystemExit(f"Role workbench feature check failed: {role}")
+        feature_checks.append({"roleWorkbench": role})
     if label == "决策闭环工作台":
         decision = js("""
         (() => ({

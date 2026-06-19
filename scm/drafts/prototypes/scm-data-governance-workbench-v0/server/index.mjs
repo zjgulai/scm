@@ -49,6 +49,7 @@ ensureP1WorkbenchOperationSchema();
 ensureP2QuestionFeedbackSchema();
 ensureAipPhase1Schema();
 ensureKnowledgeRulesSchema();
+ensureRoleProviderGovernanceSchema();
 
 function json(res, payload, status = 200) {
   const body = JSON.stringify(payload);
@@ -685,6 +686,7 @@ function seedKbDomains() {
 
 seedKbDomains();
 seedAipPhase1Data();
+seedRoleProviderGovernanceData();
 
 function writeAudit(eventType, assetType, assetId, payload, actor = "local_user") {
   const id = makeId("audit");
@@ -1882,6 +1884,74 @@ function ensureKnowledgeRulesSchema() {
   `);
 }
 
+function ensureRoleProviderGovernanceSchema() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS role_workbenches (
+      id TEXT PRIMARY KEY,
+      role_code TEXT NOT NULL UNIQUE,
+      role_name TEXT NOT NULL,
+      role_type TEXT NOT NULL DEFAULT 'supply_chain_operator',
+      mission TEXT NOT NULL DEFAULT '',
+      primary_object_types TEXT NOT NULL DEFAULT '[]',
+      metric_refs TEXT NOT NULL DEFAULT '[]',
+      decision_cadence TEXT NOT NULL DEFAULT '',
+      owner TEXT NOT NULL DEFAULT 'supply_chain_governance_owner',
+      lifecycle_status TEXT NOT NULL DEFAULT 'draft',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_role_workbenches_status ON role_workbenches(lifecycle_status, role_type);
+
+    CREATE TABLE IF NOT EXISTS role_playbooks (
+      id TEXT PRIMARY KEY,
+      role_id TEXT NOT NULL,
+      playbook_name TEXT NOT NULL,
+      trigger_condition TEXT NOT NULL DEFAULT '',
+      action_template TEXT NOT NULL DEFAULT '{}',
+      evidence_refs TEXT NOT NULL DEFAULT '[]',
+      priority TEXT NOT NULL DEFAULT 'P1',
+      status TEXT NOT NULL DEFAULT 'draft',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_role_playbooks_role ON role_playbooks(role_id, status, priority);
+
+    CREATE TABLE IF NOT EXISTS provider_gateway_policies (
+      id TEXT PRIMARY KEY,
+      provider_code TEXT NOT NULL UNIQUE,
+      provider_name TEXT NOT NULL,
+      provider_type TEXT NOT NULL DEFAULT 'llm',
+      status TEXT NOT NULL DEFAULT 'disabled',
+      allowed_use_cases TEXT NOT NULL DEFAULT '[]',
+      data_boundary TEXT NOT NULL DEFAULT '',
+      evidence_required INTEGER NOT NULL DEFAULT 1,
+      prompt_version_policy TEXT NOT NULL DEFAULT '',
+      cost_policy TEXT NOT NULL DEFAULT '',
+      pii_policy TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_provider_gateway_status ON provider_gateway_policies(status, provider_type);
+
+    CREATE TABLE IF NOT EXISTS agent_eval_cases (
+      id TEXT PRIMARY KEY,
+      role_id TEXT NOT NULL DEFAULT '',
+      scenario_type TEXT NOT NULL DEFAULT '',
+      question TEXT NOT NULL,
+      expected_answerability TEXT NOT NULL DEFAULT 'partial',
+      required_evidence_refs TEXT NOT NULL DEFAULT '[]',
+      status TEXT NOT NULL DEFAULT 'draft',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_agent_eval_cases_role ON agent_eval_cases(role_id, scenario_type, status);
+  `);
+}
+
 function parseJsonValue(value, fallback) {
   if (value && typeof value === "object") return value;
   try {
@@ -1922,6 +1992,41 @@ function rowToKnowledgeRule(row) {
     target_dimension_ids: parseJsonValue(row.target_dimension_ids, []),
     action_template: parseJsonValue(row.action_template, {}),
     evidence_refs: parseJsonValue(row.evidence_refs, [])
+  };
+}
+
+function rowToRoleWorkbench(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    primary_object_types: parseJsonValue(row.primary_object_types, []),
+    metric_refs: parseJsonValue(row.metric_refs, [])
+  };
+}
+
+function rowToRolePlaybook(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    action_template: parseJsonValue(row.action_template, {}),
+    evidence_refs: parseJsonValue(row.evidence_refs, [])
+  };
+}
+
+function rowToProviderPolicy(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    evidence_required: Boolean(row.evidence_required),
+    allowed_use_cases: parseJsonValue(row.allowed_use_cases, [])
+  };
+}
+
+function rowToAgentEvalCase(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    required_evidence_refs: parseJsonValue(row.required_evidence_refs, [])
   };
 }
 
@@ -2286,6 +2391,159 @@ function seedAipPhase1DemoInteractions(seededAt = nowIso()) {
       boundary: "seeded demo ledger assets only; no provider call; no ERP writeback"
     }, "system");
   }
+}
+
+function seedRoleProviderGovernanceData() {
+  if (!tableExists("role_workbenches")) return;
+  const seededAt = nowIso();
+  const roles = [
+    {
+      id: "role_planner",
+      role_code: "planner",
+      role_name: "计划员工作台",
+      mission: "围绕 ForecastVersion、SKU、补货计划和断货风险做证据化计划决策。",
+      primary_object_types: ["sku", "forecast_version", "po", "inventory_batch"],
+      metric_refs: ["forecast_accuracy_daily", "business_available_qty", "stockout_days", "sku_oos_rate"],
+      decision_cadence: "daily_supply_review",
+      owner: "计划 Owner"
+    },
+    {
+      id: "role_buyer",
+      role_code: "buyer",
+      role_name: "采购员工作台",
+      mission: "围绕 Supplier、PO、Shipment 的履约风险、交付偏差和采购行动草稿做审核前置。",
+      primary_object_types: ["supplier", "po", "shipment", "sku"],
+      metric_refs: ["supplier_otif_rate", "po_on_time_delivery_rate", "eta_deviation_days"],
+      decision_cadence: "twice_weekly_procurement_review",
+      owner: "采购 Owner"
+    },
+    {
+      id: "role_inventory",
+      role_code: "inventory",
+      role_name: "库存负责人工作台",
+      mission: "聚焦 Warehouse、InventoryBatch、负可用库存、库龄和库存质量异常的闭环排查。",
+      primary_object_types: ["warehouse", "inventory_batch", "sku", "cost_event"],
+      metric_refs: ["business_available_qty", "slow_moving_inventory_ratio", "storage_fee_rate", "inventory_sync_delay_minutes"],
+      decision_cadence: "daily_inventory_exception_review",
+      owner: "库存 Owner"
+    },
+    {
+      id: "role_logistics",
+      role_code: "logistics",
+      role_name: "物流控制塔工作台",
+      mission: "连接 Shipment、PO、Warehouse 和 ETA 偏差，识别入库延误对可售库存的影响。",
+      primary_object_types: ["shipment", "warehouse", "po", "inventory_batch"],
+      metric_refs: ["eta_deviation_days", "inbound_on_time_rate", "inventory_sync_delay_minutes"],
+      decision_cadence: "daily_eta_control_tower",
+      owner: "物流 Owner"
+    },
+    {
+      id: "role_cost",
+      role_code: "cost",
+      role_name: "成本财务工作台",
+      mission: "围绕 CostEvent、SKU、Shipment、Warehouse 做成本归因、费用异常和复盘证据沉淀。",
+      primary_object_types: ["cost_event", "sku", "shipment", "warehouse"],
+      metric_refs: ["storage_fee_rate", "landed_cost_per_unit", "slow_moving_inventory_ratio"],
+      decision_cadence: "weekly_cost_review",
+      owner: "财务/成本 Owner"
+    }
+  ];
+
+  roles.forEach((role) => {
+    run(
+      `INSERT OR IGNORE INTO role_workbenches
+        (id, role_code, role_name, role_type, mission, primary_object_types, metric_refs,
+         decision_cadence, owner, lifecycle_status, created_at, updated_at)
+       VALUES (?, ?, ?, 'supply_chain_operator', ?, ?, ?, ?, ?, 'active', ?, ?)`,
+      [
+        role.id,
+        role.role_code,
+        role.role_name,
+        role.mission,
+        JSON.stringify(role.primary_object_types),
+        JSON.stringify(role.metric_refs),
+        role.decision_cadence,
+        role.owner,
+        seededAt,
+        seededAt
+      ]
+    );
+  });
+
+  const playbooks = [
+    ["pb_planner_stockout", "role_planner", "计划缺口复核", "forecast_qty_30d > business_available_qty + inbound_qty", { action: "create_plan_review_task", tier: "L1", owner: "计划 Owner" }, ["metric:business_available_qty", "object:obj_forecast_v202606_pillow"], "P0"],
+    ["pb_buyer_eta", "role_buyer", "采购履约偏差复核", "po_on_time_delivery_rate below target OR shipment ETA delayed", { action: "request_supplier_eta_update", tier: "L1", owner: "采购 Owner" }, ["object:obj_po_202606_pillow_core", "metric:supplier_otif_rate"], "P1"],
+    ["pb_inventory_negative", "role_inventory", "负可用库存排查", "business_available_qty < 0", { action: "check_reservation_sync_batch_status", tier: "L1", owner: "库存 Owner" }, ["object_event:evt_negative_available_inventory", "knowledge_domain:stocking-rules"], "P0"],
+    ["pb_logistics_delay", "role_logistics", "ETA 延误影响评估", "eta_deviation_days >= 3", { action: "assess_listing_stockout_impact", tier: "L1", owner: "物流 Owner" }, ["object_event:evt_shipment_eta_delay", "object:obj_shipment_202606_us_eta"], "P1"],
+    ["pb_cost_storage", "role_cost", "库龄与仓储费复盘", "storage_fee_rate rising OR slow_moving_inventory_ratio rising", { action: "create_cost_attribution_review", tier: "L1", owner: "财务/成本 Owner" }, ["object_event:evt_storage_age_overstock", "metric:storage_fee_rate"], "P1"]
+  ];
+  playbooks.forEach(([id, roleId, name, trigger, template, evidenceRefs, priority]) => {
+    run(
+      `INSERT OR IGNORE INTO role_playbooks
+        (id, role_id, playbook_name, trigger_condition, action_template, evidence_refs, priority, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`,
+      [id, roleId, name, trigger, JSON.stringify(template), JSON.stringify(evidenceRefs), priority, seededAt, seededAt]
+    );
+  });
+
+  const providers = [
+    {
+      id: "provider_deepseek",
+      provider_code: "deepseek",
+      provider_name: "DeepSeek",
+      allowed_use_cases: ["certified_context_summarization", "evidence_rewrite_after_owner_approval"],
+      data_boundary: "Only certified metric context, object ids, evidence snippets and redacted prompts can be sent after explicit enablement.",
+      prompt_version_policy: "Prompt version must bind role_id, eval_case_id and evidence_refs before any call.",
+      cost_policy: "Disabled by default; future token and cost budget must be approved per workspace.",
+      pii_policy: "No personal contact, credential, order recipient or raw platform secret can leave the workspace."
+    },
+    {
+      id: "provider_kimi",
+      provider_code: "kimi",
+      provider_name: "Kimi",
+      allowed_use_cases: ["long_context_knowledge_review", "policy_gap_explanation_after_owner_approval"],
+      data_boundary: "Same no-provider baseline; future calls require certified context pack and audit log.",
+      prompt_version_policy: "Prompt versions must be rollbackable and pass agent eval before activation.",
+      cost_policy: "Disabled by default; future monthly budget and fallback provider must be recorded.",
+      pii_policy: "No raw ERP export, private customer data or credential-bearing evidence can be sent."
+    }
+  ];
+  providers.forEach((provider) => {
+    run(
+      `INSERT OR IGNORE INTO provider_gateway_policies
+        (id, provider_code, provider_name, provider_type, status, allowed_use_cases, data_boundary,
+         evidence_required, prompt_version_policy, cost_policy, pii_policy, created_at, updated_at)
+       VALUES (?, ?, ?, 'llm', 'disabled', ?, ?, 1, ?, ?, ?, ?, ?)`,
+      [
+        provider.id,
+        provider.provider_code,
+        provider.provider_name,
+        JSON.stringify(provider.allowed_use_cases),
+        provider.data_boundary,
+        provider.prompt_version_policy,
+        provider.cost_policy,
+        provider.pii_policy,
+        seededAt,
+        seededAt
+      ]
+    );
+  });
+
+  const evalCases = [
+    ["eval_planner_stockout", "role_planner", "stockout_risk", "核心 SKU 未来 30 天是否会断货，证据链是什么？", "partial", ["object:obj_sku_momcozy_pillow_core", "metric:stockout_days"]],
+    ["eval_buyer_supplier", "role_buyer", "supplier_po_delay", "当前 PO 延迟是否需要升级给供应商，依据是什么？", "partial", ["object:obj_po_202606_pillow_core", "object:obj_supplier_primary_textile"]],
+    ["eval_inventory_negative", "role_inventory", "negative_available_inventory", "FBA 仓计划库存表中的可用库存为负数是否合理？", "partial", ["object_event:evt_negative_available_inventory", "knowledge_domain:stocking-rules"]],
+    ["eval_logistics_eta", "role_logistics", "shipment_eta_delay", "ETA 延迟 5 天会影响哪些对象和指标？", "partial", ["object:obj_shipment_202606_us_eta", "metric:eta_deviation_days"]],
+    ["eval_cost_storage", "role_cost", "storage_cost_attribution", "仓储费上升应该归因到哪些 SKU、仓库和批次？", "insufficient_without_cost_fact", ["object:obj_cost_event_fba_storage", "metric:storage_fee_rate"]]
+  ];
+  evalCases.forEach(([id, roleId, scenarioType, question, answerability, evidenceRefs]) => {
+    run(
+      `INSERT OR IGNORE INTO agent_eval_cases
+        (id, role_id, scenario_type, question, expected_answerability, required_evidence_refs, status, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'draft', ?, ?)`,
+      [id, roleId, scenarioType, question, answerability, JSON.stringify(evidenceRefs), seededAt, seededAt]
+    );
+  });
 }
 
 function getAipObjects(url) {
@@ -2751,6 +3009,257 @@ function getAipSummary() {
     topRiskObjects: getAipObjects(new URL("http://local/api/aip/objects?limit=8")),
     openRecommendations: getAipRecommendations(new URL("http://local/api/aip/recommendations?limit=8")),
     policyTiers: all("SELECT * FROM action_policy_tiers ORDER BY tier_code")
+  };
+}
+
+function roleObjectTypes(role) {
+  return Array.isArray(role?.primary_object_types) ? role.primary_object_types.filter(Boolean) : [];
+}
+
+function getRoleObjects(role, limit = 60) {
+  const types = roleObjectTypes(role);
+  if (!types.length) return [];
+  return all(
+    `SELECT
+       oi.*,
+       (SELECT COUNT(*) FROM object_events oe WHERE oe.object_id = oi.id) AS event_count,
+       (SELECT COUNT(*) FROM recommendation_cards rc WHERE rc.target_object_id = oi.id) AS recommendation_count
+     FROM object_instances oi
+     WHERE oi.object_type IN (${types.map(() => "?").join(",")})
+     ORDER BY
+       CASE risk_level WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
+       health_score ASC,
+       updated_at DESC
+     LIMIT ?`,
+    [...types, limit]
+  ).map(rowToAipObject);
+}
+
+function getRoleMetrics(role) {
+  const refs = Array.isArray(role?.metric_refs) ? role.metric_refs.filter(Boolean) : [];
+  if (!refs.length) return [];
+  return all(
+    `SELECT * FROM metrics
+     WHERE id IN (${refs.map(() => "?").join(",")})
+        OR code IN (${refs.map(() => "?").join(",")})
+     ORDER BY CASE level WHEN 'L0' THEN 0 WHEN 'L1' THEN 1 WHEN 'L2' THEN 2 ELSE 3 END, l1_domain, code
+     LIMIT 80`,
+    [...refs, ...refs]
+  );
+}
+
+function getRoleEvents(role, limit = 50) {
+  const types = roleObjectTypes(role);
+  if (!types.length) return [];
+  return all(
+    `SELECT oe.*, oi.display_name, oi.object_type, oi.owner AS object_owner
+     FROM object_events oe
+     JOIN object_instances oi ON oi.id = oe.object_id
+     WHERE oi.object_type IN (${types.map(() => "?").join(",")})
+     ORDER BY
+       CASE oe.severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
+       oe.occurred_at DESC
+     LIMIT ?`,
+    [...types, limit]
+  ).map((row) => ({
+    ...row,
+    metric_refs: parseJsonValue(row.metric_refs, []),
+    evidence_refs: parseJsonValue(row.evidence_refs, [])
+  }));
+}
+
+function getRoleRecommendations(role, limit = 50) {
+  const types = roleObjectTypes(role);
+  if (!types.length) return [];
+  return all(
+    `SELECT * FROM recommendation_cards
+     WHERE target_object_type IN (${types.map(() => "?").join(",")})
+        OR owner = ?
+     ORDER BY updated_at DESC, priority, created_at DESC
+     LIMIT ?`,
+    [...types, role.owner, limit]
+  ).map(rowToRecommendation);
+}
+
+function getProviderGatewayPolicies(url = new URL("http://local/api/provider-gateway/policies")) {
+  const clauses = [];
+  const params = [];
+  const status = url.searchParams.get("status");
+  const q = url.searchParams.get("q");
+  if (status) {
+    clauses.push("status = ?");
+    params.push(status);
+  }
+  if (q) {
+    clauses.push("(provider_code LIKE ? OR provider_name LIKE ? OR data_boundary LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 40, 100));
+  return all(`SELECT * FROM provider_gateway_policies ${where} ORDER BY status, provider_code LIMIT ?`, params).map(rowToProviderPolicy);
+}
+
+function getAgentEvalCases(url = new URL("http://local/api/agent-evals")) {
+  const clauses = [];
+  const params = [];
+  const roleId = url.searchParams.get("roleId") || url.searchParams.get("role_id");
+  const scenarioType = url.searchParams.get("scenarioType") || url.searchParams.get("scenario_type");
+  const status = url.searchParams.get("status");
+  if (roleId) {
+    clauses.push("role_id = ?");
+    params.push(roleId);
+  }
+  if (scenarioType) {
+    clauses.push("scenario_type = ?");
+    params.push(scenarioType);
+  }
+  if (status) {
+    clauses.push("status = ?");
+    params.push(status);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 100, 300));
+  return all(`SELECT * FROM agent_eval_cases ${where} ORDER BY role_id, scenario_type, id LIMIT ?`, params).map(rowToAgentEvalCase);
+}
+
+function getRoleWorkbenches(url = new URL("http://local/api/roles/workbenches")) {
+  const clauses = [];
+  const params = [];
+  const status = url.searchParams.get("status");
+  const q = url.searchParams.get("q");
+  if (status) {
+    clauses.push("lifecycle_status = ?");
+    params.push(status);
+  }
+  if (q) {
+    clauses.push("(role_name LIKE ? OR mission LIKE ? OR owner LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 40, 100));
+  return all(`SELECT * FROM role_workbenches ${where} ORDER BY role_code LIMIT ?`, params)
+    .map(rowToRoleWorkbench)
+    .map((role) => {
+      const objects = getRoleObjects(role, 200);
+      const objectIds = new Set(objects.map((object) => object.id));
+      const events = getRoleEvents(role, 200).filter((event) => objectIds.has(event.object_id));
+      const recommendations = getRoleRecommendations(role, 200).filter((item) => !item.target_object_id || objectIds.has(item.target_object_id) || item.owner === role.owner);
+      return {
+        ...role,
+        counts: {
+          objects: objects.length,
+          criticalObjects: objects.filter((object) => object.risk_level === "critical").length,
+          openEvents: events.filter((event) => event.status !== "closed").length,
+          recommendations: recommendations.length,
+          playbooks: scalar("SELECT COUNT(*) AS count FROM role_playbooks WHERE role_id = ?", [role.id]),
+          evalCases: scalar("SELECT COUNT(*) AS count FROM agent_eval_cases WHERE role_id = ?", [role.id])
+        }
+      };
+    });
+}
+
+function getRoleWorkbenchDetail(id) {
+  const role = rowToRoleWorkbench(get("SELECT * FROM role_workbenches WHERE id = ? OR role_code = ?", [id, id]));
+  if (!role) return null;
+  const objects = getRoleObjects(role);
+  const objectIds = new Set(objects.map((object) => object.id));
+  const events = getRoleEvents(role).filter((event) => objectIds.has(event.object_id));
+  const recommendations = getRoleRecommendations(role).filter((item) => !item.target_object_id || objectIds.has(item.target_object_id) || item.owner === role.owner);
+  return {
+    role,
+    objects,
+    events,
+    recommendations,
+    playbooks: all("SELECT * FROM role_playbooks WHERE role_id = ? ORDER BY priority, id", [role.id]).map(rowToRolePlaybook),
+    metrics: getRoleMetrics(role),
+    evalCases: getAgentEvalCases(new URL(`http://local/api/agent-evals?roleId=${encodeURIComponent(role.id)}&limit=100`)),
+    providerPolicies: getProviderGatewayPolicies(),
+    actionBoundary: {
+      mode: "role_action_draft_only",
+      actionTier: "L1",
+      approvalRequired: true,
+      productionWrites: false,
+      providerCalls: false,
+      erpWriteback: false
+    }
+  };
+}
+
+function getRoleGovernanceSummary() {
+  const roles = tableExists("role_workbenches") ? getRoleWorkbenches(new URL("http://local/api/roles/workbenches?limit=50")) : [];
+  const policies = tableExists("provider_gateway_policies") ? getProviderGatewayPolicies() : [];
+  return {
+    roles: roles.length,
+    activeRoles: roles.filter((role) => role.lifecycle_status === "active").length,
+    rolePlaybooks: tableExists("role_playbooks") ? tableCount("role_playbooks") : 0,
+    evalCases: tableExists("agent_eval_cases") ? tableCount("agent_eval_cases") : 0,
+    providerPolicies: policies.length,
+    disabledProviders: policies.filter((policy) => policy.status === "disabled").length,
+    roleQueues: roles.map((role) => ({
+      id: role.id,
+      roleName: role.role_name,
+      owner: role.owner,
+      counts: role.counts
+    })),
+    boundary: {
+      providerCalls: false,
+      erpWriteback: false,
+      policy: "provider_disabled_until_certified_context_eval_and_owner_approval"
+    }
+  };
+}
+
+function createRoleActionDraft(roleId, body) {
+  const detail = getRoleWorkbenchDetail(roleId);
+  if (!detail) return null;
+  const role = detail.role;
+  const targetIds = Array.isArray(body.targetAssetIds || body.target_asset_ids)
+    ? body.targetAssetIds || body.target_asset_ids
+    : [normalizeText(body.targetAssetId || body.target_asset_id || detail.objects[0]?.id)].filter(Boolean);
+  const evidenceRefs = body.evidenceRefs || body.evidence_refs || detail.events.slice(0, 3).map((event) => `object_event:${event.id}`);
+  const title = normalizeText(body.operationTitle || body.title, `${role.role_name} 行动草稿`);
+  const summary = normalizeText(
+    body.operationSummary || body.summary,
+    "角色工作台生成 L1 建议草稿；进入 Owner 审核，不调用外部 provider，不写回 ERP/Jijia。"
+  );
+  const operation = createWorkbenchOperation({
+    moduleId: "role-workbench",
+    operationType: "role_action_draft",
+    targetAssetType: "role_workbench",
+    targetAssetIds: [role.id, ...targetIds],
+    operationTitle: title,
+    operationSummary: summary,
+    operationPayload: {
+      roleId: role.id,
+      roleCode: role.role_code,
+      source: "role_workbench",
+      evidenceRefs,
+      playbookId: normalizeText(body.playbookId || body.playbook_id),
+      providerCalls: false,
+      erpWriteback: false,
+      actionTier: "L1"
+    },
+    owner: normalizeText(body.owner, role.owner),
+    priority: normalizeText(body.priority, "P1"),
+    createdBy: normalizeText(body.createdBy || body.actor, "local_user"),
+    status: "review_pending"
+  });
+  writeAudit("role_workbench.action_draft_created", "role_workbench", role.id, {
+    operationId: operation.id,
+    targetIds,
+    evidenceRefs,
+    providerCalls: false,
+    erpWriteback: false
+  }, normalizeText(body.createdBy || body.actor, "local_user"));
+  return {
+    role,
+    operation,
+    boundary: {
+      mode: "local_ledger_action_draft",
+      productionWrites: false,
+      providerCalls: false,
+      erpWriteback: false
+    }
   };
 }
 
@@ -4860,6 +5369,7 @@ function getWorkbenchModules() {
   const p0Done = scalar("SELECT COUNT(*) AS count FROM governance_tasks WHERE priority = 'P0' AND status IN ('已签字', 'certified', 'done')");
   const lineageMapped = scalar("SELECT COUNT(*) AS count FROM lineage_edges WHERE status IN ('mapped', 'certified')");
   const lineageTotal = tableCount("lineage_edges");
+  const roleSummary = getRoleGovernanceSummary();
   return [
     {
       id: "overview",
@@ -4994,6 +5504,18 @@ function getWorkbenchModules() {
       apiPath: "/api/workbench/ai-knowledge"
     },
     {
+      id: "role-workbench",
+      code: "10",
+      title: "角色工作台",
+      focus: "计划、采购、库存、物流、成本角色队列，连接对象、指标、推荐动作和 provider/eval 边界。",
+      stage: "Act",
+      status: "draft",
+      score: roleSummary.roles ? 74 : 20,
+      primaryMetric: `${roleSummary.roles} roles`,
+      secondaryMetric: `${roleSummary.disabledProviders}/${roleSummary.providerPolicies} providers off`,
+      apiPath: "/api/workbench/role-workbench"
+    },
+    {
       id: "decision-loop",
       code: "11",
       title: "决策闭环工作台",
@@ -5106,6 +5628,14 @@ function getWorkbenchModule(id) {
       cards: getKbCards(new URL("http://local/api/kb/cards?limit=40")),
       ruleSummary: getKnowledgeRuleSummary(),
       rules: getKnowledgeRules(new URL("http://local/api/knowledge-rules?limit=40")),
+      operations: operationsForModule()
+    }),
+    "role-workbench": () => ({
+      summary: getRoleGovernanceSummary(),
+      roles: getRoleWorkbenches(new URL("http://local/api/roles/workbenches?limit=50")),
+      selected: getRoleWorkbenchDetail("role_inventory"),
+      providerPolicies: getProviderGatewayPolicies(),
+      evalCases: getAgentEvalCases(new URL("http://local/api/agent-evals?limit=100")),
       operations: operationsForModule()
     }),
     "ai-chat": () => ({ sessions: getAiChatSessions(new URL("http://local/api/ai-chat/sessions?limit=20")), summary: getAiChatSummary(), operations: operationsForModule() }),
@@ -5268,7 +5798,8 @@ function getDeployHealth() {
       ledger: getLedgerSummary(),
       knowledgeBase: getKnowledgeSummary(),
       aiChat: getAiChatSummary(),
-      aipPhase1: getAipPhase1Summary()
+      aipPhase1: getAipPhase1Summary(),
+      roleProviderGovernance: getRoleGovernanceSummary()
     },
     boundary: {
       productionWrites: false,
@@ -6019,6 +6550,21 @@ const server = createServer(async (req, res) => {
         const recommendation = getAipRecommendationDetail(aipRecommendationRoute[1]);
         return recommendation ? json(res, recommendation) : json(res, { error: "AIP recommendation not found" }, 404);
       }
+      if (req.method === "GET" && url.pathname === "/api/roles/summary") return json(res, getRoleGovernanceSummary());
+      if (req.method === "GET" && url.pathname === "/api/roles/workbenches") return json(res, getRoleWorkbenches(url));
+      const roleActionDraftRoute = url.pathname.match(/^\/api\/roles\/workbenches\/([^/]+)\/action-draft$/);
+      if (req.method === "POST" && roleActionDraftRoute) {
+        const body = await readBody(req);
+        const result = createRoleActionDraft(roleActionDraftRoute[1], body);
+        return result ? json(res, { ok: true, ...result }, 201) : json(res, { error: "Role workbench not found" }, 404);
+      }
+      const roleWorkbenchRoute = url.pathname.match(/^\/api\/roles\/workbenches\/([^/]+)$/);
+      if (req.method === "GET" && roleWorkbenchRoute) {
+        const detail = getRoleWorkbenchDetail(roleWorkbenchRoute[1]);
+        return detail ? json(res, detail) : json(res, { error: "Role workbench not found" }, 404);
+      }
+      if (req.method === "GET" && url.pathname === "/api/provider-gateway/policies") return json(res, getProviderGatewayPolicies(url));
+      if (req.method === "GET" && url.pathname === "/api/agent-evals") return json(res, getAgentEvalCases(url));
       if (req.method === "GET" && url.pathname === "/api/workbench/modules") return json(res, getWorkbenchModules());
       if (req.method === "GET" && url.pathname === "/api/workbench/operations") return json(res, getWorkbenchOperations(url));
       if (req.method === "GET" && url.pathname === "/api/workbench/operations/summary") return json(res, getWorkbenchOperationSummary());

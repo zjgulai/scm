@@ -589,6 +589,91 @@ type AipScenario = {
   boundary: AnyRow;
 };
 
+type RoleWorkbench = {
+  id: string;
+  role_code: string;
+  role_name: string;
+  role_type: string;
+  mission: string;
+  primary_object_types: string[];
+  metric_refs: string[];
+  decision_cadence: string;
+  owner: string;
+  lifecycle_status: string;
+  created_at: string;
+  updated_at: string;
+  counts?: {
+    objects: number;
+    criticalObjects: number;
+    openEvents: number;
+    recommendations: number;
+    playbooks: number;
+    evalCases: number;
+  };
+};
+
+type RolePlaybook = {
+  id: string;
+  role_id: string;
+  playbook_name: string;
+  trigger_condition: string;
+  action_template: Record<string, unknown>;
+  evidence_refs: unknown[];
+  priority: string;
+  status: string;
+};
+
+type ProviderPolicy = {
+  id: string;
+  provider_code: string;
+  provider_name: string;
+  provider_type: string;
+  status: string;
+  allowed_use_cases: string[];
+  data_boundary: string;
+  evidence_required: boolean;
+  prompt_version_policy: string;
+  cost_policy: string;
+  pii_policy: string;
+};
+
+type AgentEvalCase = {
+  id: string;
+  role_id: string;
+  scenario_type: string;
+  question: string;
+  expected_answerability: string;
+  required_evidence_refs: unknown[];
+  status: string;
+};
+
+type RoleWorkbenchDetail = {
+  role: RoleWorkbench;
+  objects: AipObject[];
+  events: (AipEvent & { display_name?: string; object_type?: string; object_owner?: string })[];
+  recommendations: AipRecommendation[];
+  playbooks: RolePlaybook[];
+  metrics: Metric[];
+  evalCases: AgentEvalCase[];
+  providerPolicies: ProviderPolicy[];
+  actionBoundary: AnyRow;
+};
+
+type RoleGovernanceSummary = {
+  roles: number;
+  activeRoles: number;
+  rolePlaybooks: number;
+  evalCases: number;
+  providerPolicies: number;
+  disabledProviders: number;
+  roleQueues: Array<{ id: string; roleName: string; owner: string; counts?: RoleWorkbench["counts"] }>;
+  boundary: {
+    providerCalls: boolean;
+    erpWriteback: boolean;
+    policy: string;
+  };
+};
+
 type LedgerState = {
   annotations: LedgerAnnotation[];
   comments: LedgerComment[];
@@ -608,6 +693,7 @@ const fallbackModules: WorkbenchModule[] = [
   { id: "lineage-quality", code: "07", title: "血缘与质量工作台", focus: "血缘、DQ 与影响分析。", stage: "Control", status: "reviewed", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/lineage-quality" },
   { id: "chatbi", code: "08", title: "ChatBI 语义治理台", focus: "可回答性与证据链。", stage: "Serve", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/chatbi" },
   { id: "ai-knowledge", code: "09", title: "AI 知识库", focus: "三大知识库主题域、本地检索和证据片段。", stage: "Serve", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/ai-knowledge" },
+  { id: "role-workbench", code: "10", title: "角色工作台", focus: "计划、采购、库存、物流、成本角色队列。", stage: "Act", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/role-workbench" },
   { id: "decision-loop", code: "11", title: "决策闭环工作台", focus: "洞察到审批复盘。", stage: "Act", status: "draft", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/decision-loop" },
   { id: "audit-log", code: "12", title: "审计日志工作台", focus: "治理操作审计、筛选和证据回看。", stage: "Control", status: "active", score: 0, primaryMetric: "--", secondaryMetric: "--", apiPath: "/api/workbench/audit-log" }
 ];
@@ -759,7 +845,26 @@ const columnLabels: Record<string, string> = {
   step_order: "步骤",
   step_type: "步骤类型",
   step_title: "步骤标题",
-  step_detail: "步骤说明"
+  step_detail: "步骤说明",
+  role_code: "角色编码",
+  role_name: "角色",
+  role_type: "角色类型",
+  mission: "角色使命",
+  primary_object_types: "主对象",
+  decision_cadence: "决策节奏",
+  playbook_name: "Playbook",
+  trigger_condition: "触发条件",
+  action_template: "动作模板",
+  provider_code: "Provider",
+  provider_name: "Provider 名称",
+  provider_type: "Provider 类型",
+  allowed_use_cases: "允许场景",
+  data_boundary: "数据边界",
+  evidence_required: "需要证据",
+  prompt_version_policy: "Prompt 版本策略",
+  cost_policy: "成本策略",
+  pii_policy: "PII 策略",
+  required_evidence_refs: "必需证据"
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -1095,6 +1200,13 @@ function defaultOperationTemplate(moduleId: string) {
       summary: "将证据不足、冲突或用户反馈沉淀为问法样本和治理任务。",
       payload: { provider_calls: "false", feedback_loop: "required" }
     },
+    "role-workbench": {
+      operationType: "role_action_draft",
+      targetAssetType: "role_workbench",
+      title: "角色工作台行动草稿",
+      summary: "围绕角色队列中的对象、事件和建议卡创建 L1 行动草稿，进入 Owner 审核。",
+      payload: { provider_calls: "false", erp_writeback: "false", action_tier: "L1", source: "role_workbench" }
+    },
     "decision-loop": {
       operationType: "action_replay_review",
       targetAssetType: "action_task",
@@ -1137,6 +1249,18 @@ function workbenchFlowSpec(moduleId: string) {
         { label: "取证", detail: "返回证据片段和可答性" },
         { label: "沉淀", detail: "生成问法样本或反馈" },
         { label: "审核", detail: "语义 Owner 认证" }
+      ]
+    },
+    "role-workbench": {
+      input: "计划、采购、库存、物流、成本角色配置，对象队列、事件、建议卡、playbook 和 eval case。",
+      output: "角色待办视图、L1 行动草稿、provider 启用前置边界和 eval 证据清单。",
+      collaborators: "供应链角色 Owner、数据治理、ChatBI 语义 Owner。",
+      guardrail: "只写本地工作台账本；provider 默认关闭；不写回积加/ERP。",
+      steps: [
+        { label: "分派", detail: "按角色聚合对象与风险" },
+        { label: "诊断", detail: "查看事件、指标和证据" },
+        { label: "草稿", detail: "生成 L1 行动建议" },
+        { label: "评估", detail: "用 eval case 校验可答性" }
       ]
     },
     ontology: {
@@ -4758,6 +4882,326 @@ function RecommendationQueuePanel({ onOpenAsset }: { onOpenAsset: (asset: AssetR
   );
 }
 
+const emptyRoleDetail: RoleWorkbenchDetail = {
+  role: {
+    id: "",
+    role_code: "",
+    role_name: "角色工作台",
+    role_type: "",
+    mission: "",
+    primary_object_types: [],
+    metric_refs: [],
+    decision_cadence: "",
+    owner: "",
+    lifecycle_status: "draft",
+    created_at: "",
+    updated_at: "",
+    counts: {
+      objects: 0,
+      criticalObjects: 0,
+      openEvents: 0,
+      recommendations: 0,
+      playbooks: 0,
+      evalCases: 0
+    }
+  },
+  objects: [],
+  events: [],
+  recommendations: [],
+  playbooks: [],
+  metrics: [],
+  evalCases: [],
+  providerPolicies: [],
+  actionBoundary: {}
+};
+
+const emptyRoleSummary: RoleGovernanceSummary = {
+  roles: 0,
+  activeRoles: 0,
+  rolePlaybooks: 0,
+  evalCases: 0,
+  providerPolicies: 0,
+  disabledProviders: 0,
+  roleQueues: [],
+  boundary: {
+    providerCalls: false,
+    erpWriteback: false,
+    policy: "provider_disabled_until_certified_context_eval_and_owner_approval"
+  }
+};
+
+function roleWorkbenchAsset(role: RoleWorkbench): AssetRef {
+  return {
+    type: "role_workbench",
+    id: role.id,
+    title: role.role_name,
+    subtitle: `${role.owner} / ${role.decision_cadence}`,
+    fields: {
+      id: role.id,
+      role_code: role.role_code,
+      role_name: role.role_name,
+      role_type: role.role_type,
+      mission: role.mission,
+      primary_object_types: safeFieldValue(role.primary_object_types),
+      metric_refs: safeFieldValue(role.metric_refs),
+      decision_cadence: role.decision_cadence,
+      owner: role.owner,
+      lifecycle_status: role.lifecycle_status
+    },
+    readOnly: true
+  };
+}
+
+function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset: (asset: AssetRef) => void }) {
+  const [selectedRoleId, setSelectedRoleId] = useState("role_inventory");
+  const [refresh, setRefresh] = useState(0);
+  const [actionNote, setActionNote] = useState("");
+  const [drafting, setDrafting] = useState(false);
+  const summary = useApi<RoleGovernanceSummary>(`/api/roles/summary?refresh=${refresh}`, emptyRoleSummary);
+  const roles = useApi<RoleWorkbench[]>(`/api/roles/workbenches?refresh=${refresh}`, []);
+  const detail = useApi<RoleWorkbenchDetail>(`/api/roles/workbenches/${encodeURIComponent(selectedRoleId)}?refresh=${refresh}`, emptyRoleDetail);
+  const activeRole = detail.data.role;
+  const firstObject = detail.data.objects[0];
+  const firstEvent = detail.data.events[0];
+
+  useEffect(() => {
+    if (!roles.data.length) return;
+    if (!roles.data.some((role) => role.id === selectedRoleId || role.role_code === selectedRoleId)) {
+      setSelectedRoleId(roles.data[0].id);
+    }
+  }, [roles.data, selectedRoleId]);
+
+  async function createActionDraft() {
+    if (!activeRole.id) return;
+    setDrafting(true);
+    setActionNote("");
+    try {
+      const payload = await api<{ ok: boolean; operation: WorkbenchOperation }>(`/api/roles/workbenches/${encodeURIComponent(activeRole.id)}/action-draft`, {
+        method: "POST",
+        body: JSON.stringify({
+          operationTitle: `${activeRole.role_name} L1 行动草稿`,
+          operationSummary: `${activeRole.role_name} 基于对象队列、事件和 playbook 生成本地行动草稿；进入 Owner 审核，不调用 provider，不写回 ERP/Jijia。`,
+          targetAssetIds: [firstObject?.id, firstEvent?.id].filter(Boolean),
+          evidenceRefs: firstEvent ? [`object_event:${firstEvent.id}`] : [],
+          playbookId: detail.data.playbooks[0]?.id,
+          owner: activeRole.owner,
+          priority: firstEvent?.severity === "critical" ? "P0" : "P1",
+          createdBy: "local_user"
+        })
+      });
+      setActionNote(`已创建 ${payload.operation.id}，workflow ${payload.operation.workflow_id}。`);
+      setRefresh((value) => value + 1);
+    } catch (err) {
+      setActionNote(`创建失败：${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setDrafting(false);
+    }
+  }
+
+  return (
+    <div className="panelStack">
+      <ModuleHeader module={module} />
+      <section className="roleWorkbench">
+        <div className="roleSummaryGrid">
+          <article>
+            <span>角色</span>
+            <strong>{summary.data.roles}</strong>
+            <small>{summary.data.activeRoles} active roles</small>
+          </article>
+          <article>
+            <span>Playbook</span>
+            <strong>{summary.data.rolePlaybooks}</strong>
+            <small>角色触发器与动作模板</small>
+          </article>
+          <article>
+            <span>Eval cases</span>
+            <strong>{summary.data.evalCases}</strong>
+            <small>问答可答性校验集</small>
+          </article>
+          <article>
+            <span>Provider</span>
+            <strong>{summary.data.disabledProviders}/{summary.data.providerPolicies}</strong>
+            <small>{summary.data.boundary.providerCalls ? "provider on" : "provider off"}</small>
+          </article>
+        </div>
+        {(summary.error || roles.error || detail.error) ? <div className="error">{summary.error || roles.error || detail.error}</div> : null}
+        <div className="roleWorkbenchLayout">
+          <aside className="roleRail">
+            <div className="sectionLabel">
+              <span>Roles</span>
+              <strong>角色队列</strong>
+            </div>
+            {roles.data.map((role) => (
+              <button
+                key={role.id}
+                className={activeRole.id === role.id ? "active" : ""}
+                onClick={() => setSelectedRoleId(role.id)}
+              >
+                <span>{role.role_code}</span>
+                <strong>{role.role_name}</strong>
+                <small>{role.counts?.objects || 0} objects / {role.counts?.openEvents || 0} events</small>
+              </button>
+            ))}
+          </aside>
+          <div className="roleWorkbenchMain">
+            <div className="roleMissionPanel">
+              <div>
+                <p className="eyebrow">Role mission</p>
+                <h3>{activeRole.role_name}</h3>
+                <p>{activeRole.mission || "暂无角色使命。"}</p>
+              </div>
+              <div className="roleMissionMeta">
+                <Badge tone={toneFromStatus(activeRole.lifecycle_status)}>{activeRole.lifecycle_status || "draft"}</Badge>
+                <Badge tone="blue">{activeRole.owner || "--"}</Badge>
+                <Badge>{activeRole.decision_cadence || "--"}</Badge>
+                <button className="textButton" onClick={() => activeRole.id && onOpenAsset(roleWorkbenchAsset(activeRole))}>查看角色资产</button>
+              </div>
+            </div>
+            <div className="roleObjectChips">
+              {activeRole.primary_object_types.map((item) => <span key={item}>{item}</span>)}
+              {activeRole.metric_refs.map((item) => <span key={item} className="metricChip">{item}</span>)}
+            </div>
+            <div className="roleQueueGrid">
+              <article>
+                <div className="surfaceHead">
+                  <h3>对象队列</h3>
+                  <Badge tone="blue">{detail.data.objects.length} objects</Badge>
+                </div>
+                <div className="roleQueueList">
+                  {detail.data.objects.slice(0, 8).map((object) => (
+                    <button key={object.id} onClick={() => onOpenAsset(aipObjectAsset(object))}>
+                      <span>
+                        <strong>{object.display_name}</strong>
+                        <small>{object.object_type} / {object.object_key}</small>
+                      </span>
+                      <Badge tone={toneFromStatus(object.risk_level)}>{object.risk_level}</Badge>
+                    </button>
+                  ))}
+                  {!detail.data.objects.length ? <div className="empty compact">暂无对象队列。</div> : null}
+                </div>
+              </article>
+              <article>
+                <div className="surfaceHead">
+                  <h3>事件队列</h3>
+                  <Badge tone="warn">{detail.data.events.length} events</Badge>
+                </div>
+                <div className="roleQueueList">
+                  {detail.data.events.slice(0, 8).map((event) => (
+                    <button key={event.id} onClick={() => onOpenAsset(aipEventAsset(event))}>
+                      <span>
+                        <strong>{event.event_title}</strong>
+                        <small>{event.display_name || event.object_id}</small>
+                      </span>
+                      <Badge tone={toneFromStatus(event.severity)}>{event.severity}</Badge>
+                    </button>
+                  ))}
+                  {!detail.data.events.length ? <div className="empty compact">暂无事件队列。</div> : null}
+                </div>
+              </article>
+              <article>
+                <div className="surfaceHead">
+                  <h3>推荐动作</h3>
+                  <Badge tone="blue">{detail.data.recommendations.length} cards</Badge>
+                </div>
+                <div className="roleQueueList">
+                  {detail.data.recommendations.slice(0, 8).map((recommendation) => (
+                    <button key={recommendation.id} onClick={() => onOpenAsset(aipRecommendationAsset(recommendation))}>
+                      <span>
+                        <strong>{recommendation.recommendation_title}</strong>
+                        <small>{recommendation.owner} / {recommendation.scenario_type}</small>
+                      </span>
+                      <Badge tone={toneFromStatus(recommendation.approval_status)}>{recommendation.approval_status}</Badge>
+                    </button>
+                  ))}
+                  {!detail.data.recommendations.length ? <div className="empty compact">暂无推荐动作。</div> : null}
+                </div>
+              </article>
+            </div>
+            <div className="roleActionPanel">
+              <div>
+                <p className="eyebrow">Ledger action</p>
+                <h3>本地行动草稿</h3>
+                <p>将当前角色的首个对象、事件和 playbook 组合为 L1 行动草稿，进入工作台操作审核流。</p>
+              </div>
+              <button className="roleActionDraftButton" disabled={drafting || !activeRole.id} onClick={createActionDraft}>
+                {drafting ? "创建中..." : "创建行动草稿"}
+              </button>
+            </div>
+            {actionNote ? <div className="kbNotice">{actionNote}</div> : null}
+            <div className="roleSupportingGrid">
+              <section className="rolePlaybookPanel">
+                <div className="surfaceHead">
+                  <h3>角色 Playbook</h3>
+                  <Badge tone="blue">{detail.data.playbooks.length}</Badge>
+                </div>
+                <div className="playbookList">
+                  {detail.data.playbooks.map((playbook) => (
+                    <article key={playbook.id}>
+                      <div className="ledgerItemHead">
+                        <strong>{playbook.playbook_name}</strong>
+                        <Badge tone={toneFromStatus(playbook.priority)}>{playbook.priority}</Badge>
+                      </div>
+                      <p>{playbook.trigger_condition}</p>
+                      <small>{cellValue(playbook.action_template)}</small>
+                    </article>
+                  ))}
+                </div>
+              </section>
+              <section className="providerPolicyPanel">
+                <div className="surfaceHead">
+                  <h3>Provider Gateway</h3>
+                  <Badge tone="good">default off</Badge>
+                </div>
+                <div className="providerPolicyList">
+                  {detail.data.providerPolicies.map((policy) => (
+                    <article key={policy.id}>
+                      <div className="ledgerItemHead">
+                        <strong>{policy.provider_name}</strong>
+                        <Badge tone={toneFromStatus(policy.status)}>{policy.status}</Badge>
+                      </div>
+                      <p>{policy.data_boundary}</p>
+                      <small>{policy.prompt_version_policy}</small>
+                    </article>
+                  ))}
+                </div>
+              </section>
+              <section className="evalCasePanel">
+                <div className="surfaceHead">
+                  <h3>Agent Eval</h3>
+                  <Badge tone="warn">{detail.data.evalCases.length} cases</Badge>
+                </div>
+                <div className="evalCaseList">
+                  {detail.data.evalCases.map((item) => (
+                    <article key={item.id}>
+                      <div className="ledgerItemHead">
+                        <strong>{item.scenario_type}</strong>
+                        <Badge tone={toneFromStatus(item.expected_answerability)}>{item.expected_answerability}</Badge>
+                      </div>
+                      <p>{item.question}</p>
+                      <small>{cellValue(item.required_evidence_refs)}</small>
+                    </article>
+                  ))}
+                </div>
+              </section>
+              <section className="roleMetricsPanel">
+                <div className="surfaceHead">
+                  <h3>角色指标</h3>
+                  <Badge tone="blue">{detail.data.metrics.length}</Badge>
+                </div>
+                <DataTable
+                  rows={detail.data.metrics.slice(0, 8).map((metric) => metric as unknown as AnyRow)}
+                  columns={["code", "name", "level", "owner", "certification_status"]}
+                  empty="暂无角色指标映射。"
+                />
+              </section>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
 function DecisionPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset: (asset: AssetRef) => void }) {
   const [refresh, setRefresh] = useState(0);
   const [note, setNote] = useState("");
@@ -5344,7 +5788,7 @@ function Sidebar({ modules, active, onSelect }: { modules: WorkbenchModule[]; ac
     { title: "对象与模型", ids: ["ontology", "tags", "dimensions"] },
     { title: "指标治理", ids: ["metric-engineering", "metric-dictionary", "kpi-system"] },
     { title: "控制与语义", ids: ["lineage-quality", "chatbi", "ai-knowledge"] },
-    { title: "闭环与审计", ids: ["decision-loop", "audit-log"] }
+    { title: "角色与闭环", ids: ["role-workbench", "decision-loop", "audit-log"] }
   ];
   const moduleById = Object.fromEntries(modules.map((module) => [module.id, module]));
   return (
@@ -5438,6 +5882,7 @@ function App() {
             onWorkbenchRefresh={() => setWorkbenchRefresh((value) => value + 1)}
           />
         )}
+        {active === "role-workbench" && <RoleWorkbenchPanel module={activeModule} onOpenAsset={setSelectedAsset} />}
         {active === "decision-loop" && <DecisionPanel module={activeModule} onOpenAsset={setSelectedAsset} />}
         {active === "audit-log" && <AuditLogPanel module={activeModule} onOpenAsset={setSelectedAsset} />}
       </section>

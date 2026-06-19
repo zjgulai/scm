@@ -50,10 +50,13 @@ assert(health.boundary?.erpWriteback === false, "ERP writeback boundary changed"
 assert(health.database?.aipPhase1?.schemaReady === true, "AIP Phase 1 schema is not ready", health.database?.aipPhase1);
 assert(health.database?.aipPhase1?.providerCalls === false, "AIP provider boundary changed", health.database?.aipPhase1);
 assert(health.database?.aipPhase1?.erpWriteback === false, "AIP ERP writeback boundary changed", health.database?.aipPhase1);
+assert(health.database?.roleProviderGovernance?.roles >= 5, "Role provider governance summary missing roles", health.database?.roleProviderGovernance);
+assert(health.database?.roleProviderGovernance?.boundary?.providerCalls === false, "Role provider boundary changed", health.database?.roleProviderGovernance);
 
 const modules = await request("/api/workbench/modules");
-assert(Array.isArray(modules) && modules.length === 13, "expected 13 workbench modules", { count: modules.length });
+assert(Array.isArray(modules) && modules.length === 14, "expected 14 workbench modules", { count: modules.length });
 assert(modules.some((module) => module.id === "audit-log"), "audit log workbench module missing", modules);
+assert(modules.some((module) => module.id === "role-workbench"), "role workbench module missing", modules);
 assert(modules[0]?.id === "overview" && modules[1]?.id === "ai-chat", "AI chat should be directly below overview", modules.slice(0, 4));
 
 const overviewExport = await request("/api/export/overview?format=json");
@@ -798,6 +801,67 @@ for (const scenarioId of scenarioIds) {
   assert(run.boundary?.providerCalls === false && run.boundary?.erpWriteback === false, `AIP scenario ${scenarioId} boundary changed`, run.boundary);
 }
 
+const roleSummary = await request("/api/roles/summary");
+assert(roleSummary.roles >= 5, "Role summary missing workbenches", roleSummary);
+assert(roleSummary.disabledProviders === roleSummary.providerPolicies, "Provider policies should stay disabled", roleSummary);
+assert(roleSummary.boundary?.providerCalls === false && roleSummary.boundary?.erpWriteback === false, "Role boundary changed", roleSummary.boundary);
+
+const roleWorkbenches = await request("/api/roles/workbenches");
+const requiredRoleIds = ["role_planner", "role_buyer", "role_inventory", "role_logistics", "role_cost"];
+assert(
+  Array.isArray(roleWorkbenches) && requiredRoleIds.every((roleId) => roleWorkbenches.some((role) => role.id === roleId)),
+  "Role workbench seed missing required roles",
+  roleWorkbenches
+);
+
+const inventoryRoleDetail = await request("/api/roles/workbenches/role_inventory");
+assert(inventoryRoleDetail.role?.id === "role_inventory", "Inventory role detail failed", inventoryRoleDetail);
+assert(inventoryRoleDetail.objects?.some((object) => object.id === "obj_batch_fba_negative_available"), "Inventory role missing negative inventory object", inventoryRoleDetail.objects);
+assert(inventoryRoleDetail.events?.some((event) => event.event_type === "negative_available_inventory"), "Inventory role missing negative inventory event", inventoryRoleDetail.events);
+assert(inventoryRoleDetail.playbooks?.some((playbook) => playbook.id === "pb_inventory_negative"), "Inventory role missing negative inventory playbook", inventoryRoleDetail.playbooks);
+assert(inventoryRoleDetail.evalCases?.some((item) => item.scenario_type === "negative_available_inventory"), "Inventory role missing eval case", inventoryRoleDetail.evalCases);
+assert(inventoryRoleDetail.actionBoundary?.providerCalls === false && inventoryRoleDetail.actionBoundary?.erpWriteback === false, "Inventory role action boundary changed", inventoryRoleDetail.actionBoundary);
+
+const roleActionDraft = await request("/api/roles/workbenches/role_inventory/action-draft", {
+  method: "POST",
+  body: JSON.stringify({
+    operationTitle: `Role smoke action ${stamp}`,
+    operationSummary: "Smoke creates a role action draft in local workbench ledger only.",
+    targetAssetIds: ["obj_batch_fba_negative_available", "evt_negative_available_inventory"],
+    evidenceRefs: ["object_event:evt_negative_available_inventory"],
+    playbookId: "pb_inventory_negative",
+    owner: "p0_role_smoke",
+    priority: "P0",
+    createdBy: "p0_role_smoke"
+  })
+});
+assert(roleActionDraft.operation?.id, "Role action draft did not create workbench operation", roleActionDraft);
+assert(roleActionDraft.operation?.module_id === "role-workbench", "Role action draft module mismatch", roleActionDraft.operation);
+assert(roleActionDraft.boundary?.providerCalls === false && roleActionDraft.boundary?.erpWriteback === false, "Role action draft boundary changed", roleActionDraft.boundary);
+
+const providerPolicies = await request("/api/provider-gateway/policies");
+assert(Array.isArray(providerPolicies) && providerPolicies.length >= 2, "Provider policies missing", providerPolicies);
+assert(providerPolicies.every((policy) => policy.status === "disabled" && policy.evidence_required === true), "Provider policies should remain disabled and evidence-gated", providerPolicies);
+
+const agentEvalCases = await request("/api/agent-evals");
+assert(Array.isArray(agentEvalCases) && agentEvalCases.length >= 5, "Agent eval cases missing", agentEvalCases);
+assert(agentEvalCases.some((item) => item.role_id === "role_inventory" && item.scenario_type === "negative_available_inventory"), "Inventory eval case missing", agentEvalCases);
+
+const roleWorkbenchExport = await request("/api/export/role-workbench?format=json");
+assert(roleWorkbenchExport.boundary?.mode === "read_only_export", "Role workbench JSON export is not read-only", roleWorkbenchExport.boundary);
+assert(roleWorkbenchExport.payload?.roles?.some((role) => role.id === "role_inventory"), "Role workbench JSON export missing inventory role", roleWorkbenchExport.payload);
+
+const roleWorkbenchExcelExport = await requestRaw("/api/export/role-workbench?format=excel");
+assert(
+  roleWorkbenchExcelExport.response.headers.get("content-type")?.includes("application/vnd.ms-excel"),
+  "Role workbench Excel export content type is wrong",
+  { contentType: roleWorkbenchExcelExport.response.headers.get("content-type") }
+);
+assert(
+  roleWorkbenchExcelExport.text.includes("角色工作台") && roleWorkbenchExcelExport.text.includes("role_inventory"),
+  "Role workbench Excel export missing role content"
+);
+
 const auditEvents = await request("/api/audit-events?limit=20");
 assert(Array.isArray(auditEvents) && auditEvents.length > 0, "audit events not recorded");
 
@@ -821,7 +885,8 @@ console.log(
         ontologyObjects: health.database?.ontologyObjects,
         metrics: health.database?.metrics,
         lineageEdges: health.database?.lineageEdges,
-        aipPhase1: health.database?.aipPhase1
+        aipPhase1: health.database?.aipPhase1,
+        roleProviderGovernance: health.database?.roleProviderGovernance
       },
       validatedWorkflows: [
         "annotation.create",
@@ -894,6 +959,14 @@ console.log(
         "aipScenarios.runNegativeInventory",
         "aipScenarios.runStockoutRisk",
         "aipScenarios.runAgingOverstock",
+        "roleSummary.read",
+        "roleWorkbenches.read",
+        "roleWorkbench.inventoryDetail",
+        "roleWorkbench.actionDraft",
+        "providerGatewayPolicies.readDisabled",
+        "agentEvalCases.read",
+        "roleWorkbench.exportJson",
+        "roleWorkbench.exportExcel",
         "auditSummary.read",
         "auditEvents.read",
         "auditEvents.filterChatbi"

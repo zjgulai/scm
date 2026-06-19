@@ -15,7 +15,7 @@ This register is the release source of truth for the SCM governance workbench pr
 
 ## 2. Current Verified Snapshot
 
-Verified at: `2026-06-19T20:02:32+0800`
+Verified at: `2026-06-19T20:23:35+0800`
 
 | Field | Value | Evidence |
 |---|---|---|
@@ -26,8 +26,8 @@ Verified at: `2026-06-19T20:02:32+0800`
 | Static build | `true` | live `/api/deploy/health` |
 | Live DB path | `/app/data/governance_workbench.sqlite` | live `/api/deploy/health` |
 | Live DB persistence | Docker external named volume `scm_governance_workbench_scm-governance-data` mounted at `/app/data` | `docker inspect scm-governance-workbench --format '{{range .Mounts}}...'` |
-| Deployment release id | `scm-workbench-role-bulk-sla-75e2b35-20260619200011` | live `/api/deploy/health` |
-| Deployment git SHA | `75e2b35` | live `/api/deploy/health` |
+| Deployment release id | `scm-workbench-workflow-orchestration-d4ed266-20260619202127` | live `/api/deploy/health` |
+| Deployment git SHA | `d4ed266` | live `/api/deploy/health` |
 | Ontology objects | `14` | live `/api/deploy/health` |
 | Metrics | `178` | live `/api/deploy/health` |
 | Lineage edges | `278` | live `/api/deploy/health` |
@@ -43,20 +43,20 @@ Verified at: `2026-06-19T20:02:32+0800`
 | Provider calls | `false` | live `/api/deploy/health` |
 | ERP writeback | `false` | live `/api/deploy/health` |
 | ChatBI policy | `certified_metric_only` | live `/api/deploy/health` |
-| Active deployed commit | `75e2b35` | live `/api/deploy/health` and release package |
-| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-role-bulk-sla-75e2b35-20260619200011` | SSH deploy output |
-| Active deployment backup | `/opt/scm-governance-workbench/backups/20260619200029-before-role-bulk-sla` | SSH deploy output |
+| Active deployed commit | `d4ed266` | live `/api/deploy/health` and release package |
+| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-workflow-orchestration-d4ed266-20260619202127` | SSH deploy output |
+| Active deployment backup | `/opt/scm-governance-workbench/backups/20260619202207-before-workflow-orchestration` | SSH deploy output |
 
 ## 3. Local Workspace Snapshot
 
-Verified at: `2026-06-19T20:02:32+0800`
+Verified at: `2026-06-19T20:23:35+0800`
 
 | Field | Value |
 |---|---|
 | Git root | `/Users/pray/project/ecom_ana_overview` |
 | Working subdirectory | `/Users/pray/project/ecom_ana_overview/scm` |
 | Branch | `codex/scm-ledger-workbench` |
-| Local application HEAD | `75e2b35` before this docs-only release-register update |
+| Local application HEAD | `d4ed266` before this docs-only release-register update |
 | Parent remote | `origin=https://github.com/zjgulai/data_analysis_expert.git` |
 | Scoped SCM remote | `scm=https://github.com/zjgulai/scm.git` |
 | Prototype path | `drafts/prototypes/scm-data-governance-workbench-v0` |
@@ -449,6 +449,48 @@ Public boundary:
 - no provider call;
 - no ERP/Jijia/WMS/TMS writeback;
 - public Browser Harness was read-only.
+
+## 20. Batch 5 Workflow Orchestration Workbench Public Deployment Status
+
+Verified publicly at: `2026-06-19T20:23:35+0800`
+
+| Item | Status | Evidence |
+|---|---|---|
+| Git commit | `pushed` | `d4ed266` pushed to `scm/codex/scm-ledger-workbench` |
+| Active release package | `deployed` | `/opt/scm-governance-workbench/releases/scm-workbench-workflow-orchestration-d4ed266-20260619202127` |
+| Backup directory | `created` | `/opt/scm-governance-workbench/backups/20260619202207-before-workflow-orchestration` |
+| New workbench module | `passed_public` | Browser Harness: `moduleCount=15`; `工作流编排台` navigation and header passed |
+| Orchestration lane canvas | `passed_public` | Browser Harness: `lanes=6`, `commandCards=4`, `moduleContracts=15` |
+| Handoff contracts | `passed_public` | Browser Harness: `handoffPanel=true`, `handoffs=6` |
+| Task pool and action entry | `passed_public` | Browser Harness: `taskPool=true`, `createButtons=16` |
+| Workflow orchestration API | `passed_local` | Workflow smoke: `workflowOrchestration.summary`, `workflowOrchestration.operation`, `workflowOrchestration.exportJson` |
+| Health release id | `passed_public` | `/api/deploy/health.deployment.releaseId = scm-workbench-workflow-orchestration-d4ed266-20260619202127` |
+| Health git SHA | `passed_public` | `/api/deploy/health.deployment.gitSha = d4ed266` |
+| Health data mount | `passed_public` | `/api/deploy/health.deployment.dataMountType = docker_external_volume`; `dataVolumeName = scm_governance_workbench_scm-governance-data` |
+| Volume mount | `verified` | `docker inspect`: `volume scm_governance_workbench_scm-governance-data /app/data` |
+| Container | `healthy` | `docker ps`: `scm-governance-workbench Up ... (healthy)` |
+| Public Browser Harness | `passed_public_read_only` | 15 modules checked; workflow orchestration, role workbench, AIP, KB, KPI canvas and responsive checks passed at 4 viewports |
+
+Verification commands:
+
+```bash
+node --check server/index.mjs
+node --check scripts/smoke-core-workflows.mjs
+bash -n scripts/smoke-browser-harness.sh
+npm run check
+npm run build
+REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm run smoke:p0
+REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser
+```
+
+Public boundary:
+
+- the workflow orchestration workbench is a local SQLite governance control plane over existing workflow, operation, candidate, annotation, revision and audit ledgers;
+- public Browser Harness was read-only; local write smoke used a temporary SQLite database;
+- the production volume currently reports `workflowInstances=0` and `workbenchOperations=0`; this is the live ledger state, not a feature failure;
+- imports remain disabled; only JSON/Excel export links are exposed;
+- no provider call;
+- no ERP/Jijia/WMS/TMS writeback.
 
 ## 12. Batch 4 Public Deployment And Acceptance
 

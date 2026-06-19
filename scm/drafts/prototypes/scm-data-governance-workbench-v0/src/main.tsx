@@ -1790,6 +1790,13 @@ function WorkbenchFlowStrip({ module }: { module: WorkbenchModule }) {
   const spec = workbenchFlowSpec(module.id);
   return (
     <div className="workbenchFlowStrip">
+      <div className="flowSectionHead">
+        <div>
+          <p className="eyebrow">Workflow contract</p>
+          <h3>输入、处理、输出与协作边界</h3>
+        </div>
+        <Badge tone="blue">{module.stage}</Badge>
+      </div>
       <div className="flowMeta">
         <div>
           <span>输入</span>
@@ -2036,7 +2043,7 @@ function ModuleHeader({ module, eyebrow }: { module: WorkbenchModule; eyebrow?: 
   return (
     <div className="moduleHeaderStack">
       <div className="moduleHeader">
-        <div>
+        <div className="moduleTitleBlock">
           <p className="eyebrow">{eyebrow || `${module.stage} / ${module.code}`}</p>
           <h2>{module.title}</h2>
           <p className="muted">{module.focus}</p>

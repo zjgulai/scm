@@ -77,6 +77,7 @@ ALLOW_LEDGER_WRITE_SMOKE=1 SCM_WORKBENCH_URL=https://staging.example.com npm run
 | quality issue create/close | `smoke-core-workflows.mjs` | 能创建质量问题并关闭 |
 | quality summary rendering | Browser Harness DOM check | 公开站点血缘质量页有 summary 卡、规则表单、创建规则按钮和影响面容器 |
 | light consulting style | Browser Harness DOM check | 公开站点侧边栏背景为浅色，导航文字为中性灰，页面背景为浅灰咨询风格 |
+| professional SaaS layout rhythm | Browser Harness DOM check | 页面保留 cockpit、模块工作流条、导出入口和专业非透明边线；15 个模块在 1350/1024/768/390 宽度无横向溢出 |
 | P1 candidate workbench rendering | Browser Harness DOM check | 本地新 bundle 中总览页有 workflow board，标签/维度/指标工程页有候选表单 |
 | ChatBI context create | `smoke-core-workflows.mjs` | 能创建上下文候选并自动生成认证 workflow |
 | ChatBI fail-closed before certification | `smoke-core-workflows.mjs` | 未认证问法命中样本时拒答，不进入正式回答 |

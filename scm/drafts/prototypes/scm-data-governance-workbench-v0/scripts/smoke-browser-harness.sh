@@ -180,11 +180,12 @@ for label in expected:
           heroRadius: getComputedStyle(document.querySelector('.missionHero')).borderRadius,
           cardBackground: getComputedStyle(document.querySelector('.assetProgressPanel')).backgroundColor,
           cardBorder: getComputedStyle(document.querySelector('.assetProgressPanel')).borderColor,
+          cardBorderProfessional: !['transparent', 'rgba(0, 0, 0, 0)'].includes(getComputedStyle(document.querySelector('.assetProgressPanel')).borderColor),
           flow: !!document.querySelector('.workbenchFlowStrip'),
           exports: document.querySelectorAll('.exportActions a').length
         }))()
         """)
-        if not cockpit["cockpit"] or not cockpit["aiSearch"] or cockpit["moduleCards"] < 4 or cockpit["assetProgress"] < 4 or not cockpit["taskCenter"] or not cockpit["releaseStatus"] or cockpit["releaseFields"] < 4 or not cockpit["releaseBoundary"] or cockpit["heroRadius"] != "8px" or cockpit["cardBackground"] != "rgb(255, 255, 255)" or not cockpit["flow"] or cockpit["exports"] < 2:
+        if not cockpit["cockpit"] or not cockpit["aiSearch"] or cockpit["moduleCards"] < 4 or cockpit["assetProgress"] < 4 or not cockpit["taskCenter"] or not cockpit["releaseStatus"] or cockpit["releaseFields"] < 4 or not cockpit["releaseBoundary"] or cockpit["heroRadius"] != "8px" or cockpit["cardBackground"] != "rgb(255, 255, 255)" or not cockpit["cardBorderProfessional"] or not cockpit["flow"] or cockpit["exports"] < 2:
           raise SystemExit(f"Overview cockpit feature check failed: {cockpit}")
         feature_checks.append({"overviewCockpit": cockpit})
         workflow = js("""

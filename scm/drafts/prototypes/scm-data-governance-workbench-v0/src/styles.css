@@ -5669,3 +5669,461 @@ input::placeholder {
 	    grid-template-columns: 1fr;
 	  }
 	}
+
+/* Professional SaaS workbench refinement: clearer page sections, lighter lines, better breathing room. */
+:root {
+  --content-max: 1680px;
+  --section-gap: clamp(18px, 2vw, 28px);
+  --section-pad: clamp(18px, 2vw, 26px);
+  --line: #d9dee7;
+  --line-strong: #c3cad5;
+  --panel-soft: #fafbfc;
+  --blue-soft: #edf5ff;
+  --shadow: 0 18px 54px rgba(25, 33, 46, 0.075);
+  --shadow-soft: 0 1px 2px rgba(25, 33, 46, 0.035), 0 10px 28px rgba(25, 33, 46, 0.045);
+}
+
+.content {
+  display: grid;
+  align-content: start;
+  gap: var(--section-gap);
+  padding: clamp(20px, 2.4vw, 36px);
+}
+
+.topbar,
+.stack {
+  width: min(100%, var(--content-max));
+  margin-inline: auto;
+}
+
+.topbar {
+  margin-bottom: 0;
+  padding: 0;
+}
+
+.stack {
+  gap: var(--section-gap);
+}
+
+.panel {
+  display: grid;
+  gap: var(--section-gap);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.panel > * {
+  min-width: 0;
+}
+
+.moduleHeaderStack {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 2px;
+}
+
+.moduleHeader {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(230px, 292px);
+  gap: clamp(18px, 2.4vw, 34px);
+  align-items: stretch;
+  margin: 0;
+  padding: clamp(22px, 2.5vw, 34px);
+  overflow: hidden;
+  border: 1px solid rgba(210, 217, 227, 0.92);
+  border-radius: var(--radius-card);
+  background:
+    linear-gradient(90deg, rgba(237, 245, 255, 0.72), rgba(255, 255, 255, 0) 42%),
+    linear-gradient(180deg, #fff, #fbfcfd);
+  box-shadow: var(--shadow-soft);
+}
+
+.moduleHeader::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  background: linear-gradient(180deg, var(--blue), var(--teal));
+}
+
+.moduleTitleBlock {
+  min-width: 0;
+  max-width: 980px;
+  padding-left: 4px;
+}
+
+.moduleHeader h2 {
+  color: var(--ink);
+  font-size: clamp(26px, 2.2vw, 36px);
+  line-height: 1.16;
+}
+
+.moduleHeader .muted {
+  max-width: 860px;
+  margin-top: 10px;
+  color: var(--ink-2);
+  font-size: 14px;
+  line-height: 1.68;
+}
+
+.moduleSignal {
+  justify-items: stretch;
+  align-content: start;
+  min-width: 0;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid rgba(217, 222, 231, 0.95);
+  border-radius: var(--radius-card);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+
+.moduleSignal strong {
+  color: var(--ink);
+  font-size: 20px;
+  line-height: 1.15;
+}
+
+.moduleSignal .exportActions {
+  justify-content: flex-start;
+  padding-top: 4px;
+}
+
+.workbenchFlowStrip,
+.moduleOpsPanel,
+.surface,
+.railPanel {
+  border: 1px solid rgba(217, 222, 231, 0.95);
+  border-radius: var(--radius-card);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.workbenchFlowStrip {
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.flowSectionHead {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 17px 20px;
+  border-bottom: 1px solid rgba(217, 222, 231, 0.78);
+  background: linear-gradient(180deg, #fff, #fbfcfd);
+}
+
+.flowSectionHead h3 {
+  color: var(--ink);
+  font-size: 16px;
+}
+
+.flowSectionHead .eyebrow {
+  margin-bottom: 4px;
+}
+
+.flowMeta {
+  padding: 16px 18px 6px;
+}
+
+.flowSteps {
+  padding: 6px 18px 18px;
+}
+
+.flowMeta div,
+.flowStep {
+  border-color: rgba(217, 222, 231, 0.9);
+  background: var(--panel-soft);
+  box-shadow: none;
+}
+
+.flowMeta div {
+  padding: 12px;
+}
+
+.flowStep {
+  min-height: 98px;
+  padding: 13px 13px 13px 15px;
+  background: #fff;
+}
+
+.flowStep::before {
+  inset: 13px auto 13px 0;
+  width: 2px;
+}
+
+.moduleOpsPanel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.moduleOpsSummary {
+  padding: 14px 16px;
+  border-bottom: 1px solid rgba(217, 222, 231, 0.78);
+  background: linear-gradient(180deg, #fff, #fbfcfd);
+}
+
+.moduleOpsBody {
+  padding: 16px;
+}
+
+.surface {
+  display: grid;
+  gap: 14px;
+  padding: var(--section-pad);
+}
+
+.surfaceHead {
+  align-items: flex-start;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(217, 222, 231, 0.72);
+}
+
+.surfaceHead h3,
+.surfaceHead h4 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.surfaceHead .muted,
+.surfaceHead p:not(.eyebrow) {
+  max-width: 72ch;
+  margin: 5px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.surface > .surfaceHead + *,
+.surface > .toolbar + *,
+.surface > .formGrid + *,
+.surface > .compactFilters + * {
+  margin-top: 0;
+}
+
+.missionHero,
+.cockpitSearch,
+.assetProgressPanel,
+.taskCenterPanel,
+.releaseStatusPanel,
+.aipRiskQueue,
+.aipRecommendationQueue,
+.scenarioSelector,
+.object360Panel,
+.agentTraceTimeline,
+.knowledgeRulesWorkbench,
+.roleWorkbench,
+.platformReadinessPanel {
+  border-color: rgba(217, 222, 231, 0.95);
+  box-shadow: var(--shadow-soft);
+}
+
+.missionHero {
+  padding: clamp(28px, 3.5vw, 48px);
+}
+
+.cockpitSearch,
+.assetProgressPanel,
+.taskCenterPanel,
+.releaseStatusPanel,
+.aipRiskQueue,
+.aipRecommendationQueue,
+.scenarioSelector {
+  padding: clamp(16px, 1.6vw, 22px);
+}
+
+.moduleGrid,
+.readinessGrid,
+.scenarioGrid,
+.kbCards,
+.knowledgeRuleCards,
+.recommendationCards,
+.actionCards,
+.contextCards,
+.sampleList,
+.operationCards,
+.evidenceList,
+.platformReadinessList,
+.roleQueueList,
+.providerPolicyList,
+.providerDecisionList,
+.promptVersionList,
+.providerCallAuditList,
+.evalCaseList {
+  gap: 14px;
+}
+
+.moduleCard,
+.aipQueueCard,
+.aipScenarioCard,
+.contextCard,
+.operationCard,
+.candidateCard,
+.workflowCard,
+.knowledgeRuleCard,
+.recommendationCard,
+.actionCard,
+.sampleList article,
+.evidenceList article,
+.platformReadinessList article,
+.roleQueueList button,
+.providerPolicyList article,
+.providerDecisionList article,
+.promptVersionList article,
+.providerCallAuditList article,
+.evalCaseList article,
+.answerabilityDomainGrid article,
+.weakContextList article,
+.evidenceExportRegistryGrid article {
+  border-color: rgba(217, 222, 231, 0.92);
+  background: #fff;
+  box-shadow: none;
+}
+
+.moduleCard:hover,
+.aipQueueCard:hover,
+.contextCard:hover,
+.operationCard:hover,
+.workflowCard:hover,
+.knowledgeRuleCard:hover,
+.recommendationCard:hover,
+.actionCard:hover {
+  border-color: rgba(0, 113, 227, 0.28);
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.chatbiSummaryGrid > div,
+.auditSummaryGrid > div,
+.qualitySummaryGrid > div,
+.workflowSummaryGrid > div,
+.aiGovernanceGrid > article,
+.answerabilityScoreGrid article,
+.providerReadinessStats div,
+.platformReadinessStats div,
+.releaseMetaItem,
+.scenarioSignals > div {
+  border-color: rgba(217, 222, 231, 0.92);
+  background: #fff;
+  box-shadow: none;
+}
+
+.tableWrap {
+  border-color: rgba(217, 222, 231, 0.95);
+  box-shadow: none;
+}
+
+table {
+  font-size: 13px;
+}
+
+th {
+  color: var(--ink-2);
+  background: #f7f9fb;
+  font-weight: 650;
+}
+
+th,
+td {
+  padding: 12px 13px;
+  border-bottom-color: #edf0f4;
+}
+
+tbody tr:hover td {
+  background: #f8fbff;
+}
+
+input,
+textarea,
+select {
+  min-height: 42px;
+  border-color: rgba(195, 202, 213, 0.95);
+  border-radius: var(--radius-control);
+  background: #fff;
+  box-shadow: inset 0 1px 0 rgba(25, 33, 46, 0.02);
+}
+
+input:hover,
+textarea:hover,
+select:hover {
+  border-color: var(--line-strong);
+}
+
+button,
+.textButton,
+.exportActions a,
+.exportActions span {
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.textButton,
+.exportActions a,
+.canvasControls button,
+.qualityActions button,
+.canvasActions button {
+  border-color: rgba(0, 113, 227, 0.2);
+  background: #fff;
+}
+
+.badge,
+.statusPill,
+.metricChip {
+  border: 1px solid rgba(217, 222, 231, 0.8);
+}
+
+.badge.good {
+  border-color: rgba(46, 125, 50, 0.22);
+}
+
+.badge.warn {
+  border-color: rgba(180, 95, 6, 0.24);
+}
+
+.badge.bad {
+  border-color: rgba(191, 45, 70, 0.24);
+}
+
+.badge.blue {
+  border-color: rgba(0, 113, 227, 0.24);
+}
+
+.empty {
+  border: 1px dashed rgba(195, 202, 213, 0.95);
+  border-radius: var(--radius-card);
+  background: rgba(250, 251, 252, 0.86);
+}
+
+@media (max-width: 1180px) {
+  .moduleHeader {
+    grid-template-columns: 1fr;
+  }
+
+  .moduleSignal {
+    max-width: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .content {
+    padding: 16px;
+  }
+
+  .moduleHeader,
+  .surface,
+  .moduleOpsBody,
+  .flowSectionHead {
+    padding: 16px;
+  }
+
+  .flowMeta,
+  .flowSteps {
+    padding-inline: 16px;
+  }
+}

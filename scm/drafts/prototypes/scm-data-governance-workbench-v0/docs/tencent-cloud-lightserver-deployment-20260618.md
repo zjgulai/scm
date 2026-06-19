@@ -23,10 +23,10 @@ source: human+ai
 ## 当前发布快照
 
 - 线上地址：`https://scm.lute-tlz-dddd.top/`
-- 当前部署追溯 SHA：`09fbf24`，分支 `codex/scm-ledger-workbench`
-- 当前 P0 UI/workflow release：`/opt/scm-governance-workbench/releases/scm-workbench-p0-ui-09fbf24-20260619141831`
-- 当前 P0 UI/workflow 部署备份：`/opt/scm-governance-workbench/backups/20260619141831-before-p0-ui/governance_workbench.sqlite`
-- 当前 P0 UI/workflow release 来自远端仓库 `zjgulai/scm` 的 `codex/scm-ledger-workbench` 分支 `09fbf24` 提交。
+- 当前部署追溯 SHA：`ccb554a`，分支 `codex/scm-ledger-workbench`
+- 当前响应式修复 release：`/opt/scm-governance-workbench/releases/scm-workbench-responsive-ccb554a-202606191502`
+- 当前响应式修复部署备份：`/opt/scm-governance-workbench/backups/202606191502-before-responsive/governance_workbench.sqlite`
+- 当前响应式修复 release 来自远端仓库 `zjgulai/scm` 的 `codex/scm-ledger-workbench` 分支 `ccb554a` 提交。
 - 容器名：`scm-governance-workbench`
 - 内部端口：`127.0.0.1:5174`
 - 模块数量：13 个工作台模块

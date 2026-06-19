@@ -258,6 +258,16 @@ for label in expected:
           raise SystemExit(f"Role workbench feature check failed: {role}")
         feature_checks.append({"roleWorkbench": role})
     if label == "决策闭环工作台":
+        for _ in range(30):
+            decision_ready = js("""
+            (() => ({
+              stateRail: document.querySelectorAll('.stateRail span').length,
+              recommendationCards: document.querySelectorAll('.recommendationCard').length
+            }))()
+            """)
+            if decision_ready["stateRail"] >= 7 and decision_ready["recommendationCards"] >= 1:
+                break
+            sleep(0.25)
         decision = js("""
         (() => ({
           stateRail: document.querySelectorAll('.stateRail span').length,

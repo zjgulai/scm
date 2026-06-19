@@ -15,7 +15,7 @@ This register is the release source of truth for the AIP-SCM data workbench prot
 
 ## 2. Current Verified Snapshot
 
-Verified at: `2026-06-19T20:39:40+0800`
+Verified at: `2026-06-19T20:54:30+0800`
 
 | Field | Value | Evidence |
 |---|---|---|
@@ -26,8 +26,8 @@ Verified at: `2026-06-19T20:39:40+0800`
 | Static build | `true` | live `/api/deploy/health` |
 | Live DB path | `/app/data/governance_workbench.sqlite` | live `/api/deploy/health` |
 | Live DB persistence | Docker external named volume `scm_governance_workbench_scm-governance-data` mounted at `/app/data` | `docker inspect scm-governance-workbench --format '{{range .Mounts}}...'` |
-| Deployment release id | `scm-workbench-aip-brand-templates-add2b78-20260619203844` | live `/api/deploy/health` |
-| Deployment git SHA | `add2b78` | live `/api/deploy/health` |
+| Deployment release id | `scm-workbench-apple-ui-9b14dd0-20260619205239` | live `/api/deploy/health` |
+| Deployment git SHA | `9b14dd0` | live `/api/deploy/health` |
 | Ontology objects | `14` | live `/api/deploy/health` |
 | Metrics | `178` | live `/api/deploy/health` |
 | Lineage edges | `278` | live `/api/deploy/health` |
@@ -43,20 +43,20 @@ Verified at: `2026-06-19T20:39:40+0800`
 | Provider calls | `false` | live `/api/deploy/health` |
 | ERP writeback | `false` | live `/api/deploy/health` |
 | ChatBI policy | `certified_metric_only` | live `/api/deploy/health` |
-| Active deployed commit | `add2b78` | live `/api/deploy/health` and release package |
-| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-aip-brand-templates-add2b78-20260619203844` | SSH deploy output |
-| Active deployment backup | `/opt/scm-governance-workbench/backups/*-before-scm-workbench-aip-brand-templates-add2b78-20260619203844` | SSH deploy output |
+| Active deployed commit | `9b14dd0` | live `/api/deploy/health` and release package |
+| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-apple-ui-9b14dd0-20260619205239` | SSH deploy output |
+| Active deployment backup | `/opt/scm-governance-workbench/backups/*-before-scm-workbench-apple-ui-9b14dd0-20260619205239` | SSH deploy output |
 
 ## 3. Local Workspace Snapshot
 
-Verified at: `2026-06-19T20:39:40+0800`
+Verified at: `2026-06-19T20:54:30+0800`
 
 | Field | Value |
 |---|---|
 | Git root | `/Users/pray/project/ecom_ana_overview` |
 | Working subdirectory | `/Users/pray/project/ecom_ana_overview/scm` |
 | Branch | `codex/scm-ledger-workbench` |
-| Local application HEAD | `add2b78` before this docs-only release-register update |
+| Local application HEAD | `9b14dd0` before this docs-only release-register update |
 | Parent remote | `origin=https://github.com/zjgulai/data_analysis_expert.git` |
 | Scoped SCM remote | `scm=https://github.com/zjgulai/scm.git` |
 | Prototype path | `drafts/prototypes/scm-data-governance-workbench-v0` |
@@ -210,6 +210,43 @@ Boundary:
 - local P0 smoke writes only to a temporary SQLite database;
 - workflow template review creates local SQLite workbench operations only when explicitly triggered;
 - imports remain disabled;
+- no provider call;
+- no ERP/Jijia/WMS/TMS writeback.
+
+## 22. Apple Support Visual-System Refinement Public Deployment Status
+
+Verified publicly at: `2026-06-19T20:54:30+0800`
+
+| Item | Status | Evidence |
+|---|---|---|
+| Git commit | `pushed` | `9b14dd0` pushed to `scm/codex/scm-ledger-workbench` |
+| Release package | `deployed` | `/opt/scm-governance-workbench/releases/scm-workbench-apple-ui-9b14dd0-20260619205239` |
+| UI extraction document | `created` | `docs/apple-support-ui-extraction-20260619.md` |
+| Apple Support source | `sampled` | `https://support.apple.com/zh-cn`; computed style samples saved under `tmp/outputs/apple-support-ui-extraction-20260619/` |
+| Health release id | `passed_public` | `/api/deploy/health.deployment.releaseId = scm-workbench-apple-ui-9b14dd0-20260619205239` |
+| Health git SHA | `passed_public` | `/api/deploy/health.deployment.gitSha = 9b14dd0` |
+| Base visual tokens | `passed_public` | Browser Harness asserts `body.backgroundColor = rgb(245,245,247)`, `body.color = rgb(29,29,31)`, SF/PingFang font stack present |
+| Card/surface style | `passed_public` | Browser Harness asserts hero `borderRadius=8px`, card background `rgb(255,255,255)`, card border `rgb(210,210,215)` |
+| Public screenshot | `captured` | `tmp/outputs/apple-ui-release-20260619/aip-scm-apple-ui-home.png` |
+| Public Browser Harness | `passed_public_read_only` | 15 modules checked at `1350x900`, `1024x900`, `768x900`, `390x900` |
+
+Verification commands:
+
+```bash
+node --check scripts/smoke-core-workflows.mjs
+bash -n scripts/smoke-browser-harness.sh
+npm run check
+REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm run smoke:p0
+REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser
+curl -fsS https://scm.lute-tlz-dddd.top/api/deploy/health
+```
+
+Boundary:
+
+- Apple Support was used as a visual-system reference only;
+- no Apple images, icons, or proprietary page layout were reused;
+- public Browser Harness is read-only;
+- local P0 smoke writes only to a temporary SQLite database;
 - no provider call;
 - no ERP/Jijia/WMS/TMS writeback.
 

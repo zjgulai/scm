@@ -15,7 +15,7 @@ This register is the release source of truth for the AIP-SCM data workbench prot
 
 ## 2. Current Verified Snapshot
 
-Verified at: `2026-06-19T20:54:30+0800`
+Verified at: `2026-06-19T21:10:40+0800`
 
 | Field | Value | Evidence |
 |---|---|---|
@@ -26,8 +26,8 @@ Verified at: `2026-06-19T20:54:30+0800`
 | Static build | `true` | live `/api/deploy/health` |
 | Live DB path | `/app/data/governance_workbench.sqlite` | live `/api/deploy/health` |
 | Live DB persistence | Docker external named volume `scm_governance_workbench_scm-governance-data` mounted at `/app/data` | `docker inspect scm-governance-workbench --format '{{range .Mounts}}...'` |
-| Deployment release id | `scm-workbench-apple-ui-9b14dd0-20260619205239` | live `/api/deploy/health` |
-| Deployment git SHA | `9b14dd0` | live `/api/deploy/health` |
+| Deployment release id | `scm-workbench-role-domains-1520905-20260619210920` | live `/api/deploy/health` |
+| Deployment git SHA | `1520905` | live `/api/deploy/health` |
 | Ontology objects | `14` | live `/api/deploy/health` |
 | Metrics | `178` | live `/api/deploy/health` |
 | Lineage edges | `278` | live `/api/deploy/health` |
@@ -43,20 +43,20 @@ Verified at: `2026-06-19T20:54:30+0800`
 | Provider calls | `false` | live `/api/deploy/health` |
 | ERP writeback | `false` | live `/api/deploy/health` |
 | ChatBI policy | `certified_metric_only` | live `/api/deploy/health` |
-| Active deployed commit | `9b14dd0` | live `/api/deploy/health` and release package |
-| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-apple-ui-9b14dd0-20260619205239` | SSH deploy output |
-| Active deployment backup | `/opt/scm-governance-workbench/backups/*-before-scm-workbench-apple-ui-9b14dd0-20260619205239` | SSH deploy output |
+| Active deployed commit | `1520905` | live `/api/deploy/health` and release package |
+| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-role-domains-1520905-20260619210920` | SSH deploy output |
+| Active deployment backup | `/opt/scm-governance-workbench/backups/20260619T211040-after-scm-workbench-role-domains-1520905.sqlite` | post-deploy `docker cp` SQLite snapshot; no pre-deploy backup was created in this release command |
 
 ## 3. Local Workspace Snapshot
 
-Verified at: `2026-06-19T20:54:30+0800`
+Verified at: `2026-06-19T21:10:40+0800`
 
 | Field | Value |
 |---|---|
 | Git root | `/Users/pray/project/ecom_ana_overview` |
 | Working subdirectory | `/Users/pray/project/ecom_ana_overview/scm` |
 | Branch | `codex/scm-ledger-workbench` |
-| Local application HEAD | `9b14dd0` before this docs-only release-register update |
+| Local application HEAD | `1520905` before this release-register update |
 | Parent remote | `origin=https://github.com/zjgulai/data_analysis_expert.git` |
 | Scoped SCM remote | `scm=https://github.com/zjgulai/scm.git` |
 | Prototype path | `drafts/prototypes/scm-data-governance-workbench-v0` |
@@ -172,6 +172,41 @@ Boundary confirmed by local smoke:
 - `providerCalls=false`
 - `erpWriteback=false`
 - `SCM_SKIP_PUBLIC_BROWSER_SMOKE=1`, so no public production assertion is made for this batch.
+
+## 23. Batch 5 Role Domain Workbench Release
+
+Verified at: `2026-06-19T21:10:40+0800`
+
+| Item | Value | Evidence |
+|---|---|---|
+| Release id | `scm-workbench-role-domains-1520905-20260619210920` | live `/api/deploy/health` |
+| Git SHA | `1520905` | live `/api/deploy/health`, `git push scm codex/scm-ledger-workbench` |
+| Scope | Role domain workbenches for planner, buyer, inventory, logistics and cost roles | `RoleWorkbenchPanel`, `/api/roles/workbenches/:id` |
+| Role domain API | `domainProfile`, `workstreams`, `filterOptions`, `activeFilters` | `smoke-core-workflows.mjs` `roleWorkbench.domainProfiles`, `roleWorkbench.filters` |
+| Role filters | `objectType`, `riskLevel`, `eventStatus`, `scenarioType`, `q` | `/api/roles/workbenches/role_planner?objectType=sku&riskLevel=high` smoke |
+| Role exports | JSON and Excel current-role export | `/api/roles/workbenches/role_inventory/export?format=json/excel` smoke |
+| Public Browser Harness | `passed` | `SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser` with AIP and KB flags |
+| Responsive public check | `1350x900`, `1024x900`, `768x900`, `390x900` | Browser Harness output |
+| Provider calls | `false` | live `/api/deploy/health`, Browser Harness role panel `providerOffText=true` |
+| ERP/Jijia writeback | `false` | live `/api/deploy/health` |
+| SQLite snapshot | `/opt/scm-governance-workbench/backups/20260619T211040-after-scm-workbench-role-domains-1520905.sqlite` | post-deploy `docker cp` snapshot |
+
+Verification commands:
+
+```bash
+npm run check
+npm run build
+REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm run smoke:p0
+REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser
+```
+
+Boundary:
+
+- role action drafts remain `workbench_operations` ledger entries and owner-review workflows;
+- role workbench exports are read-only JSON/Excel snapshots;
+- role SLA/shift copy is a workflow cue, not a staff scheduling system;
+- no external model provider call was made;
+- no ERP/Jijia writeback was made.
 
 ## 21. AIP-SCM Brand, Background, And Workflow Template Public Deployment Status
 

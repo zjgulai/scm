@@ -15,7 +15,7 @@ This register is the release source of truth for the AIP-SCM data workbench prot
 
 ## 2. Current Verified Snapshot
 
-Verified at: `2026-06-19T22:31:31+0800`
+Verified at: `2026-06-19T22:50:20+0800`
 
 | Field | Value | Evidence |
 |---|---|---|
@@ -26,8 +26,8 @@ Verified at: `2026-06-19T22:31:31+0800`
 | Static build | `true` | live `/api/deploy/health` |
 | Live DB path | `/app/data/governance_workbench.sqlite` | live `/api/deploy/health` |
 | Live DB persistence | Docker external named volume `scm_governance_workbench_scm-governance-data` mounted at `/app/data` | `docker inspect scm-governance-workbench --format '{{range .Mounts}}...'` |
-| Deployment release id | `scm-workbench-readability-layout-70a09b6-20260619222845` | live `/api/deploy/health` |
-| Deployment git SHA | `70a09b6` | live `/api/deploy/health` |
+| Deployment release id | `scm-workbench-pagination-layout-49b93dc-20260619224832` | live `/api/deploy/health` |
+| Deployment git SHA | `49b93dc` | live `/api/deploy/health` |
 | Ontology objects | `14` | live `/api/deploy/health` |
 | Metrics | `178` | live `/api/deploy/health` |
 | Lineage edges | `278` | live `/api/deploy/health` |
@@ -47,21 +47,22 @@ Verified at: `2026-06-19T22:31:31+0800`
 | AI evidence export registry | `rows=0` | live `/api/ai-chat/evidence-exports`; expected empty state because production read-only smoke did not create AI chat messages |
 | Professional SaaS layout refinement | Module header, workflow contract strip, transparent page container, section surfaces, calmer borders, table/control rhythm | commit `b10c384`; live Browser Harness layout checks |
 | Readability layout refinement | Scenario board full-row layout, adaptive card grid, readable KPI/stat minimum widths, non-vertical signal labels | commit `70a09b6`; live Browser Harness `overviewScenarioReadability` |
-| Public Browser Harness | Passed 15-module navigation, professional border check, scenario readability check, AIP scenario check, ChatBI scorecard DOM, AI evidence registry empty state, and 1350/1024/768/390 responsive checks | `REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser` |
-| Active deployed commit | `70a09b6` | live `/api/deploy/health` and release package |
-| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-readability-layout-70a09b6-20260619222845` | SSH deploy output |
-| Active deployment backups | `20260619222912-before-scm-workbench-readability-layout-70a09b6-20260619222845.sqlite`, `20260619222931-after-scm-workbench-readability-layout-70a09b6-20260619222845.sqlite` | pre/post `docker cp` SQLite snapshots |
+| Pagination layout governance | DataTable global row index, reusable pagination, knowledge cards 6/page, audit timeline 10/page, workflow board 6/page, module contracts 4/page, role batch pool 4/page | commit `49b93dc`; live Browser Harness `layoutReports` and `kbPaginationLayout` |
+| Public Browser Harness | Passed 15-module navigation, professional border check, scenario readability check, AIP scenario check, ChatBI scorecard DOM, AI evidence registry empty state, KB pagination layout check, layout reports, and 1350/1024/768/390 responsive checks | `REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser` |
+| Active deployed commit | `49b93dc` | live `/api/deploy/health` and release package |
+| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-pagination-layout-49b93dc-20260619224832` | SSH deploy output |
+| Active deployment backups | pre-deploy SQLite snapshot under `/opt/scm-governance-workbench/backups/*-before-scm-workbench-pagination-layout-49b93dc-20260619224832.sqlite` | pre `docker cp` SQLite snapshot |
 
 ## 3. Local Workspace Snapshot
 
-Verified at: `2026-06-19T22:31:31+0800`
+Verified at: `2026-06-19T22:50:20+0800`
 
 | Field | Value |
 |---|---|
 | Git root | `/Users/pray/project/ecom_ana_overview` |
 | Working subdirectory | `/Users/pray/project/ecom_ana_overview/scm` |
 | Branch | `codex/scm-ledger-workbench` |
-| Local application HEAD | `70a09b6` before this release-register update |
+| Local application HEAD | `49b93dc` before this release-register update |
 | Parent remote | `origin=https://github.com/zjgulai/data_analysis_expert.git` |
 | Scoped SCM remote | `scm=https://github.com/zjgulai/scm.git` |
 | Prototype path | `drafts/prototypes/scm-data-governance-workbench-v0` |

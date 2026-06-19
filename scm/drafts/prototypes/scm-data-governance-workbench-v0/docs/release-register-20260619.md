@@ -15,7 +15,7 @@ This register is the release source of truth for the SCM governance workbench pr
 
 ## 2. Current Verified Snapshot
 
-Verified at: `2026-06-19T19:49:49+0800`
+Verified at: `2026-06-19T20:02:32+0800`
 
 | Field | Value | Evidence |
 |---|---|---|
@@ -26,8 +26,8 @@ Verified at: `2026-06-19T19:49:49+0800`
 | Static build | `true` | live `/api/deploy/health` |
 | Live DB path | `/app/data/governance_workbench.sqlite` | live `/api/deploy/health` |
 | Live DB persistence | Docker external named volume `scm_governance_workbench_scm-governance-data` mounted at `/app/data` | `docker inspect scm-governance-workbench --format '{{range .Mounts}}...'` |
-| Deployment release id | `scm-workbench-overview-release-status-d03309d-20260619194723` | live `/api/deploy/health` |
-| Deployment git SHA | `d03309d` | live `/api/deploy/health` |
+| Deployment release id | `scm-workbench-role-bulk-sla-75e2b35-20260619200011` | live `/api/deploy/health` |
+| Deployment git SHA | `75e2b35` | live `/api/deploy/health` |
 | Ontology objects | `14` | live `/api/deploy/health` |
 | Metrics | `178` | live `/api/deploy/health` |
 | Lineage edges | `278` | live `/api/deploy/health` |
@@ -43,20 +43,20 @@ Verified at: `2026-06-19T19:49:49+0800`
 | Provider calls | `false` | live `/api/deploy/health` |
 | ERP writeback | `false` | live `/api/deploy/health` |
 | ChatBI policy | `certified_metric_only` | live `/api/deploy/health` |
-| Active deployed commit | `d03309d` | live `/api/deploy/health` and release package |
-| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-overview-release-status-d03309d-20260619194723` | SSH deploy output |
-| Active deployment backup | `/opt/scm-governance-workbench/backups/20260619194742-before-overview-release-status` | SSH deploy output |
+| Active deployed commit | `75e2b35` | live `/api/deploy/health` and release package |
+| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-role-bulk-sla-75e2b35-20260619200011` | SSH deploy output |
+| Active deployment backup | `/opt/scm-governance-workbench/backups/20260619200029-before-role-bulk-sla` | SSH deploy output |
 
 ## 3. Local Workspace Snapshot
 
-Verified at: `2026-06-19T19:49:49+0800`
+Verified at: `2026-06-19T20:02:32+0800`
 
 | Field | Value |
 |---|---|
 | Git root | `/Users/pray/project/ecom_ana_overview` |
 | Working subdirectory | `/Users/pray/project/ecom_ana_overview/scm` |
 | Branch | `codex/scm-ledger-workbench` |
-| Local application HEAD | `d03309d` before this docs-only release-register update |
+| Local application HEAD | `75e2b35` before this docs-only release-register update |
 | Parent remote | `origin=https://github.com/zjgulai/data_analysis_expert.git` |
 | Scoped SCM remote | `scm=https://github.com/zjgulai/scm.git` |
 | Prototype path | `drafts/prototypes/scm-data-governance-workbench-v0` |
@@ -403,6 +403,48 @@ REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQ
 Public boundary:
 
 - the overview page now shows read-only deployment/release/git/volume status from `/api/deploy/health`;
+- SQLite data remains on Docker external named volume `scm_governance_workbench_scm-governance-data`;
+- no provider call;
+- no ERP/Jijia/WMS/TMS writeback;
+- public Browser Harness was read-only.
+
+## 19. Batch 5 Role Bulk Action And SLA Public Deployment Status
+
+Verified publicly at: `2026-06-19T20:02:32+0800`
+
+| Item | Status | Evidence |
+|---|---|---|
+| Git commit | `pushed` | `75e2b35` pushed to `scm/codex/scm-ledger-workbench` |
+| Active release package | `deployed` | `/opt/scm-governance-workbench/releases/scm-workbench-role-bulk-sla-75e2b35-20260619200011` |
+| Backup directory | `created` | `/opt/scm-governance-workbench/backups/20260619200029-before-role-bulk-sla` |
+| Role SLA panel | `passed_public` | Browser Harness: `slaPanel=true` |
+| Role shift cadence panel | `passed_public` | Browser Harness: `shiftPanel=true` |
+| Role bulk action panel | `passed_public` | Browser Harness: `batchPanel=true`, `batchTargets=8`, `batchActionButton=true` |
+| Bulk action ledger payload | `passed_local` | Workflow smoke: `roleWorkbench.bulkActionDraft`; `batchMode=bulk`, `selectedTargetCount>=3`, `slaStatus=critical`, `shiftCadence=daily control tower` |
+| Health release id | `passed_public` | `/api/deploy/health.deployment.releaseId = scm-workbench-role-bulk-sla-75e2b35-20260619200011` |
+| Health git SHA | `passed_public` | `/api/deploy/health.deployment.gitSha = 75e2b35` |
+| Health data mount | `passed_public` | `/api/deploy/health.deployment.dataMountType = docker_external_volume`; `dataVolumeName = scm_governance_workbench_scm-governance-data` |
+| Volume mount | `verified` | `docker inspect`: `volume scm_governance_workbench_scm-governance-data /app/data` |
+| Container | `healthy` | `docker ps`: `scm-governance-workbench Up ... (healthy)` |
+| Public Browser Harness | `passed_public_read_only` | 14 modules checked; role workbench SLA/shift/bulk panels, AIP, KB, KPI canvas and responsive checks passed at 4 viewports |
+
+Verification commands:
+
+```bash
+node --check server/index.mjs
+node --check scripts/smoke-core-workflows.mjs
+bash -n scripts/smoke-browser-harness.sh
+git diff --check -- scm/drafts/prototypes/scm-data-governance-workbench-v0/server/index.mjs scm/drafts/prototypes/scm-data-governance-workbench-v0/src/main.tsx scm/drafts/prototypes/scm-data-governance-workbench-v0/src/styles.css scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/smoke-core-workflows.mjs scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/smoke-browser-harness.sh
+npm run check
+npm run build
+REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm run smoke:p0
+REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser
+```
+
+Public boundary:
+
+- role bulk action creates only a local governance ledger operation; it does not call providers or write back to ERP/Jijia/WMS/TMS;
+- the role workbench SLA and shift cadence are derived from seeded AIP role/object/event context, not from live ERP writeback;
 - SQLite data remains on Docker external named volume `scm_governance_workbench_scm-governance-data`;
 - no provider call;
 - no ERP/Jijia/WMS/TMS writeback;

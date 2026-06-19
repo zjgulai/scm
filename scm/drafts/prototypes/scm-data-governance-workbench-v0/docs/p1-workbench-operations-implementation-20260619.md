@@ -58,10 +58,26 @@ npm run smoke:p0
 - `workbenchOperation.summary`
 - 本地 Browser Harness 对 `.moduleOpsPanel`、`.moduleOpsSummary`、展开控件做强校验。
 
-线上只读 smoke 仍通过，但线上 release 尚未部署本批新 UI，因此公开站点默认不强制检查 `.moduleOpsPanel`。部署后可执行：
+线上 release 已部署：
+
+```text
+release=/opt/scm-governance-workbench/releases/scm-workbench-p1-ops-5f53edd-20260619120804
+backup=/opt/scm-governance-workbench/backups/20260619120804-before-p1-ops/governance_workbench.sqlite
+```
+
+公开站点强校验通过：
 
 ```bash
 REQUIRE_WORKBENCH_OPERATIONS=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser
+```
+
+公开 API 检查通过：
+
+```text
+/api/deploy/health: ok=true, productionWrites=false, providerCalls=false, erpWriteback=false
+/api/workbench/modules: 13 modules
+/api/workbench/operations/summary: total=0
+/api/chatbi/summary: total=8, certified=8
 ```
 
 ## 4. 边界

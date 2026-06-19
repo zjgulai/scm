@@ -12,8 +12,8 @@ source_of_truth:
   - "drafts/prototypes/scm-data-governance-workbench-v0/docs/second-iteration-ui-information-architecture-20260618.md"
 current_deploy:
   url: "https://scm.lute-tlz-dddd.top/"
-  deployed_branch_sha: "ee30914"
-  release: "/opt/scm-governance-workbench/releases/scm-workbench-p1-chatbi-audit-ee30914-20260619015017"
+  deployed_branch_sha: "5f53edd"
+  release: "/opt/scm-governance-workbench/releases/scm-workbench-p1-ops-5f53edd-20260619120804"
 ---
 
 # 供应链数据开发治理工作台剩余 PRD 盘点与 TODO
@@ -34,7 +34,7 @@ current_deploy:
 
 ### 1.2 当前推断
 
-当前版本已经完成 P0 工程验收闭环，并已完成三批 P1 交互闭环：候选资产流、统一 workflow board、owner/SLA/批量审核、对象图谱路径解释、决策闭环状态机、ChatBI 上下文认证流和审计日志操作页。2026-06-19 本地新增 `workbench_operations` 治理型 CRUD 基础版，13 个模块均具备创建操作请求、查询/筛选、批量审核、状态流转与审计留痕入口；该能力通过本地 `smoke:p0`，但尚未在腾讯云线上 release 中启用。下一阶段差距集中在知识库运营、AI 语义治理、问法样本质量评分、外部模型接入治理和生产部署收口。
+当前版本已经完成 P0 工程验收闭环，并已完成三批 P1 交互闭环：候选资产流、统一 workflow board、owner/SLA/批量审核、对象图谱路径解释、决策闭环状态机、ChatBI 上下文认证流和审计日志操作页。2026-06-19 已新增并部署 `workbench_operations` 治理型 CRUD 基础版，13 个模块均具备创建操作请求、查询/筛选、批量审核、状态流转与审计留痕入口；该能力通过本地 `smoke:p0` 与线上 `REQUIRE_WORKBENCH_OPERATIONS=1` Browser Harness 强校验。下一阶段差距集中在知识库运营、AI 语义治理、问法样本质量评分和外部模型接入治理。
 
 ### 1.3 当前不确定项
 
@@ -155,7 +155,7 @@ current_deploy:
 
 | ID | 当前状态 | 新鲜证据 | 边界 |
 |---|---|---|---|
-| SCM-PRD-P1-001 | 完成治理型 CRUD 基础版 | 新增 `workbench_operations`、`005_p1_workbench_operations.sql`、`/api/workbench/operations`、13 个模块操作台入口；`smoke:p0` 覆盖 `workbenchOperation.create/filter/review/bulkReview/summary`，本地 Browser Harness 强校验 `.moduleOpsPanel` | 只写 SQLite 治理台账与 workflow/audit；不直接删除、覆盖或 promote canonical 正本；生产站点尚未部署本批新 UI |
+| SCM-PRD-P1-001 | 完成治理型 CRUD 基础版 | 新增 `workbench_operations`、`005_p1_workbench_operations.sql`、`/api/workbench/operations`、13 个模块操作台入口；`smoke:p0` 覆盖 `workbenchOperation.create/filter/review/bulkReview/summary`，线上 Browser Harness 强校验 `.moduleOpsPanel` | 只写 SQLite 治理台账与 workflow/audit；不直接删除、覆盖或 promote canonical 正本 |
 | SCM-PRD-P1-002 | 完成基础版 | `governance_candidates` 统一承载 tag candidate，标签工程页可提交候选并创建 workflow | 不直接写 `tags` 正本 |
 | SCM-PRD-P1-003 | 完成基础版 | `governance_candidates` 统一承载 dimension candidate，维度工程页可提交候选并创建 workflow | 不直接写 `dimensions` 正本 |
 | SCM-PRD-P1-004 | 完成基础版 | `governance_candidates` 统一承载 metric candidate，指标工程页可提交候选并创建 workflow | 指标字典 2.0 仍保持只读 |

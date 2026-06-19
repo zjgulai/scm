@@ -23,10 +23,10 @@ source: human+ai
 ## 当前发布快照
 
 - 线上地址：`https://scm.lute-tlz-dddd.top/`
-- 当前部署追溯 SHA：`ee30914`，分支 `codex/scm-ledger-workbench`
-- 当前 P1 release：`/opt/scm-governance-workbench/releases/scm-workbench-p1-chatbi-audit-ee30914-20260619015017`
-- 当前 P1 部署备份：`/opt/scm-governance-workbench/backups/20260619015004/governance_workbench.sqlite`
-- 当前 P1 release 来自远端仓库 `zjgulai/scm` 的 `codex/scm-ledger-workbench` 分支 `ee30914` 提交。
+- 当前部署追溯 SHA：`5f53edd`，分支 `codex/scm-ledger-workbench`
+- 当前 P1 release：`/opt/scm-governance-workbench/releases/scm-workbench-p1-ops-5f53edd-20260619120804`
+- 当前 P1 部署备份：`/opt/scm-governance-workbench/backups/20260619120804-before-p1-ops/governance_workbench.sqlite`
+- 当前 P1 release 来自远端仓库 `zjgulai/scm` 的 `codex/scm-ledger-workbench` 分支 `5f53edd` 提交。
 - 容器名：`scm-governance-workbench`
 - 内部端口：`127.0.0.1:5174`
 - 模块数量：13 个工作台模块
@@ -138,6 +138,8 @@ server {
 - P1 第二批只读 API 检查通过：`/api/ontology/paths?objectId=sku` 返回 `outbound=2`、`inbound=2`、`tags=3`、`dimensions=3`、`metrics=60`、`lineageEdges=9`；`/api/decision/summary` 返回 `writeBackPolicy=suggestion_approval_replay_only`。
 - P1 第三批公开站点 Browser Harness DOM 检查通过：13 个模块导航通过；ChatBI 页 `.chatbiSummaryGrid > div = 4`、`.chatbiForm=true`、`.chatbiFilters=true`、dry-run 控件存在；审计日志页 `.auditSummaryGrid > div = 4`、facet 存在、`.auditFilters=true`、`.auditTimeline=true`。
 - P1 第三批只读 API 检查通过：`/api/workbench/modules` 返回 `13`；`/api/chatbi/summary` 返回 `total=8`、`certified=8`；`/api/audit/summary` 返回 `total=1`；`/api/deploy/health` 返回 `providerCalls=false`、`erpWriteback=false`、`chatbiPolicy=certified_metric_only`。
+- P1 工作台操作闭环 release 公开站点强校验通过：`REQUIRE_WORKBENCH_OPERATIONS=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser` 返回 13 个模块导航通过，并确认 `.moduleOpsPanel=true`、`.moduleOpsSummary=true`、展开控件存在。
+- P1 工作台操作闭环只读 API 检查通过：`/api/workbench/operations/summary` 返回 `total=0`；`/api/chatbi/summary` 仍返回 `total=8`、`certified=8`；`/api/deploy/health` 仍返回 `productionWrites=false`、`providerCalls=false`、`erpWriteback=false`。
 
 P0 验收命令：
 

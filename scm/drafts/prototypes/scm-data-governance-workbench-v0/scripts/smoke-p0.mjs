@@ -11,6 +11,7 @@ const sourceDb = resolve(root, "data/governance_workbench.sqlite");
 const tempDb = resolve(tmpDir, `governance_workbench-p0-smoke-${Date.now()}.sqlite`);
 const publicUrl = process.env.SCM_BROWSER_SMOKE_URL || "https://scm.lute-tlz-dddd.top/";
 const skipPublicBrowserSmoke = process.env.SCM_SKIP_PUBLIC_BROWSER_SMOKE === "1";
+const requireAipOnPublic = process.env.REQUIRE_AIP_ON_PUBLIC === "1";
 
 mkdirSync(tmpDir, { recursive: true });
 copyFileSync(sourceDb, tempDb);
@@ -80,9 +81,23 @@ try {
   await runCommand("npm", ["run", "smoke:workflows"], { env: { SCM_WORKBENCH_URL: localUrl } });
   await runCommand("npm", ["run", "smoke:browser"], { env: { SCM_WORKBENCH_URL: localUrl } });
   if (!skipPublicBrowserSmoke) {
-    await runCommand("npm", ["run", "smoke:browser"], { env: { SCM_WORKBENCH_URL: publicUrl } });
+    await runCommand("npm", ["run", "smoke:browser"], {
+      env: {
+        SCM_WORKBENCH_URL: publicUrl,
+        REQUIRE_AIP_PHASE1: requireAipOnPublic ? process.env.REQUIRE_AIP_PHASE1 || "0" : "0",
+        REQUIRE_AIP_SCENARIOS: requireAipOnPublic ? process.env.REQUIRE_AIP_SCENARIOS || "0" : "0"
+      }
+    });
   }
-  console.log(JSON.stringify({ ok: true, tempDb, localUrl, publicUrl: skipPublicBrowserSmoke ? null : publicUrl }, null, 2));
+  console.log(JSON.stringify({
+    ok: true,
+    tempDb,
+    localUrl,
+    publicUrl: skipPublicBrowserSmoke ? null : publicUrl,
+    localAipPhase1: process.env.REQUIRE_AIP_PHASE1 === "1",
+    localAipScenarios: process.env.REQUIRE_AIP_SCENARIOS === "1",
+    publicAipChecks: !skipPublicBrowserSmoke && requireAipOnPublic
+  }, null, 2));
 } finally {
   apiServer.kill("SIGTERM");
 }

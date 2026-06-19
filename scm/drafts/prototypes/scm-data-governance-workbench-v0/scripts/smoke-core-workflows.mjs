@@ -47,6 +47,9 @@ const health = await request("/api/deploy/health");
 assert(health.ok === true, "deploy health is not ok", health);
 assert(health.boundary?.providerCalls === false, "provider call boundary changed", health.boundary);
 assert(health.boundary?.erpWriteback === false, "ERP writeback boundary changed", health.boundary);
+assert(health.database?.aipPhase1?.schemaReady === true, "AIP Phase 1 schema is not ready", health.database?.aipPhase1);
+assert(health.database?.aipPhase1?.providerCalls === false, "AIP provider boundary changed", health.database?.aipPhase1);
+assert(health.database?.aipPhase1?.erpWriteback === false, "AIP ERP writeback boundary changed", health.database?.aipPhase1);
 
 const modules = await request("/api/workbench/modules");
 assert(Array.isArray(modules) && modules.length === 13, "expected 13 workbench modules", { count: modules.length });
@@ -436,6 +439,11 @@ assert(certifiedContext.context?.answer_policy === "certified_metric_only", "Cha
 
 const chatbiSummary = await request("/api/chatbi/summary");
 assert(chatbiSummary.certified >= 1, "ChatBI summary missing certified contexts", chatbiSummary);
+assert(
+  Array.isArray(chatbiSummary.answerabilityBuckets) && Number.isFinite(Number(chatbiSummary.averageAnswerabilityScore || 0)),
+  "ChatBI answerability summary fields missing",
+  chatbiSummary
+);
 
 const dryRun = await request("/api/chatbi/dry-run", {
   method: "POST",
@@ -456,6 +464,19 @@ assert(
   "AI chat did not return evidence-backed classification",
   aiSupported.result
 );
+assert(aiSupported.result?.messageId, "AI chat did not return assistant message id", aiSupported.result);
+
+const aiEvidenceJson = await request(`/api/ai-chat/messages/${aiSupported.result.messageId}/evidence-export?format=json`);
+assert(aiEvidenceJson.boundary?.providerCalls === false, "AI evidence JSON export provider boundary changed", aiEvidenceJson.boundary);
+assert(Array.isArray(aiEvidenceJson.evidence), "AI evidence JSON export missing evidence rows", aiEvidenceJson);
+
+const aiEvidenceMarkdown = await requestRaw(`/api/ai-chat/messages/${aiSupported.result.messageId}/evidence-export?format=markdown`);
+assert(
+  aiEvidenceMarkdown.response.headers.get("content-type")?.includes("text/markdown"),
+  "AI evidence Markdown export content type is wrong",
+  { contentType: aiEvidenceMarkdown.response.headers.get("content-type") }
+);
+assert(aiEvidenceMarkdown.text.includes("AI Evidence Export"), "AI evidence Markdown export missing title");
 
 const aiInsufficient = await request("/api/ai-chat/local", {
   method: "POST",
@@ -495,6 +516,62 @@ assert(Array.isArray(kbStaleFindings), "KB stale findings response is not an arr
 const kbCrosswalkMatrix = await request("/api/kb/crosswalk-matrix");
 assert(kbCrosswalkMatrix.summary?.crosswalks >= 1, "KB crosswalk summary missing links", kbCrosswalkMatrix);
 assert(Array.isArray(kbCrosswalkMatrix.rows), "KB crosswalk matrix rows missing", kbCrosswalkMatrix);
+
+const knowledgeRule = await request("/api/knowledge-rules", {
+  method: "POST",
+  body: JSON.stringify({
+    sourceCardId: kbCards[0].id,
+    ruleName: `P0 smoke knowledge rule ${stamp} ${kbCards[0].title}`,
+    createdBy: "p0_knowledge_rule_smoke"
+  })
+});
+assert(knowledgeRule.rule?.id, "Knowledge rule was not created", knowledgeRule);
+assert(knowledgeRule.rule?.workflow_id, "Knowledge rule workflow was not created", knowledgeRule);
+assert(knowledgeRule.rule?.target_object_type, "Knowledge rule target object was not inferred", knowledgeRule.rule);
+
+const reviewedKnowledgeRule = await request(`/api/knowledge-rules/${knowledgeRule.rule.id}/review`, {
+  method: "POST",
+  body: JSON.stringify({
+    status: "reviewed",
+    reviewer: "p0_knowledge_rule_smoke",
+    reviewNote: "Smoke reviews knowledge rule candidate; certification remains owner-governed."
+  })
+});
+assert(reviewedKnowledgeRule.rule?.lifecycle_status === "reviewed", "Knowledge rule review failed", reviewedKnowledgeRule);
+
+const triggeredKnowledgeRule = await request(`/api/knowledge-rules/${knowledgeRule.rule.id}/run`, {
+  method: "POST",
+  body: JSON.stringify({ actor: "p0_knowledge_rule_smoke" })
+});
+assert(triggeredKnowledgeRule.recommendation?.recommendation?.id, "Knowledge rule did not create recommendation card", triggeredKnowledgeRule);
+assert(
+  triggeredKnowledgeRule.recommendation?.recommendation?.scenario_type === "knowledge_rule_trigger",
+  "Knowledge rule recommendation scenario mismatch",
+  triggeredKnowledgeRule.recommendation
+);
+
+const knowledgeRuleSummary = await request("/api/knowledge-rules/summary");
+assert(knowledgeRuleSummary.total >= 1, "Knowledge rule summary missing rules", knowledgeRuleSummary);
+assert(knowledgeRuleSummary.boundary?.providerCalls === false && knowledgeRuleSummary.boundary?.erpWriteback === false, "Knowledge rule boundary changed", knowledgeRuleSummary.boundary);
+
+const knowledgeRuleExport = await request("/api/export/knowledge-rules?format=json");
+assert(knowledgeRuleExport.boundary?.mode === "read_only_export", "Knowledge rule JSON export is not read-only", knowledgeRuleExport.boundary);
+assert(
+  knowledgeRuleExport.payload?.rules?.some((rule) => rule.id === knowledgeRule.rule.id),
+  "Knowledge rule JSON export missing smoke rule",
+  knowledgeRuleExport.payload
+);
+
+const knowledgeRuleExcelExport = await requestRaw("/api/export/knowledge-rules?format=excel");
+assert(
+  knowledgeRuleExcelExport.response.headers.get("content-type")?.includes("application/vnd.ms-excel"),
+  "Knowledge rule Excel export content type is wrong",
+  { contentType: knowledgeRuleExcelExport.response.headers.get("content-type") }
+);
+assert(
+  knowledgeRuleExcelExport.text.includes("Knowledge Rules") && knowledgeRuleExcelExport.text.includes(knowledgeRule.rule.rule_code),
+  "Knowledge rule Excel export missing rule content"
+);
 
 const questionSample = await request("/api/ai-chat/question-samples", {
   method: "POST",
@@ -592,6 +669,135 @@ assert(approvedTransition.task?.status === "approved", "action transition to app
 const decisionSummary = await request("/api/decision/summary");
 assert(decisionSummary.writeBackPolicy === "suggestion_approval_replay_only", "decision write-back policy changed", decisionSummary);
 
+const aipSummary = await request("/api/aip/summary");
+assert(aipSummary.schemaReady === true, "AIP summary schema readiness failed", aipSummary);
+assert(aipSummary.objectInstances >= 10, "AIP object seed missing", aipSummary);
+assert(aipSummary.actionPolicyTiers >= 4, "AIP policy tier seed missing", aipSummary);
+assert(Array.isArray(aipSummary.topRiskObjects) && aipSummary.topRiskObjects.length > 0, "AIP top risk objects missing", aipSummary);
+
+const aipObjects = await request("/api/aip/objects?type=inventory_batch&risk=critical&limit=5");
+assert(Array.isArray(aipObjects) && aipObjects.some((object) => object.id === "obj_batch_fba_negative_available"), "AIP critical inventory batch not found", aipObjects);
+
+const aipObjectDetail = await request("/api/aip/objects/obj_batch_fba_negative_available");
+assert(aipObjectDetail.object?.properties?.business_available_qty < 0, "AIP Object 360 negative available inventory evidence missing", aipObjectDetail.object);
+assert(Array.isArray(aipObjectDetail.events) && aipObjectDetail.events.some((event) => event.event_type === "negative_available_inventory"), "AIP object events missing negative available inventory", aipObjectDetail.events);
+assert(aipObjectDetail.boundary?.ontologyReadOnly === true, "AIP object boundary changed", aipObjectDetail.boundary);
+
+const aipObjectEvents = await request("/api/aip/objects/obj_batch_fba_negative_available/events?eventType=negative_available_inventory");
+assert(Array.isArray(aipObjectEvents) && aipObjectEvents.length >= 1, "AIP object events API failed", aipObjectEvents);
+
+const aipTrace = await request("/api/aip/traces", {
+  method: "POST",
+  body: JSON.stringify({
+    question: "FBA 可用库存为负是否合理，应该如何排查？",
+    intent: "negative_available_inventory_diagnosis",
+    targetObjectId: "obj_batch_fba_negative_available",
+    targetMetricId: "business_available_qty",
+    answerability: "partial",
+    answerabilityScore: 72,
+    evidenceRefs: [
+      { type: "object_event", ref: "evt_negative_available_inventory" },
+      { type: "knowledge_domain", ref: "stocking-rules" }
+    ],
+    createdBy: "p0_aip_smoke"
+  })
+});
+assert(aipTrace.trace?.id, "AIP trace was not created", aipTrace);
+assert(Array.isArray(aipTrace.steps) && aipTrace.steps.length >= 4, "AIP trace steps were not created", aipTrace);
+
+const aipTraceDetail = await request(`/api/aip/traces/${aipTrace.trace.id}`);
+assert(aipTraceDetail.trace?.target_object_id === "obj_batch_fba_negative_available", "AIP trace detail target object mismatch", aipTraceDetail);
+
+const aipRecommendation = await request("/api/aip/recommendations", {
+  method: "POST",
+  body: JSON.stringify({
+    traceId: aipTrace.trace.id,
+    targetObjectId: "obj_batch_fba_negative_available",
+    scenarioType: "negative_available_inventory",
+    recommendationTitle: "P0 smoke 负可用库存排查行动卡",
+    recommendationDetail: "先核对平台预占、同步延迟、批次状态和调整流水，再决定是否发起库存修正或补货动作。",
+    impactSummary: "影响 business_available_qty、stockout_risk 和 Listing 可售连续性。",
+    evidenceRefs: [
+      { type: "trace", ref: aipTrace.trace.id },
+      { type: "object_event", ref: "evt_negative_available_inventory" }
+    ],
+    actionOptions: ["核对平台预占", "检查库存同步延迟", "复核批次状态", "生成 Owner 审核任务"],
+    actionTier: "L1",
+    owner: "p0_aip_smoke",
+    priority: "P1",
+    createdBy: "p0_aip_smoke"
+  })
+});
+assert(aipRecommendation.recommendation?.id, "AIP recommendation was not created", aipRecommendation);
+assert(aipRecommendation.recommendation?.workflow_id, "AIP recommendation workflow was not created", aipRecommendation);
+assert(aipRecommendation.recommendation?.approval_status === "submitted", "AIP recommendation default status changed", aipRecommendation);
+
+const reviewedRecommendation = await request(`/api/aip/recommendations/${aipRecommendation.recommendation.id}/review`, {
+  method: "POST",
+  body: JSON.stringify({
+    status: "approved",
+    reviewer: "p0_aip_smoke",
+    reviewNote: "Smoke approves recommendation as ledger-only action card; no ERP/Jijia writeback."
+  })
+});
+assert(reviewedRecommendation.recommendation?.approval_status === "approved", "AIP recommendation review failed", reviewedRecommendation);
+
+const transitionedRecommendation = await request(`/api/aip/recommendations/${aipRecommendation.recommendation.id}/transition`, {
+  method: "POST",
+  body: JSON.stringify({
+    status: "in_progress",
+    actor: "p0_aip_smoke",
+    note: "Smoke moves approved recommendation into execution tracking."
+  })
+});
+assert(transitionedRecommendation.recommendation?.approval_status === "in_progress", "AIP recommendation transition failed", transitionedRecommendation);
+
+const aipRecommendations = await request(`/api/aip/recommendations?objectId=obj_batch_fba_negative_available&q=${encodeURIComponent("负可用")}`);
+assert(Array.isArray(aipRecommendations) && aipRecommendations.some((card) => card.id === aipRecommendation.recommendation.id), "AIP recommendation filter failed", aipRecommendations);
+
+const aipRecommendationExport = await request("/api/export/aip-recommendations?format=json");
+assert(aipRecommendationExport.boundary?.mode === "read_only_export", "AIP recommendation JSON export is not read-only", aipRecommendationExport.boundary);
+assert(
+  aipRecommendationExport.payload?.recommendations?.some((card) => card.id === aipRecommendation.recommendation.id),
+  "AIP recommendation JSON export missing smoke recommendation",
+  aipRecommendationExport.payload
+);
+
+const aipRecommendationExcelExport = await requestRaw("/api/export/aip-recommendations?format=excel");
+assert(
+  aipRecommendationExcelExport.response.headers.get("content-type")?.includes("application/vnd.ms-excel"),
+  "AIP recommendation Excel export content type is wrong",
+  { contentType: aipRecommendationExcelExport.response.headers.get("content-type") }
+);
+assert(
+  aipRecommendationExcelExport.text.includes("AIP Recommendation Cards") && aipRecommendationExcelExport.text.includes(aipRecommendation.recommendation.id),
+  "AIP recommendation Excel export missing recommendation content"
+);
+
+const aipScenarios = await request("/api/aip/scenarios");
+const scenarioIds = ["negative_available_inventory", "stockout_risk", "aging_overstock_risk"];
+assert(
+  Array.isArray(aipScenarios) && scenarioIds.every((scenarioId) => aipScenarios.some((scenario) => scenario.id === scenarioId)),
+  "AIP scenarios missing required scenario ids",
+  aipScenarios
+);
+assert(
+  aipScenarios.every((scenario) => scenario.object?.id && Array.isArray(scenario.events) && scenario.events.length >= 1 && Array.isArray(scenario.pathObjects) && scenario.pathObjects.length >= 3),
+  "AIP scenarios missing object/event/path evidence",
+  aipScenarios
+);
+
+for (const scenarioId of scenarioIds) {
+  const run = await request(`/api/aip/scenarios/${scenarioId}/run`, {
+    method: "POST",
+    body: JSON.stringify({ actor: "p0_aip_scenario_smoke" })
+  });
+  assert(run.trace?.id, `AIP scenario ${scenarioId} did not create trace`, run);
+  assert(run.recommendation?.id, `AIP scenario ${scenarioId} did not create recommendation`, run);
+  assert(run.recommendation?.scenario_type === scenarioId, `AIP scenario ${scenarioId} recommendation scenario mismatch`, run.recommendation);
+  assert(run.boundary?.providerCalls === false && run.boundary?.erpWriteback === false, `AIP scenario ${scenarioId} boundary changed`, run.boundary);
+}
+
 const auditEvents = await request("/api/audit-events?limit=20");
 assert(Array.isArray(auditEvents) && auditEvents.length > 0, "audit events not recorded");
 
@@ -614,7 +820,8 @@ console.log(
       health: {
         ontologyObjects: health.database?.ontologyObjects,
         metrics: health.database?.metrics,
-        lineageEdges: health.database?.lineageEdges
+        lineageEdges: health.database?.lineageEdges,
+        aipPhase1: health.database?.aipPhase1
       },
       validatedWorkflows: [
         "annotation.create",
@@ -648,13 +855,21 @@ console.log(
         "chatbiContext.failClosedBeforeCertification",
         "chatbiContext.certify",
         "chatbiSummary.read",
+        "chatbiSummary.answerabilityGovernance",
         "chatbi.dryRun",
         "aiChat.supportedOrPartial",
+        "aiChat.evidenceExportJson",
+        "aiChat.evidenceExportMarkdown",
         "aiChat.failClosed",
         "kbSourceRegister.read",
         "kbCardQuality.score",
         "kbStaleFindings.read",
         "kbCrosswalkMatrix.read",
+        "knowledgeRule.createFromCard",
+        "knowledgeRule.review",
+        "knowledgeRule.triggerRecommendation",
+        "knowledgeRule.exportJson",
+        "knowledgeRule.exportExcel",
         "aiQuestionSample.create",
         "aiQuestionSample.certify",
         "aiFeedback.create",
@@ -664,6 +879,21 @@ console.log(
         "decisionAction.transitionPendingApproval",
         "decisionAction.transitionApproved",
         "decisionSummary.read",
+        "aipSummary.read",
+        "aipObject.read",
+        "aipObject.events",
+        "aipTrace.create",
+        "aipTrace.read",
+        "aipRecommendation.create",
+        "aipRecommendation.review",
+        "aipRecommendation.transition",
+        "aipRecommendation.filter",
+        "aipRecommendation.exportJson",
+        "aipRecommendation.exportExcel",
+        "aipScenarios.read",
+        "aipScenarios.runNegativeInventory",
+        "aipScenarios.runStockoutRisk",
+        "aipScenarios.runAgingOverstock",
         "auditSummary.read",
         "auditEvents.read",
         "auditEvents.filterChatbi"

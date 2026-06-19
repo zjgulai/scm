@@ -3,7 +3,7 @@ title: "供应链治理工作台 E2E 验收矩阵"
 status: "draft"
 created_at: "2026-06-18"
 updated_at: "2026-06-19"
-scope: "P0 browser smoke, P1 workflow operations, P2 KB governance register and scoring, P2 AI question samples and feedback, ontology path, decision state machine, ChatBI certification, audit log smoke"
+scope: "P0 browser smoke, P1 workflow operations, P2 KB governance, P2 AI question samples and feedback, PRD v2.0 AIP Phase 1 acceptance gates, ontology path, decision state machine, ChatBI certification, audit log smoke"
 boundary: "test design and executable smoke scripts; no ERP/Jijia writeback; provider calls remain disabled"
 ---
 
@@ -13,15 +13,29 @@ boundary: "test design and executable smoke scripts; no ERP/Jijia writeback; pro
 
 | 命令 | 默认目标 | 写入边界 | 用途 |
 |---|---|---|---|
-| `npm run smoke:browser` | `https://scm.lute-tlz-dddd.top/` | 只读浏览器导航 | 使用 Browser Harness 打开真实 Chrome 标签页，验证 13 个模块可打开；本地 URL 或 `REQUIRE_WORKBENCH_OPERATIONS=1` 时强校验工作台操作入口；本地 URL 或 `REQUIRE_KB_GOVERNANCE=1` 时强校验 AI 知识库治理视图；本地 URL 或 `REQUIRE_AI_FEEDBACK=1` 时强校验 AI 对话治理视图 |
+| `npm run smoke:browser` | `https://scm.lute-tlz-dddd.top/` | 只读浏览器导航 | 使用 Browser Harness 打开真实 Chrome 标签页，验证 13 个模块可打开；本地 URL 或 `REQUIRE_WORKBENCH_OPERATIONS=1` 时强校验工作台操作入口；本地 URL 或 `REQUIRE_KB_GOVERNANCE=1` 时强校验 AI 知识库治理视图；本地 URL 或 `REQUIRE_AI_FEEDBACK=1` 时强校验 AI 对话治理视图；`REQUIRE_AIP_PHASE1=1` 时强校验 PRD v2.0 AIP 骨架；`REQUIRE_AIP_SCENARIOS=1` 时强校验三大供应链场景 |
 | `npm run smoke:workflows` | `http://127.0.0.1:5174` | 只写本项目治理台账 | 验证注解、评论、修订建议、候选资产流、Workflow Board、ChatBI 认证流、AI 本地证据问答、审计筛选 |
-| `npm run smoke:p0` | 临时本地 API/本地新 bundle + 线上浏览器导航 | 临时 SQLite 副本写入 + 线上只读导航 | 执行 build、SQLite 迁移、临时 API 工作流 smoke、本地 Browser Harness 导航 smoke、线上 Browser Harness 导航 smoke |
+| `npm run smoke:p0` | 临时本地 API/本地新 bundle + 线上浏览器导航 | 临时 SQLite 副本写入 + 线上只读导航 | 执行 build、SQLite 迁移、临时 API 工作流 smoke、本地 Browser Harness 导航 smoke、线上 Browser Harness 导航 smoke；若设置 `REQUIRE_AIP_PHASE1=1`，本地 Browser Harness 会追加 AIP 骨架检查 |
 
 `smoke:workflows` 默认拒绝写入非本地 URL。若要对授权 staging 目标执行，需要显式设置：
 
 ```bash
 ALLOW_LEDGER_WRITE_SMOKE=1 SCM_WORKBENCH_URL=https://staging.example.com npm run smoke:workflows
 ```
+
+## 1.1 PRD v2.0 AIP 验收开关
+
+| 开关 | 默认行为 | 强校验内容 | 适用阶段 |
+|---|---|---|---|
+| `REQUIRE_AIP_PHASE1=1` | 默认关闭；本地 URL 可按需开启 | Command Center、Object 360、Agent Execution Trace、Recommendation Card 的 DOM/API 暴露 | Batch 1/2 |
+| `REQUIRE_AIP_SCENARIOS=1` | 默认关闭；依赖 `REQUIRE_AIP_PHASE1=1` | FBA 可用库存为负、断货风险、库龄/超储三大场景链路 | Batch 3 |
+| `SCM_SKIP_AIP_BROWSER_SMOKE=1` | 默认不跳过 | 显式跳过 AIP 专项 DOM 检查，保留基础导航检查 | 调试脚本自身 |
+
+说明：
+
+- `REQUIRE_AIP_PHASE1=1` 只表示需要页面和 API 具备 AIP Phase 1 骨架，不表示外部模型、业务系统写回或实时生产对象图已经启用。
+- `REQUIRE_AIP_SCENARIOS=1` 只验证本地种子或授权 staging 场景链路，不把 seed/draft 数据描述为真实生产业务结论。
+- 生产公开站点默认只读检查。只有用户明确授权 staging 写入时，才允许设置 `ALLOW_LEDGER_WRITE_SMOKE=1` 对非本地目标写入治理台账。
 
 ## 2. 导航验收
 
@@ -86,6 +100,26 @@ ALLOW_LEDGER_WRITE_SMOKE=1 SCM_WORKBENCH_URL=https://staging.example.com npm run
 | audit events filter | `smoke-core-workflows.mjs` | 能按 ChatBI review 事件、资产和操作者筛选审计日志 |
 | audit log rendering | Browser Harness DOM check | 审计日志页有 summary 卡、facet、筛选条和时间线 |
 
+## 3.1 PRD v2.0 AIP Phase 1 验收
+
+| 工作流 | 脚本覆盖 | 通过条件 |
+|---|---|---|
+| AIP deploy health fields | `GET /api/deploy/health` | 返回 `aipPhase1` 或等价字段，包含对象、trace、推荐动作计数；边界仍为 `providerCalls=false`、`erpWriteback=false` |
+| Command Center shell | Browser Harness DOM check | `REQUIRE_AIP_PHASE1=1` 时，总览页存在 `.aipCommandCenter`、`.aipRiskQueue`、`.recommendationQueue`、`.assetProgressPanel` |
+| Object 360 shell | Browser Harness DOM check | 存在 Object 360 入口或对象本体增强区；对象详情具备摘要、关系、证据、事件和行动卡入口 |
+| Agent Execution Trace shell | Browser Harness DOM check | AI 对话页或 ChatBI 页存在 trace timeline、answerability 和 evidence gap 展示区 |
+| Recommendation Card shell | Browser Harness DOM check | 决策闭环或 Command Center 存在 recommendation card 列表、详情、审批或状态流转入口 |
+| AIP API surface | `smoke-core-workflows.mjs` | 可读取 `/api/aip/summary`、对象列表、trace 列表和 recommendation 列表；未实现前不得开启强校验 |
+| AIP audit events | `smoke-core-workflows.mjs` | 创建 trace 或 recommendation 时写入 audit event，且不改写 canonical 本体/指标字典 |
+
+## 3.2 PRD v2.0 三大场景验收
+
+| 场景 | 脚本覆盖 | 通过条件 |
+|---|---|---|
+| FBA 可用库存为负 | `REQUIRE_AIP_SCENARIOS=1` Browser Harness + local workflow smoke | 能从对象事件进入 trace，trace 展示业务解释、证据缺口和排查行动卡 |
+| 断货风险 | `REQUIRE_AIP_SCENARIOS=1` Browser Harness + local workflow smoke | 能展示 SKU -> Listing -> PO/Shipment/InventoryBatch 路径和补货/调拨行动卡 |
+| 库龄/超储 | `REQUIRE_AIP_SCENARIOS=1` Browser Harness + local workflow smoke | 能展示 InventoryBatch/Warehouse/SKU 健康分和调拨/清仓/促销行动卡 |
+
 ## 4. 当前限制
 
 - 该矩阵先固化 P0 可重复验收，不代表完整 PRD 已完成。
@@ -93,5 +127,16 @@ ALLOW_LEDGER_WRITE_SMOKE=1 SCM_WORKBENCH_URL=https://staging.example.com npm run
 - AI 知识库治理 DOM 强校验仅在本地 URL 或显式 `REQUIRE_KB_GOVERNANCE=1` 下启用；线上部署前的只读导航不会被误判为新版功能已上线。
 - AI 对话问法样本/反馈 DOM 强校验仅在本地 URL 或显式 `REQUIRE_AI_FEEDBACK=1` 下启用；线上部署前的只读导航不会被误判为新版功能已上线。
 - 工作流 smoke 默认只对本地服务执行台账写入；生产站点默认只做只读导航检查。
+- PRD v2.0 AIP smoke 默认关闭；只有实现对应 Batch 后才开启 `REQUIRE_AIP_PHASE1=1` 或 `REQUIRE_AIP_SCENARIOS=1`。
 - 工作台操作 CRUD 是治理型 CRUD：创建、查询、筛选、审核、批量审核和审计留痕；不包含对本体、指标字典、标签、维度、指标正本表的直接删除或覆盖。
 - 外部模型 provider 仍保持关闭。
+
+## 5. 写入边界分层
+
+| 层级 | 目标 | 允许写入 | 禁止 |
+|---|---|---|---|
+| Local smoke | `http://127.0.0.1:*` 临时 SQLite 副本 | 治理台账、workflow、audit、trace、recommendation seed | 改写 canonical 本体/指标字典 |
+| Authorized staging | 用户显式授权的 staging URL | 仅治理台账写入 smoke，必须设置 `ALLOW_LEDGER_WRITE_SMOKE=1` | 业务系统 write-back |
+| Public production | `https://scm.lute-tlz-dddd.top/` | 默认只读导航、DOM、health 检查 | 默认禁止 ledger 写入 smoke、provider call、ERP/Jijia write-back |
+
+所有验收输出必须说明属于 `local smoke`、`staging write smoke` 还是 `production read-only smoke`。

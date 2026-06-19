@@ -159,6 +159,51 @@ type KbCrosswalkMatrix = {
   rows: AnyRow[];
 };
 
+type KnowledgeRule = {
+  id: string;
+  source_card_id: string;
+  source_domain_id: string;
+  source_card_title?: string;
+  source_domain_name?: string;
+  rule_code: string;
+  rule_name: string;
+  rule_type: string;
+  target_object_type: string;
+  target_metric_ids: string[];
+  target_dimension_ids: string[];
+  condition_expression: string;
+  action_template: Record<string, unknown>;
+  evidence_refs: unknown[];
+  conflict_key: string;
+  conflict_status: string;
+  open_conflict_count?: number;
+  recommendation_count?: number;
+  owner: string;
+  priority: string;
+  lifecycle_status: string;
+  workflow_id: string;
+  reviewer: string;
+  review_note: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type KnowledgeRuleSummary = {
+  total: number;
+  draft: number;
+  certified: number;
+  conflicts: number;
+  byStatus: AnyRow[];
+  byTargetObject: AnyRow[];
+  byConflictStatus: AnyRow[];
+  boundary: {
+    mode: string;
+    importAllowed: boolean;
+    providerCalls: boolean;
+    erpWriteback: boolean;
+  };
+};
+
 type AiEvidence = {
   cardId: string;
   chunkId: string;
@@ -371,8 +416,16 @@ type ChatbiSummary = {
   certified: number;
   draft: number;
   rejected: number;
+  averageAnswerabilityScore?: number;
+  weakContexts?: number;
   byStatus: AnyRow[];
   byPolicy: AnyRow[];
+  answerabilityBuckets?: AnyRow[];
+  answerabilityPolicy?: {
+    certifiedAnswerPolicy: string;
+    localEvidenceSamplePolicy: string;
+    refusalRule: string;
+  };
   pending: AnyRow[];
 };
 
@@ -382,6 +435,158 @@ type AuditSummary = {
   byAssetType: AnyRow[];
   byActor: AnyRow[];
   recent: AuditEvent[];
+};
+
+type AipObject = {
+  id: string;
+  object_type: string;
+  object_key: string;
+  display_name: string;
+  lifecycle_status: string;
+  risk_level: string;
+  owner: string;
+  health_score: number;
+  source_refs: unknown[];
+  properties: Record<string, unknown>;
+  event_count?: number;
+  recommendation_count?: number;
+  trace_count?: number;
+};
+
+type AipEvent = {
+  id: string;
+  object_id: string;
+  event_type: string;
+  severity: string;
+  event_title: string;
+  event_detail: string;
+  metric_refs: unknown[];
+  evidence_refs: unknown[];
+  status: string;
+  occurred_at: string;
+};
+
+type AipTrace = {
+  id: string;
+  session_id: string;
+  source_message_id: string;
+  intent: string;
+  question: string;
+  target_object_type: string;
+  target_object_id: string;
+  target_metric_id: string;
+  answerability: string;
+  answerability_score: number;
+  status: string;
+  evidence_refs: unknown[];
+  created_by: string;
+  created_at: string;
+};
+
+type AipTraceStep = {
+  id: string;
+  trace_id: string;
+  step_order: number;
+  step_type: string;
+  step_title: string;
+  step_detail: string;
+  input_refs: unknown[];
+  output_refs: unknown[];
+  status: string;
+  created_at: string;
+};
+
+type AipRecommendation = {
+  id: string;
+  trace_id: string;
+  target_object_type: string;
+  target_object_id: string;
+  scenario_type: string;
+  recommendation_title: string;
+  recommendation_detail: string;
+  impact_summary: string;
+  evidence_refs: unknown[];
+  action_options: unknown[];
+  action_tier: string;
+  owner: string;
+  priority: string;
+  approval_status: string;
+  workflow_id: string;
+  due_date: string;
+  reviewer: string;
+  review_note: string;
+  created_at: string;
+  updated_at: string;
+};
+
+type AipObjectDetail = {
+  object: AipObject;
+  ontology: AnyRow | null;
+  relations: { outbound: AnyRow[]; inbound: AnyRow[] };
+  identityLinks: AnyRow[];
+  metrics: AnyRow[];
+  tags: AnyRow[];
+  kbCards: AnyRow[];
+  qualityIssues: AnyRow[];
+  recommendations: AipRecommendation[];
+  events: AipEvent[];
+  traces: AipTrace[];
+  boundary: AnyRow;
+};
+
+type AipTraceDetail = {
+  trace: AipTrace;
+  steps: AipTraceStep[];
+  recommendations: AipRecommendation[];
+};
+
+type AipSummary = {
+  schemaReady: boolean;
+  objectInstances: number;
+  identityLinks: number;
+  objectEvents: number;
+  traces: number;
+  traceSteps: number;
+  recommendations: number;
+  recommendationTransitions: number;
+  actionPolicyTiers: number;
+  providerCalls: boolean;
+  erpWriteback: boolean;
+  objectsByType: AnyRow[];
+  riskBuckets: AnyRow[];
+  eventBuckets: AnyRow[];
+  recommendationBuckets: AnyRow[];
+  topRiskObjects: AipObject[];
+  openRecommendations: AipRecommendation[];
+  policyTiers: AnyRow[];
+};
+
+type AipScenario = {
+  id: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  ruleSummary: string;
+  targetObjectId: string;
+  targetObjectType: string;
+  targetMetricId: string;
+  pathNarrative: string[];
+  owner: string;
+  priority: string;
+  answerability: string;
+  answerabilityScore: number;
+  question: string;
+  recommendationTitle: string;
+  recommendationDetail: string;
+  impactSummary: string;
+  actionOptions: string[];
+  object: AipObject | null;
+  pathObjects: AipObject[];
+  events: AipEvent[];
+  recommendations: AipRecommendation[];
+  traces: AipTrace[];
+  healthScore: number;
+  boundary: AnyRow;
 };
 
 type LedgerState = {
@@ -528,7 +733,33 @@ const columnLabels: Record<string, string> = {
   operation_summary: "操作说明",
   operation_payload: "操作载荷",
   target_asset_ids: "目标资产",
-  workflow_ref: "关联流程"
+  workflow_ref: "关联流程",
+  object_key: "对象主键",
+  display_name: "对象名称",
+  risk_level: "风险等级",
+  health_score: "健康分",
+  source_refs: "来源引用",
+  properties: "对象属性",
+  event_count: "事件数",
+  recommendation_count: "建议数",
+  trace_count: "Trace 数",
+  target_object_type: "目标对象类型",
+  target_metric_id: "目标指标",
+  scenario_type: "场景类型",
+  recommendation_title: "建议标题",
+  recommendation_detail: "建议详情",
+  impact_summary: "影响摘要",
+  action_options: "动作选项",
+  action_tier: "动作层级",
+  approval_status: "审批状态",
+  occurred_at: "发生时间",
+  event_title: "事件标题",
+  event_detail: "事件详情",
+  metric_refs: "指标引用",
+  step_order: "步骤",
+  step_type: "步骤类型",
+  step_title: "步骤标题",
+  step_detail: "步骤说明"
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
@@ -563,10 +794,10 @@ function useApi<T>(path: string, fallback: T) {
 }
 
 function toneFromStatus(status = "") {
-  if (["active", "certified", "已签字", "done", "approved", "completed", "on_track", "supported", "resolved"].includes(status)) return "good";
-  if (["mapped", "reviewed", "in_progress", "closed", "partial"].includes(status)) return "blue";
-  if (["draft", "review_pending", "pending_approval", "recommended", "due_soon", "no_due", "insufficient"].includes(status)) return "warn";
-  if (["deprecated", "blocked", "rejected", "overdue", "invalid_due", "conflict"].includes(status)) return "bad";
+  if (["active", "certified", "已签字", "done", "approved", "completed", "on_track", "supported", "resolved", "low", "healthy", "replayed"].includes(status)) return "good";
+  if (["mapped", "reviewed", "in_progress", "closed", "partial", "medium", "submitted", "L0", "L1"].includes(status)) return "blue";
+  if (["draft", "review_pending", "pending_approval", "recommended", "due_soon", "no_due", "insufficient", "high", "L2"].includes(status)) return "warn";
+  if (["deprecated", "blocked", "rejected", "overdue", "invalid_due", "conflict", "critical", "L3"].includes(status)) return "bad";
   return "neutral";
 }
 
@@ -583,6 +814,19 @@ function actionNextStates(status = "") {
     rejected: []
   };
   return transitions[state] || [];
+}
+
+function recommendationNextStates(status = "") {
+  const transitions: Record<string, string[]> = {
+    draft: ["submitted", "rejected"],
+    submitted: ["approved", "rejected"],
+    approved: ["in_progress", "done"],
+    in_progress: ["done", "rejected"],
+    done: ["replayed"],
+    replayed: [],
+    rejected: []
+  };
+  return transitions[status] || [];
 }
 
 function Badge({ children, tone = "neutral" }: { children: React.ReactNode; tone?: "neutral" | "good" | "warn" | "bad" | "blue" }) {
@@ -602,6 +846,12 @@ function cellValue(value: unknown) {
   if (typeof value === "boolean") return value ? "是" : "否";
   if (typeof value === "object") return JSON.stringify(value);
   return String(value);
+}
+
+function safeFieldValue(value: unknown): string | number | boolean | null {
+  if (value === null || value === undefined) return null;
+  if (["string", "number", "boolean"].includes(typeof value)) return value as string | number | boolean;
+  return JSON.stringify(value);
 }
 
 function DataTable({
@@ -658,6 +908,111 @@ function makeAsset(type: string, row: AnyRow, titleKeys: string[], subtitleKeys:
     subtitle: subtitle ? String(subtitle) : undefined,
     fields: row,
     readOnly
+  };
+}
+
+function aipObjectAsset(object: AipObject): AssetRef {
+  return {
+    type: "aip_object",
+    id: object.id,
+    title: object.display_name || object.object_key,
+    subtitle: `${object.object_type} / ${object.risk_level} / health ${object.health_score}`,
+    fields: {
+      id: object.id,
+      object_type: object.object_type,
+      object_key: object.object_key,
+      display_name: object.display_name,
+      lifecycle_status: object.lifecycle_status,
+      risk_level: object.risk_level,
+      owner: object.owner,
+      health_score: Number(object.health_score || 0),
+      source_refs: safeFieldValue(object.source_refs),
+      properties: safeFieldValue(object.properties),
+      event_count: Number(object.event_count || 0),
+      recommendation_count: Number(object.recommendation_count || 0),
+      trace_count: Number(object.trace_count || 0)
+    },
+    readOnly: true
+  };
+}
+
+function aipRecommendationAsset(recommendation: AipRecommendation): AssetRef {
+  return {
+    type: "aip_recommendation",
+    id: recommendation.id,
+    title: recommendation.recommendation_title,
+    subtitle: `${recommendation.scenario_type} / ${recommendation.approval_status}`,
+    fields: {
+      id: recommendation.id,
+      trace_id: recommendation.trace_id,
+      target_object_type: recommendation.target_object_type,
+      target_object_id: recommendation.target_object_id,
+      scenario_type: recommendation.scenario_type,
+      recommendation_title: recommendation.recommendation_title,
+      recommendation_detail: recommendation.recommendation_detail,
+      impact_summary: recommendation.impact_summary,
+      evidence_refs: safeFieldValue(recommendation.evidence_refs),
+      action_options: safeFieldValue(recommendation.action_options),
+      action_tier: recommendation.action_tier,
+      owner: recommendation.owner,
+      priority: recommendation.priority,
+      approval_status: recommendation.approval_status,
+      workflow_id: recommendation.workflow_id,
+      due_date: recommendation.due_date,
+      reviewer: recommendation.reviewer,
+      review_note: recommendation.review_note,
+      created_at: recommendation.created_at,
+      updated_at: recommendation.updated_at
+    },
+    readOnly: true
+  };
+}
+
+function aipTraceAsset(trace: AipTrace): AssetRef {
+  return {
+    type: "aip_trace",
+    id: trace.id,
+    title: trace.question,
+    subtitle: `${trace.intent} / ${trace.answerability}`,
+    fields: {
+      id: trace.id,
+      session_id: trace.session_id,
+      source_message_id: trace.source_message_id,
+      intent: trace.intent,
+      question: trace.question,
+      target_object_type: trace.target_object_type,
+      target_object_id: trace.target_object_id,
+      target_metric_id: trace.target_metric_id,
+      answerability: trace.answerability,
+      answerability_score: Number(trace.answerability_score || 0),
+      status: trace.status,
+      evidence_refs: safeFieldValue(trace.evidence_refs),
+      created_by: trace.created_by,
+      created_at: trace.created_at
+    },
+    readOnly: true
+  };
+}
+
+function aipEventAsset(event: AipEvent): AssetRef {
+  return {
+    type: "aip_event",
+    id: event.id,
+    title: event.event_title,
+    subtitle: `${event.event_type} / ${event.severity}`,
+    fields: {
+      id: event.id,
+      object_id: event.object_id,
+      event_type: event.event_type,
+      severity: event.severity,
+      event_title: event.event_title,
+      event_detail: event.event_detail,
+      metric_refs: safeFieldValue(event.metric_refs),
+      evidence_refs: safeFieldValue(event.evidence_refs),
+      status: event.status,
+      occurred_at: event.occurred_at
+    },
+    readOnly: true
   };
 }
 
@@ -1198,14 +1553,90 @@ function ModuleHeader({ module, eyebrow }: { module: WorkbenchModule; eyebrow?: 
   );
 }
 
+function AipScenarioBoard({ onOpenAsset }: { onOpenAsset: (asset: AssetRef) => void }) {
+  const [refresh, setRefresh] = useState(0);
+  const [runningId, setRunningId] = useState("");
+  const [note, setNote] = useState("");
+  const scenarios = useApi<AipScenario[]>(`/api/aip/scenarios?refresh=${refresh}`, []);
+
+  async function runScenario(scenario: AipScenario) {
+    setRunningId(scenario.id);
+    setNote("");
+    try {
+      const payload = await api<{ ok: boolean; trace: AipTrace; recommendation: AipRecommendation }>(`/api/aip/scenarios/${encodeURIComponent(scenario.id)}/run`, {
+        method: "POST",
+        body: JSON.stringify({ actor: "local_user" })
+      });
+      setNote(`场景 ${scenario.title} 已生成 trace ${payload.trace.id} 和建议卡 ${payload.recommendation.id}。`);
+      onOpenAsset(aipRecommendationAsset(payload.recommendation));
+      setRefresh((value) => value + 1);
+    } catch (err) {
+      setNote(`运行场景失败：${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setRunningId("");
+    }
+  }
+
+  return (
+    <div className="scenarioSelector">
+      <div className="surfaceHead">
+        <div>
+          <p className="eyebrow">AIP scenario closed loop</p>
+          <h3>三大供应链场景闭环</h3>
+          <p className="muted">场景卡把对象、事件、指标、证据、trace 和建议卡串起来；当前动作只写入治理 ledger。</p>
+        </div>
+        <Badge tone="blue">{scenarios.data.length} scenarios</Badge>
+      </div>
+      {note ? <div className="kbNotice compact">{note}</div> : null}
+      {scenarios.error ? <div className="error compact">{scenarios.error}</div> : null}
+      <div className="scenarioGrid">
+        {scenarios.data.map((scenario) => (
+          <article className="aipScenarioCard scenarioCard" data-scenario={scenario.id} key={scenario.id}>
+            <div className="scenarioCardHead">
+              <div>
+                <span>{scenario.subtitle}</span>
+                <h4>{scenario.title}</h4>
+              </div>
+              <Badge tone={toneFromStatus(scenario.priority)}>{scenario.priority}</Badge>
+            </div>
+            <p>{scenario.description}</p>
+            <div className="scenarioPath">
+              {scenario.pathNarrative.map((node) => <span key={`${scenario.id}-${node}`}>{node}</span>)}
+            </div>
+            <div className="scenarioSignals">
+              <div><span>对象健康</span><strong>{Math.round(Number(scenario.healthScore || 0))}</strong></div>
+              <div><span>事件</span><strong>{scenario.events.length}</strong></div>
+              <div><span>Trace</span><strong>{scenario.traces.length}</strong></div>
+              <div><span>建议卡</span><strong>{scenario.recommendations.length}</strong></div>
+            </div>
+            <div className="scenarioRule">
+              <strong>规则口径</strong>
+              <span>{scenario.ruleSummary}</span>
+            </div>
+            <div className="scenarioActions">
+              <button className="textButton" disabled={!scenario.object} onClick={() => scenario.object && onOpenAsset(aipObjectAsset(scenario.object))}>打开对象</button>
+              <button className="textButton scenarioRunButton" disabled={runningId === scenario.id} onClick={() => runScenario(scenario)}>
+                {runningId === scenario.id ? "运行中..." : "生成 Trace + 建议卡"}
+              </button>
+            </div>
+          </article>
+        ))}
+        {!scenarios.data.length ? <div className="empty compact">暂无场景定义。</div> : null}
+      </div>
+    </div>
+  );
+}
+
 function MissionHero({
   overview,
   modules,
-  onSelect
+  onSelect,
+  onOpenAsset
 }: {
   overview: Overview;
   modules: WorkbenchModule[];
   onSelect: (id: string) => void;
+  onOpenAsset: (asset: AssetRef) => void;
 }) {
   const certified = modules.find((module) => module.id === "metric-engineering")?.secondaryMetric || "--";
   const l3 = overview.levels.find((item) => item.level === "L3")?.count || 0;
@@ -1219,6 +1650,26 @@ function MissionHero({
   const [result, setResult] = useState<AiChatResult | null>(null);
   const [running, setRunning] = useState(false);
   const [error, setError] = useState("");
+  const aip = useApi<AipSummary>("/api/aip/summary", {
+    schemaReady: false,
+    objectInstances: 0,
+    identityLinks: 0,
+    objectEvents: 0,
+    traces: 0,
+    traceSteps: 0,
+    recommendations: 0,
+    recommendationTransitions: 0,
+    actionPolicyTiers: 0,
+    providerCalls: false,
+    erpWriteback: false,
+    objectsByType: [],
+    riskBuckets: [],
+    eventBuckets: [],
+    recommendationBuckets: [],
+    topRiskObjects: [],
+    openRecommendations: [],
+    policyTiers: []
+  });
 
   async function askFromCockpit(event: React.FormEvent) {
     event.preventDefault();
@@ -1246,7 +1697,7 @@ function MissionHero({
   ];
 
   return (
-    <section className="missionHero">
+    <section className="missionHero aipCommandCenter">
       <div className="cockpitLead">
         <div className="heroCopy">
           <p className="eyebrow">Management cockpit</p>
@@ -1277,6 +1728,63 @@ function MissionHero({
             </div>
           ) : null}
         </form>
+        <div className="aipCommandGrid">
+          <div className="aipRiskQueue">
+            <div className="surfaceHead">
+              <div>
+                <p className="eyebrow">AIP risk queue</p>
+                <h3>高风险对象队列</h3>
+              </div>
+              <Badge tone={aip.data.schemaReady ? "good" : "warn"}>{aip.data.objectInstances} objects</Badge>
+            </div>
+            {aip.error ? <div className="error compact">{aip.error}</div> : null}
+            <div className="aipQueueList">
+              {(aip.data.topRiskObjects || []).slice(0, 4).map((object) => (
+                <button key={object.id} className="aipQueueCard" onClick={() => onOpenAsset(aipObjectAsset(object))}>
+                  <span>
+                    <strong>{object.display_name}</strong>
+                    <small>{object.object_type} / {object.object_key}</small>
+                  </span>
+                  <Badge tone={toneFromStatus(object.risk_level)}>{object.risk_level}</Badge>
+                  <ScoreLine score={Number(object.health_score || 0)} />
+                  <small>{Number(object.event_count || 0)} events / {Number(object.recommendation_count || 0)} cards / {Number(object.trace_count || 0)} traces</small>
+                </button>
+              ))}
+              {!aip.data.topRiskObjects?.length ? <div className="empty compact">暂无 AIP 对象实例；先运行本地迁移或 seed。</div> : null}
+            </div>
+          </div>
+          <div className="recommendationQueue aipRecommendationQueue">
+            <div className="surfaceHead">
+              <div>
+                <p className="eyebrow">Recommendation queue</p>
+                <h3>待处理行动建议</h3>
+              </div>
+              <Badge tone={aip.data.erpWriteback ? "bad" : "good"}>{aip.data.erpWriteback ? "writeback on" : "no writeback"}</Badge>
+            </div>
+            <div className="aipQueueList">
+              {(aip.data.openRecommendations || []).slice(0, 4).map((recommendation) => (
+                <button key={recommendation.id} className="aipQueueCard recommendationCardMini" onClick={() => onOpenAsset(aipRecommendationAsset(recommendation))}>
+                  <span>
+                    <strong>{recommendation.recommendation_title}</strong>
+                    <small>{recommendation.scenario_type} / {recommendation.owner}</small>
+                  </span>
+                  <div className="badgeCluster">
+                    <Badge tone={toneFromStatus(recommendation.approval_status)}>{recommendation.approval_status}</Badge>
+                    <Badge tone={toneFromStatus(recommendation.action_tier)}>{recommendation.action_tier}</Badge>
+                  </div>
+                  <p>{recommendation.impact_summary || recommendation.recommendation_detail}</p>
+                </button>
+              ))}
+              {!aip.data.openRecommendations?.length ? <div className="empty compact">暂无建议卡。Agent Trace 或手工诊断后会进入这里。</div> : null}
+            </div>
+            <div className="aipBoundaryLine">
+              <span>provider {aip.data.providerCalls ? "on" : "off"}</span>
+              <span>writeback {aip.data.erpWriteback ? "on" : "off"}</span>
+              <span>{aip.data.actionPolicyTiers} action tiers</span>
+            </div>
+          </div>
+        </div>
+        <AipScenarioBoard onOpenAsset={onOpenAsset} />
       </div>
       <div className="cockpitSide">
         <div className="assetProgressPanel">
@@ -1379,7 +1887,7 @@ function OverviewPanel({
   const overviewModule = modules.find((module) => module.id === "overview") || fallbackModules[0];
   return (
     <div className="stack">
-      <MissionHero overview={overview} modules={modules} onSelect={onSelect} />
+      <MissionHero overview={overview} modules={modules} onSelect={onSelect} onOpenAsset={onOpenAsset} />
       <div className="overviewControlBar">
         <WorkbenchFlowStrip module={overviewModule} />
         <div className="overviewExportCard">
@@ -1611,6 +2119,285 @@ function WorkflowBoard({ onOpenAsset }: { onOpenAsset: (asset: AssetRef) => void
   );
 }
 
+function Object360Panel({ onOpenAsset }: { onOpenAsset: (asset: AssetRef) => void }) {
+  const [refresh, setRefresh] = useState(0);
+  const [filters, setFilters] = useState({ type: "", risk: "", owner: "", q: "" });
+  const [selectedId, setSelectedId] = useState("");
+  const [note, setNote] = useState("");
+  const [creatingRecommendation, setCreatingRecommendation] = useState(false);
+  const objectsPath = useMemo(() => {
+    const params = new URLSearchParams({ limit: "80", refresh: String(refresh) });
+    if (filters.type) params.set("type", filters.type);
+    if (filters.risk) params.set("risk", filters.risk);
+    if (filters.owner) params.set("owner", filters.owner);
+    if (filters.q) params.set("q", filters.q);
+    return `/api/aip/objects?${params.toString()}`;
+  }, [filters, refresh]);
+  const objects = useApi<AipObject[]>(objectsPath, []);
+  const currentId = selectedId || objects.data[0]?.id || "obj_batch_fba_negative_available";
+  const detail = useApi<AipObjectDetail>(`/api/aip/objects/${encodeURIComponent(currentId)}?refresh=${refresh}`, {
+    object: {
+      id: currentId,
+      object_type: "",
+      object_key: "",
+      display_name: "暂无对象",
+      lifecycle_status: "draft",
+      risk_level: "medium",
+      owner: "",
+      health_score: 0,
+      source_refs: [],
+      properties: {}
+    },
+    ontology: null,
+    relations: { outbound: [], inbound: [] },
+    identityLinks: [],
+    metrics: [],
+    tags: [],
+    kbCards: [],
+    qualityIssues: [],
+    recommendations: [],
+    events: [],
+    traces: [],
+    boundary: {}
+  });
+  const selectedObject = detail.data.object;
+  const propertyEntries = Object.entries(selectedObject.properties || {}).slice(0, 8);
+  const relationCount = detail.data.relations.outbound.length + detail.data.relations.inbound.length;
+  const owners = Array.from(new Set(objects.data.map((object) => object.owner).filter(Boolean))).sort();
+
+  function updateFilters(next: Partial<typeof filters>) {
+    setFilters((current) => ({ ...current, ...next }));
+    setSelectedId("");
+  }
+
+  async function createObjectRecommendation() {
+    if (!selectedObject.id || selectedObject.id === "__missing__") return;
+    setCreatingRecommendation(true);
+    setNote("");
+    try {
+      const riskText = selectedObject.risk_level === "critical" || selectedObject.risk_level === "high"
+        ? `当前对象风险等级为 ${selectedObject.risk_level}，建议 owner 复核业务事件、指标证据和库存状态。`
+        : "建议 owner 复核对象证据、指标口径和业务状态，确认是否需要后续治理动作。";
+      const payload = await api<{ ok: boolean; recommendation: AipRecommendation }>("/api/aip/recommendations", {
+        method: "POST",
+        body: JSON.stringify({
+          targetObjectId: selectedObject.id,
+          targetObjectType: selectedObject.object_type,
+          scenarioType: selectedObject.risk_level === "critical" ? "critical_object_review" : "object_360_review",
+          recommendationTitle: `复核 ${selectedObject.display_name}`,
+          recommendationDetail: riskText,
+          impactSummary: `object=${selectedObject.object_type}; health=${selectedObject.health_score}; events=${detail.data.events.length}; metrics=${detail.data.metrics.length}`,
+          evidenceRefs: [
+            { type: "aip_object", ref: selectedObject.id },
+            ...detail.data.events.slice(0, 3).map((event) => ({ type: "object_event", ref: event.id })),
+            ...detail.data.metrics.slice(0, 3).map((metric) => ({ type: "metric", ref: String(metric.id || metric.code) }))
+          ],
+          actionOptions: ["复核对象事件", "核对指标口径", "补充证据链", "确认是否转执行任务"],
+          actionTier: "L1",
+          owner: selectedObject.owner || "supply_chain_owner",
+          priority: selectedObject.risk_level === "critical" ? "P0" : "P1",
+          createdBy: "local_user"
+        })
+      });
+      setNote(`已从 Object 360 创建建议卡 ${payload.recommendation.id}，进入决策闭环审核。`);
+      onOpenAsset(aipRecommendationAsset(payload.recommendation));
+      setRefresh((value) => value + 1);
+    } catch (err) {
+      setNote(`创建建议卡失败：${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setCreatingRecommendation(false);
+    }
+  }
+
+  return (
+    <div className="object360Panel">
+      <div className="surfaceHead">
+        <div>
+          <p className="eyebrow">AIP Object 360</p>
+          <h3>关键对象实例与证据视图</h3>
+          <p className="muted">类型本体保持只读；实例层只允许注解、评论、修订建议和行动卡。</p>
+        </div>
+        <div className="badgeCluster">
+          <Badge tone={toneFromStatus(selectedObject.risk_level)}>{selectedObject.risk_level}</Badge>
+          <Badge tone="blue">{objects.data.length} visible</Badge>
+        </div>
+      </div>
+      {note ? <div className="kbNotice compact">{note}</div> : null}
+      {objects.error ? <div className="error compact">{objects.error}</div> : null}
+      {detail.error ? <div className="error compact">{detail.error}</div> : null}
+      <div className="object360Filters">
+        <label>
+          对象类型
+          <select value={filters.type} onChange={(event) => updateFilters({ type: event.target.value })}>
+            <option value="">全部</option>
+            {Array.from(new Set(objects.data.map((object) => object.object_type).filter(Boolean))).map((type) => <option key={type} value={type}>{type}</option>)}
+          </select>
+        </label>
+        <label>
+          风险
+          <select value={filters.risk} onChange={(event) => updateFilters({ risk: event.target.value })}>
+            <option value="">全部</option>
+            <option value="critical">critical</option>
+            <option value="high">high</option>
+            <option value="medium">medium</option>
+            <option value="low">low</option>
+          </select>
+        </label>
+        <label className="objectOwnerFilter">
+          Owner
+          <select value={filters.owner} onChange={(event) => updateFilters({ owner: event.target.value })}>
+            <option value="">全部</option>
+            {owners.map((owner) => <option key={owner} value={owner}>{owner}</option>)}
+          </select>
+        </label>
+        <label>
+          搜索
+          <input value={filters.q} onChange={(event) => updateFilters({ q: event.target.value })} placeholder="SKU / warehouse / exception" />
+        </label>
+        <button className="textButton" onClick={() => setRefresh((value) => value + 1)}>刷新</button>
+      </div>
+      <div className="object360Layout">
+        <aside className="object360List">
+          {objects.data.length ? objects.data.map((object) => (
+            <button key={object.id} className={object.id === currentId ? "active" : ""} onClick={() => setSelectedId(object.id)}>
+              <span>
+                <strong>{object.display_name}</strong>
+                <small>{object.object_type} / {object.object_key}</small>
+              </span>
+              <Badge tone={toneFromStatus(object.risk_level)}>{object.risk_level}</Badge>
+              <ScoreLine score={Number(object.health_score || 0)} />
+              <small>{Number(object.event_count || 0)} events / {Number(object.recommendation_count || 0)} cards</small>
+            </button>
+          )) : <div className="empty compact">暂无对象实例。</div>}
+        </aside>
+        <div className="object360Detail">
+          <div className="objectHeroCard">
+            <div>
+              <p className="eyebrow">{selectedObject.object_type}</p>
+              <h3>{selectedObject.display_name}</h3>
+              <p>{selectedObject.object_key} / owner {selectedObject.owner || "--"} / status {selectedObject.lifecycle_status}</p>
+            </div>
+            <div className="objectHeroActions">
+              <Badge tone={toneFromStatus(selectedObject.risk_level)}>{selectedObject.risk_level}</Badge>
+              <button className="textButton" onClick={() => onOpenAsset(aipObjectAsset(selectedObject))}>打开注解</button>
+              <button className="textButton objectRecommendationCreate" disabled={creatingRecommendation} onClick={createObjectRecommendation}>
+                {creatingRecommendation ? "创建中..." : "创建建议卡"}
+              </button>
+            </div>
+          </div>
+          <div className="objectSignalGrid">
+            <div><span>健康分</span><strong>{Number(selectedObject.health_score || 0)}</strong></div>
+            <div><span>关系</span><strong>{relationCount}</strong></div>
+            <div><span>指标</span><strong>{detail.data.metrics.length}</strong></div>
+            <div><span>证据</span><strong>{detail.data.kbCards.length}</strong></div>
+            <div><span>Trace</span><strong>{detail.data.traces.length}</strong></div>
+            <div><span>Action</span><strong>{detail.data.recommendations.length}</strong></div>
+          </div>
+          <div className="objectGraphCanvas">
+            <div className="objectNode activeNode">{selectedObject.display_name}</div>
+            <div className="objectRelationGraph">
+              {detail.data.relations.outbound.slice(0, 4).map((link) => (
+                <span key={`out-${cellValue(link.id)}`}>{cellValue(link.link_type)} to {cellValue(link.target_name || link.target_object_id)}</span>
+              ))}
+              {detail.data.relations.inbound.slice(0, 4).map((link) => (
+                <span key={`in-${cellValue(link.id)}`}>{cellValue(link.source_name || link.source_object_id)} to {cellValue(link.link_type)}</span>
+              ))}
+              {!relationCount ? <span>暂无对象关系</span> : null}
+            </div>
+          </div>
+          <div className="objectEvidencePanel evidencePanel">
+            <div className="surfaceHead">
+              <h3>证据与属性</h3>
+              <Badge>{detail.data.identityLinks.length} identities</Badge>
+            </div>
+            <div className="objectEvidenceGrid">
+              <div>
+                <strong>对象属性</strong>
+                {propertyEntries.length ? propertyEntries.map(([key, value]) => (
+                  <span key={key}>{key}: {cellValue(value)}</span>
+                )) : <span>暂无属性</span>}
+              </div>
+              <div>
+                <strong>身份映射</strong>
+                {detail.data.identityLinks.slice(0, 6).map((identity) => (
+                  <span key={String(identity.id)}>{cellValue(identity.identity_type)} = {cellValue(identity.identity_value)} / {cellValue(identity.confidence)}</span>
+                ))}
+                {!detail.data.identityLinks.length ? <span>暂无身份映射</span> : null}
+              </div>
+              <div>
+                <strong>知识证据</strong>
+                {detail.data.kbCards.slice(0, 5).map((card) => (
+                  <button className="textButton inlineAssetButton" key={String(card.id)} onClick={() => onOpenAsset(makeAsset("kb_card", card, ["title", "id"], ["domain_name", "source_path"], true))}>{cellValue(card.title)}</button>
+                ))}
+                {!detail.data.kbCards.length ? <span>暂无知识证据</span> : null}
+              </div>
+              <div className="objectMetricEvidence">
+                <strong>关联指标</strong>
+                {detail.data.metrics.slice(0, 5).map((metric) => (
+                  <button className="textButton inlineAssetButton" key={String(metric.id || metric.code)} onClick={() => onOpenAsset(makeAsset("metric", metric, ["name", "code", "id"], ["level", "owner"], true))}>
+                    {cellValue(metric.name || metric.code)} / {cellValue(metric.certification_status || metric.lifecycle_status)}
+                  </button>
+                ))}
+                {!detail.data.metrics.length ? <span>暂无指标证据</span> : null}
+              </div>
+              <div className="objectQualityEvidence">
+                <strong>质量问题</strong>
+                {detail.data.qualityIssues.slice(0, 5).map((issue) => (
+                  <button className="textButton inlineAssetButton" key={String(issue.id)} onClick={() => onOpenAsset(makeAsset("quality_issue", issue, ["issue_title", "id"], ["severity", "status"], true))}>
+                    {cellValue(issue.issue_title || issue.id)} / {cellValue(issue.severity || issue.status)}
+                  </button>
+                ))}
+                {!detail.data.qualityIssues.length ? <span>暂无质量问题</span> : null}
+              </div>
+            </div>
+          </div>
+          <div className="objectEventTimeline objectEventTimelineGrid">
+            <div className="surfaceHead">
+              <h3>事件 / Trace / 建议卡</h3>
+              <Badge tone="blue">{detail.data.events.length + detail.data.traces.length + detail.data.recommendations.length}</Badge>
+            </div>
+            <div className="objectTimelineColumns">
+              <div>
+                <strong>业务事件</strong>
+                {detail.data.events.slice(0, 5).map((event) => (
+                  <button key={event.id} onClick={() => onOpenAsset(aipEventAsset(event))}>
+                    <Badge tone={toneFromStatus(event.severity)}>{event.severity}</Badge>
+                    <span>{event.event_title}</span>
+                    <small>{event.event_type} / {event.occurred_at}</small>
+                  </button>
+                ))}
+                {!detail.data.events.length ? <small>暂无事件</small> : null}
+              </div>
+              <div>
+                <strong>Agent Trace</strong>
+                {detail.data.traces.slice(0, 5).map((trace) => (
+                  <button key={trace.id} onClick={() => onOpenAsset(aipTraceAsset(trace))}>
+                    <Badge tone={answerabilityTone(trace.answerability)}>{trace.answerability}</Badge>
+                    <span>{trace.question}</span>
+                    <small>{trace.intent} / score {trace.answerability_score}</small>
+                  </button>
+                ))}
+                {!detail.data.traces.length ? <small>暂无 trace</small> : null}
+              </div>
+              <div>
+                <strong>建议卡</strong>
+                {detail.data.recommendations.slice(0, 5).map((recommendation) => (
+                  <button key={recommendation.id} onClick={() => onOpenAsset(aipRecommendationAsset(recommendation))}>
+                    <Badge tone={toneFromStatus(recommendation.approval_status)}>{recommendation.approval_status}</Badge>
+                    <span>{recommendation.recommendation_title}</span>
+                    <small>{recommendation.action_tier} / {recommendation.owner}</small>
+                  </button>
+                ))}
+                {!detail.data.recommendations.length ? <small>暂无建议卡</small> : null}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function OntologyPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset: (asset: AssetRef) => void }) {
   const objects = useApi<AnyRow[]>("/api/ontology/objects", []);
   const links = useApi<AnyRow[]>("/api/ontology/links", []);
@@ -1629,6 +2416,7 @@ function OntologyPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
   return (
     <section className="panel">
       <ModuleHeader module={module} />
+      <Object360Panel onOpenAsset={onOpenAsset} />
       <div className="ontologyPathPanel">
         <div className="surfaceHead">
           <div>
@@ -2591,8 +3379,16 @@ function ChatBiPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenA
     certified: 0,
     draft: 0,
     rejected: 0,
+    averageAnswerabilityScore: 0,
+    weakContexts: 0,
     byStatus: [],
     byPolicy: [],
+    answerabilityBuckets: [],
+    answerabilityPolicy: {
+      certifiedAnswerPolicy: "certified_metric_only",
+      localEvidenceSamplePolicy: "local_kb_evidence_sample",
+      refusalRule: "missing certified context returns governed refusal"
+    },
     pending: []
   });
   const metrics = useApi<Metric[]>("/api/metrics?level=L3&q=库存", []);
@@ -2688,6 +3484,32 @@ function ChatBiPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenA
           <span>已拒绝</span>
           <strong>{summary.data.rejected}</strong>
           <small>保留证据，不进入正式回答</small>
+        </div>
+      </div>
+      <div className="chatbiAnswerabilityPanel">
+        <div>
+          <p className="eyebrow">Answerability governance</p>
+          <h3>可回答性分层</h3>
+          <span>{summary.data.answerabilityPolicy?.refusalRule}</span>
+        </div>
+        <div className="answerabilityMiniGrid">
+          <article>
+            <span>平均可回答性</span>
+            <strong>{summary.data.averageAnswerabilityScore || 0}</strong>
+            <small>score / 100</small>
+          </article>
+          <article>
+            <span>弱证据上下文</span>
+            <strong>{summary.data.weakContexts || 0}</strong>
+            <small>insufficient / refused / score&lt;55</small>
+          </article>
+          {(summary.data.answerabilityBuckets || []).slice(0, 4).map((bucket) => (
+            <article key={String(bucket.answerability)}>
+              <span>{cellValue(bucket.answerability)}</span>
+              <strong>{cellValue(bucket.count)}</strong>
+              <small>answerability bucket</small>
+            </article>
+          ))}
         </div>
       </div>
       {note ? <div className="kbNotice">{note}</div> : null}
@@ -2844,6 +3666,7 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
   const sourcePath = `/api/kb/sources?limit=80${selectedDomain ? `&domainId=${encodeURIComponent(selectedDomain)}` : ""}${query ? `&q=${encodeURIComponent(query)}` : ""}&refresh=${refresh}`;
   const stalePath = `/api/kb/stale-findings?limit=40${selectedDomain ? `&domainId=${encodeURIComponent(selectedDomain)}` : ""}&refresh=${refresh}`;
   const crosswalkPath = `/api/kb/crosswalk-matrix${selectedDomain ? `?domainId=${encodeURIComponent(selectedDomain)}&` : "?"}refresh=${refresh}`;
+  const rulePath = `/api/knowledge-rules?limit=60${selectedDomain ? `&q=${encodeURIComponent(selectedDomain)}` : ""}&refresh=${refresh}`;
   const domains = useApi<KbDomain[]>(domainPath, []);
   const cards = useApi<KbCard[]>(cardPath, []);
   const quality = useApi<KbQualitySummary>(qualityPath, {
@@ -2857,6 +3680,19 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
     summary: { rows: 0, crosswalks: 0, mapped_metrics: 0, total_l3_metrics: 0, metric_coverage_rate: 0 },
     rows: []
   });
+  const ruleSummary = useApi<KnowledgeRuleSummary>(`/api/knowledge-rules/summary?refresh=${refresh}`, {
+    total: 0,
+    draft: 0,
+    certified: 0,
+    conflicts: 0,
+    byStatus: [],
+    byTargetObject: [],
+    byConflictStatus: [],
+    boundary: { mode: "local_rule_governance", importAllowed: false, providerCalls: false, erpWriteback: false }
+  });
+  const rules = useApi<KnowledgeRule[]>(rulePath, []);
+  const [ruleNote, setRuleNote] = useState("");
+  const [activeRuleId, setActiveRuleId] = useState("");
 
   async function reindex() {
     setReindexing(true);
@@ -2904,6 +3740,92 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
     });
   }
 
+  function openRule(rule: KnowledgeRule) {
+    onOpenAsset({
+      type: "knowledge_rule",
+      id: rule.id,
+      title: rule.rule_name,
+      subtitle: `${rule.rule_code} / ${rule.target_object_type}`,
+      fields: {
+        id: rule.id,
+        rule_code: rule.rule_code,
+        rule_type: rule.rule_type,
+        target_object_type: rule.target_object_type,
+        target_metric_ids: rule.target_metric_ids.join(", "),
+        target_dimension_ids: rule.target_dimension_ids.join(", "),
+        condition_expression: rule.condition_expression,
+        conflict_status: rule.conflict_status,
+        lifecycle_status: rule.lifecycle_status,
+        owner: rule.owner,
+        priority: rule.priority,
+        workflow_id: rule.workflow_id,
+        source_card_id: rule.source_card_id,
+        source_card_title: rule.source_card_title || "",
+        recommendation_count: rule.recommendation_count || 0,
+        review_note: rule.review_note || ""
+      },
+      readOnly: true
+    });
+  }
+
+  async function createRuleFromCard(card: KbCard) {
+    setActiveRuleId(card.id);
+    setRuleNote("");
+    try {
+      const payload = await api<{ ok: boolean; rule: KnowledgeRule; conflicts: AnyRow[] }>("/api/knowledge-rules", {
+        method: "POST",
+        body: JSON.stringify({
+          sourceCardId: card.id,
+          ruleName: `${card.title} - 规则候选`,
+          createdBy: "local_user"
+        })
+      });
+      setRuleNote(`已生成知识规则 ${payload.rule.rule_code}，冲突 ${payload.conflicts.length} 条，等待 Owner 复核。`);
+      setRefresh((value) => value + 1);
+    } catch (error) {
+      setRuleNote(error instanceof Error ? error.message : String(error));
+    } finally {
+      setActiveRuleId("");
+    }
+  }
+
+  async function reviewRule(rule: KnowledgeRule, status: "reviewed" | "certified" | "rejected") {
+    setActiveRuleId(rule.id);
+    try {
+      const payload = await api<{ ok: boolean; rule: KnowledgeRule }>(`/api/knowledge-rules/${encodeURIComponent(rule.id)}/review`, {
+        method: "POST",
+        body: JSON.stringify({
+          status,
+          conflictStatus: status === "rejected" ? "rejected" : rule.conflict_status === "conflict" ? "conflict" : "clear",
+          reviewer: "local_user",
+          reviewNote: status === "certified"
+            ? "UI owner review: rule can be used by semantic governance and AIP recommendation cards."
+            : status === "rejected"
+              ? "UI owner review: rule rejected; evidence retained for audit."
+              : "UI owner review: rule checked, pending certification."
+        })
+      });
+      setRuleNote(`规则 ${payload.rule.rule_code} 已更新为 ${payload.rule.lifecycle_status}。`);
+      setRefresh((value) => value + 1);
+    } finally {
+      setActiveRuleId("");
+    }
+  }
+
+  async function runRule(rule: KnowledgeRule) {
+    setActiveRuleId(rule.id);
+    try {
+      const payload = await api<{ ok: boolean; recommendation: { recommendation: AipRecommendation } }>(`/api/knowledge-rules/${encodeURIComponent(rule.id)}/run`, {
+        method: "POST",
+        body: JSON.stringify({ actor: "local_user" })
+      });
+      setRuleNote(`规则已触发建议卡 ${payload.recommendation.recommendation.id}，进入人工审批与复盘边界。`);
+      setRefresh((value) => value + 1);
+    } finally {
+      setActiveRuleId("");
+    }
+  }
+
   return (
     <section className="panel">
       <ModuleHeader module={module} />
@@ -2917,12 +3839,15 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
         </button>
       </div>
       {reindexResult ? <div className="kbNotice">{reindexResult}</div> : null}
+      {ruleNote ? <div className="kbNotice">{ruleNote}</div> : null}
       {domains.error ? <div className="error">{domains.error}</div> : null}
       {cards.error ? <div className="error">{cards.error}</div> : null}
       {quality.error ? <div className="error">{quality.error}</div> : null}
       {sources.error ? <div className="error">{sources.error}</div> : null}
       {staleFindings.error ? <div className="error">{staleFindings.error}</div> : null}
       {crosswalkMatrix.error ? <div className="error">{crosswalkMatrix.error}</div> : null}
+      {ruleSummary.error ? <div className="error">{ruleSummary.error}</div> : null}
+      {rules.error ? <div className="error">{rules.error}</div> : null}
       <div className="kbGovernanceGrid">
         <article>
           <span>知识源台账</span>
@@ -2943,6 +3868,11 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
           <span>指标 Crosswalk</span>
           <strong>{crosswalkMatrix.data.summary.mapped_metrics}</strong>
           <small>{Math.round(Number(crosswalkMatrix.data.summary.metric_coverage_rate || 0) * 100)}% of L3 metrics</small>
+        </article>
+        <article>
+          <span>知识规则</span>
+          <strong>{ruleSummary.data.total}</strong>
+          <small>{ruleSummary.data.draft} draft / {ruleSummary.data.conflicts} conflicts</small>
         </article>
       </div>
       <div className="domainGrid">
@@ -3026,6 +3956,65 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
           />
         </div>
       </div>
+      <div className="surface knowledgeRulesWorkbench">
+        <div className="surfaceHead">
+          <div>
+            <p className="eyebrow">Rule governance</p>
+            <h3>知识规则治理台账</h3>
+          </div>
+          <div className="exportActions knowledgeRuleExportActions" aria-label="knowledge rule export actions">
+            <a href="/api/export/knowledge-rules?format=json" target="_blank" rel="noreferrer">JSON</a>
+            <a href="/api/export/knowledge-rules?format=excel" target="_blank" rel="noreferrer">Excel</a>
+          </div>
+        </div>
+        <div className="knowledgeRuleSummaryGrid">
+          <article>
+            <span>规则总数</span>
+            <strong>{ruleSummary.data.total}</strong>
+            <small>{ruleSummary.data.byStatus.map((item) => `${item.lifecycle_status}:${item.count}`).join(" / ") || "no status"}</small>
+          </article>
+          <article>
+            <span>已认证规则</span>
+            <strong>{ruleSummary.data.certified}</strong>
+            <small>can guide ChatBI/AIP</small>
+          </article>
+          <article>
+            <span>冲突待审</span>
+            <strong>{ruleSummary.data.conflicts}</strong>
+            <small>same target condition</small>
+          </article>
+          <article>
+            <span>治理边界</span>
+            <strong>{ruleSummary.data.boundary.providerCalls ? "ON" : "OFF"}</strong>
+            <small>provider call / ERP writeback</small>
+          </article>
+        </div>
+        <div className="knowledgeRuleCards">
+          {rules.data.length ? rules.data.slice(0, 12).map((rule) => (
+            <article className="knowledgeRuleCard" key={rule.id}>
+              <div className="ledgerItemHead">
+                <strong>{rule.rule_name}</strong>
+                <Badge tone={rule.conflict_status === "conflict" ? "warn" : "good"}>{rule.conflict_status}</Badge>
+              </div>
+              <p>{rule.condition_expression}</p>
+              <div className="ruleMetaGrid">
+                <span>{rule.rule_code}</span>
+                <span>{rule.target_object_type}</span>
+                <span>{rule.priority}</span>
+                <span>{rule.lifecycle_status}</span>
+              </div>
+              <small>{rule.source_card_title || rule.source_card_id} / rec {rule.recommendation_count || 0}</small>
+              <div className="qualityActions">
+                <button className="textButton" onClick={() => openRule(rule)}>详情</button>
+                <button className="textButton" onClick={() => reviewRule(rule, "reviewed")} disabled={activeRuleId === rule.id}>标记已审</button>
+                <button className="textButton" onClick={() => reviewRule(rule, "certified")} disabled={activeRuleId === rule.id || rule.conflict_status === "conflict"}>认证</button>
+                <button className="textButton" onClick={() => runRule(rule)} disabled={activeRuleId === rule.id}>触发建议卡</button>
+                <button className="textButton" onClick={() => reviewRule(rule, "rejected")} disabled={activeRuleId === rule.id}>拒绝</button>
+              </div>
+            </article>
+          )) : <div className="empty compact">暂无知识规则。可从知识卡片生成规则候选。</div>}
+        </div>
+      </div>
       <div className="kbResultHeader">
         <div>
           <p className="eyebrow">Local evidence</p>
@@ -3071,7 +4060,12 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
                     ))}
                   </div>
                 ) : null}
-                <button className="textButton" onClick={() => openCard(card)}>打开上下文</button>
+                <div className="qualityActions">
+                  <button className="textButton" onClick={() => openCard(card)}>打开上下文</button>
+                  <button className="textButton createKnowledgeRuleButton" onClick={() => createRuleFromCard(card)} disabled={activeRuleId === card.id}>
+                    {activeRuleId === card.id ? "生成中..." : "生成规则候选"}
+                  </button>
+                </div>
               </article>
             );
           })}
@@ -3098,6 +4092,136 @@ function toChatSourceContext(asset: AssetRef | null) {
     subtitle: asset.subtitle || "",
     fields: asset.fields
   };
+}
+
+function AgentTraceTimelinePanel({ refresh, onOpenAsset }: { refresh: number; onOpenAsset: (asset: AssetRef) => void }) {
+  const [selectedId, setSelectedId] = useState("");
+  const [note, setNote] = useState("");
+  const traces = useApi<AipTrace[]>(`/api/aip/traces?limit=12&refresh=${refresh}`, []);
+  const currentTraceId = selectedId || traces.data[0]?.id || "";
+  const traceDetail = useApi<AipTraceDetail>(`/api/aip/traces/${encodeURIComponent(currentTraceId || "__missing__")}?refresh=${refresh}`, {
+    trace: {
+      id: "",
+      session_id: "",
+      source_message_id: "",
+      intent: "no_trace",
+      question: "暂无 Agent Trace",
+      target_object_type: "",
+      target_object_id: "",
+      target_metric_id: "",
+      answerability: "insufficient",
+      answerability_score: 0,
+      status: "draft",
+      evidence_refs: [],
+      created_by: "",
+      created_at: ""
+    },
+    steps: [],
+    recommendations: []
+  });
+  const activeTrace = traceDetail.data.trace.id ? traceDetail.data.trace : traces.data[0];
+  const steps = traceDetail.data.steps.length
+    ? traceDetail.data.steps
+    : [{
+        id: "trace-placeholder",
+        trace_id: activeTrace?.id || "",
+        step_order: 1,
+        step_type: "waiting_for_trace",
+        step_title: traces.data.length ? "正在读取 trace 详情" : "暂无 trace，先运行本地证据问答或 P0 smoke",
+        step_detail: traces.data.length ? "Trace list is available; detail panel is loading." : "Trace ledger will record intent parse, object resolve, evidence binding and answerability gate.",
+        input_refs: [],
+        output_refs: [],
+        status: traces.data.length ? "loading" : "draft",
+        created_at: ""
+      }];
+  const evidenceGap = activeTrace
+    ? Math.max(0, 100 - Math.round(Number(activeTrace.answerability_score || 0)))
+    : 100;
+
+  async function createRecommendationFromTrace() {
+    if (!activeTrace?.id) return;
+    const payload = await api<{ ok: boolean; recommendation: AipRecommendation }>("/api/aip/recommendations", {
+      method: "POST",
+      body: JSON.stringify({
+        traceId: activeTrace.id,
+        targetObjectId: activeTrace.target_object_id,
+        targetObjectType: activeTrace.target_object_type,
+        targetMetricId: activeTrace.target_metric_id,
+        scenarioType: activeTrace.intent || "semantic_governance",
+        recommendationTitle: `复核 ${activeTrace.question.slice(0, 36)}`,
+        recommendationDetail: "基于 Agent Trace 创建的 ledger-only 建议卡，需要 owner 审核证据、对象和动作边界。",
+        impactSummary: `answerability ${activeTrace.answerability} / score ${activeTrace.answerability_score}`,
+        evidenceRefs: [{ type: "trace", ref: activeTrace.id }],
+        actionOptions: ["复核对象证据", "补齐指标口径", "创建治理任务"],
+        actionTier: "L1",
+        owner: "semantic_governance_owner",
+        priority: evidenceGap >= 50 ? "P0" : "P1",
+        createdBy: "local_user"
+      })
+    });
+    setNote(`已创建建议卡 ${payload.recommendation.id}，进入决策闭环审核。`);
+    onOpenAsset(aipRecommendationAsset(payload.recommendation));
+  }
+
+  return (
+    <div className="agentTraceTimeline">
+      <div className="surfaceHead">
+        <div>
+          <p className="eyebrow">Agent execution trace</p>
+          <h3>AI 执行轨迹与证据门控</h3>
+        </div>
+        <div className="badgeCluster">
+          <Badge tone={answerabilityTone(activeTrace?.answerability)}>{activeTrace?.answerability || "insufficient"}</Badge>
+          <Badge>{traces.data.length} traces</Badge>
+        </div>
+      </div>
+      {note ? <div className="kbNotice compact">{note}</div> : null}
+      {traces.error ? <div className="error compact">{traces.error}</div> : null}
+      {currentTraceId && traceDetail.error ? <div className="error compact">{traceDetail.error}</div> : null}
+      <div className="traceLayout">
+        <aside className="traceList">
+          {traces.data.length ? traces.data.map((trace) => (
+            <button key={trace.id} className={trace.id === currentTraceId ? "active" : ""} onClick={() => setSelectedId(trace.id)}>
+              <strong>{trace.question}</strong>
+              <span>{trace.intent}</span>
+              <Badge tone={answerabilityTone(trace.answerability)}>{trace.answerability}</Badge>
+            </button>
+          )) : <div className="empty compact">暂无可选 trace。</div>}
+        </aside>
+        <div className="traceDetail">
+          <div className="answerabilityPanel">
+            <div>
+              <span>可回答性</span>
+              <strong>{activeTrace ? Math.round(Number(activeTrace.answerability_score || 0)) : 0}/100</strong>
+            </div>
+            <ScoreLine score={activeTrace ? Number(activeTrace.answerability_score || 0) : 0} />
+            <small>{activeTrace?.question || "等待问答产生 trace"}</small>
+          </div>
+          <div className="evidenceGapPanel">
+            <span>证据缺口</span>
+            <strong>{evidenceGap}</strong>
+            <small>{evidenceGap >= 50 ? "需要补证或拒答" : "证据基本可支撑"}</small>
+          </div>
+          <ol className="traceSteps">
+            {steps.map((step) => (
+              <li className="traceStep" key={step.id}>
+                <span>{step.step_order}</span>
+                <div>
+                  <strong>{step.step_title}</strong>
+                  <p>{step.step_detail}</p>
+                  <small>{step.step_type} / {step.status}</small>
+                </div>
+              </li>
+            ))}
+          </ol>
+          <div className="traceActions">
+            {activeTrace?.id ? <button className="textButton" onClick={() => onOpenAsset(aipTraceAsset(activeTrace))}>打开 trace 上下文</button> : null}
+            <button className="textButton createRecommendationButton" disabled={!activeTrace?.id} onClick={createRecommendationFromTrace}>生成建议卡</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function AiChatPanel({
@@ -3160,6 +4284,36 @@ function AiChatPanel({
         })
       });
       setResult(payload.result);
+      try {
+        const inferredTargetObjectId = sourceAsset?.type === "aip_object"
+          ? sourceAsset.id
+          : /负|FBA|库存|available/i.test(question)
+            ? "obj_batch_fba_negative_available"
+            : "";
+        const trace = await api<{ ok: boolean; trace: AipTrace }>("/api/aip/traces", {
+          method: "POST",
+          body: JSON.stringify({
+            question,
+            sessionId: payload.result.sessionId,
+            sourceMessageId: payload.result.messageId,
+            intent: sourceAsset?.type === "aip_object" ? "source_context_diagnosis" : "local_knowledge_answerability_check",
+            targetObjectId: inferredTargetObjectId,
+            targetObjectType: sourceAsset?.type === "aip_object" ? String(sourceAsset.fields.object_type || "") : inferredTargetObjectId ? "inventory_batch" : "",
+            targetMetricId: inferredTargetObjectId ? "business_available_qty" : "",
+            answerability: payload.result.answerability,
+            answerabilityScore: payload.result.answerabilityScore,
+            evidenceRefs: payload.result.evidence.slice(0, 5).map((item) => ({
+              type: "kb_evidence",
+              ref: `${item.domainId}/${item.cardId}/${item.chunkId}`,
+              score: item.score
+            })),
+            createdBy: "local_user"
+          })
+        });
+        setFeedbackNote(`已写入 AIP Trace ${trace.trace.id}，可在执行轨迹中复盘证据链。`);
+      } catch (traceErr) {
+        setFeedbackNote(`AI 回答已生成；AIP Trace 写入失败：${traceErr instanceof Error ? traceErr.message : String(traceErr)}`);
+      }
       setRefresh((value) => value + 1);
       onWorkbenchRefresh();
     } catch (err) {
@@ -3359,6 +4513,11 @@ function AiChatPanel({
 	                  {result.chatbiContextId ? <Badge tone="blue">draft context</Badge> : null}
 	                </div>
 	              </div>
+              <div className="exportActions aiEvidenceExportActions" aria-label="ai evidence export actions">
+                <span>证据包导出</span>
+                <a href={`/api/ai-chat/messages/${encodeURIComponent(result.messageId)}/evidence-export?format=json`} target="_blank" rel="noreferrer">JSON</a>
+                <a href={`/api/ai-chat/messages/${encodeURIComponent(result.messageId)}/evidence-export?format=markdown`} target="_blank" rel="noreferrer">Markdown</a>
+              </div>
               <div className="aiFeedbackActions">
                 <div>
                   <strong>样本沉淀</strong>
@@ -3432,6 +4591,7 @@ function AiChatPanel({
           )}
         </div>
       </div>
+      <AgentTraceTimelinePanel refresh={refresh} onOpenAsset={onOpenAsset} />
       <div className="aiGovernanceWorkbench">
         <div className="surface questionSampleLibrary">
           <div className="surfaceHead">
@@ -3489,6 +4649,112 @@ function AiChatPanel({
         </div>
       </div>
     </section>
+  );
+}
+
+function RecommendationQueuePanel({ onOpenAsset }: { onOpenAsset: (asset: AssetRef) => void }) {
+  const [refresh, setRefresh] = useState(0);
+  const [filters, setFilters] = useState({ status: "", q: "" });
+  const [note, setNote] = useState("");
+  const recommendationPath = useMemo(() => {
+    const params = new URLSearchParams({ limit: "60", refresh: String(refresh) });
+    if (filters.status) params.set("status", filters.status);
+    if (filters.q) params.set("q", filters.q);
+    return `/api/aip/recommendations?${params.toString()}`;
+  }, [filters, refresh]);
+  const recommendations = useApi<AipRecommendation[]>(recommendationPath, []);
+
+  async function moveRecommendation(recommendation: AipRecommendation, status: string) {
+    const route = ["approved", "rejected"].includes(status) && recommendation.approval_status === "submitted"
+      ? `/api/aip/recommendations/${encodeURIComponent(recommendation.id)}/review`
+      : `/api/aip/recommendations/${encodeURIComponent(recommendation.id)}/transition`;
+    const result = await api<{ ok: boolean; recommendation: AipRecommendation }>(route, {
+      method: "POST",
+      body: JSON.stringify({
+        status,
+        reviewer: "local_user",
+        actor: "local_user",
+        reviewNote: `UI review: ${recommendation.id} -> ${status}; no provider call and no ERP writeback.`,
+        note: `UI transition: ${recommendation.id} -> ${status}.`,
+        evidenceRefs: [{ type: "ui_action", ref: recommendation.id, status }]
+      })
+    });
+    setNote(`建议卡 ${result.recommendation.id} 已更新为 ${result.recommendation.approval_status}`);
+    setRefresh((value) => value + 1);
+  }
+
+  return (
+    <div className="recommendationQueue">
+      <div className="surfaceHead">
+        <div>
+          <p className="eyebrow">AIP recommendation cards</p>
+          <h3>建议卡审核与行动分层</h3>
+          <p className="muted">建议卡是 Action 前置层：先证据复核和 owner 审批，再转执行，不做自动写回。</p>
+        </div>
+        <div className="recommendationHeaderActions">
+          <Badge>{recommendations.data.length} visible</Badge>
+          <div className="exportActions recommendationExportActions" aria-label="recommendation card export actions">
+            <a href="/api/export/aip-recommendations?format=json" className="textButton" target="_blank" rel="noreferrer">导出 JSON</a>
+            <a href="/api/export/aip-recommendations?format=excel" className="textButton" target="_blank" rel="noreferrer">导出 Excel</a>
+          </div>
+        </div>
+      </div>
+      {note ? <div className="kbNotice compact">{note}</div> : null}
+      {recommendations.error ? <div className="error compact">{recommendations.error}</div> : null}
+      <div className="recommendationToolbar">
+        <label>
+          状态
+          <select value={filters.status} onChange={(event) => setFilters({ ...filters, status: event.target.value })}>
+            <option value="">全部</option>
+            <option value="submitted">submitted</option>
+            <option value="approved">approved</option>
+            <option value="in_progress">in_progress</option>
+            <option value="done">done</option>
+            <option value="replayed">replayed</option>
+            <option value="rejected">rejected</option>
+          </select>
+        </label>
+        <label>
+          搜索
+          <input value={filters.q} onChange={(event) => setFilters({ ...filters, q: event.target.value })} placeholder="建议 / 场景 / 影响" />
+        </label>
+        <button className="textButton" onClick={() => setRefresh((value) => value + 1)}>刷新</button>
+      </div>
+      <div className="recommendationCards">
+        {recommendations.data.length ? recommendations.data.map((recommendation) => (
+          <article className="recommendationCard" key={recommendation.id}>
+            <div className="ledgerItemHead">
+              <div>
+                <strong>{recommendation.recommendation_title}</strong>
+                <small>{recommendation.scenario_type} / {recommendation.target_object_id || "--"}</small>
+              </div>
+              <div className="badgeCluster">
+                <Badge tone={toneFromStatus(recommendation.approval_status)}>{recommendation.approval_status}</Badge>
+                <span className={`actionTierBadge ${recommendation.action_tier.toLowerCase()}`}>{recommendation.action_tier}</span>
+              </div>
+            </div>
+            <p>{recommendation.recommendation_detail}</p>
+            <div className="recommendationMetaGrid">
+              <span>Impact <strong>{recommendation.impact_summary || "--"}</strong></span>
+              <span>Owner <strong>{recommendation.owner}</strong></span>
+              <span>Workflow <strong>{recommendation.workflow_id || "--"}</strong></span>
+            </div>
+            {recommendation.action_options.length ? (
+              <div className="termRow">
+                {recommendation.action_options.slice(0, 5).map((option, index) => <span key={`${recommendation.id}-${index}`}>{cellValue(option)}</span>)}
+              </div>
+            ) : null}
+            <div className="recommendationReviewControl">
+              <button className="textButton" onClick={() => onOpenAsset(aipRecommendationAsset(recommendation))}>详情</button>
+              {recommendationNextStates(recommendation.approval_status).map((state) => (
+                <button className="textButton" key={state} onClick={() => moveRecommendation(recommendation, state)}>{state}</button>
+              ))}
+              {!recommendationNextStates(recommendation.approval_status).length ? <span className="muted">terminal</span> : null}
+            </div>
+          </article>
+        )) : <div className="empty compact">暂无建议卡。可从 AI 执行轨迹生成，或由 API/流程写入 ledger。</div>}
+      </div>
+    </div>
   );
 }
 
@@ -3561,6 +4827,7 @@ function DecisionPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
           <span key={state} className={summary.data.terminalStates.includes(state) ? "terminal" : ""}>{state}</span>
         ))}
       </div>
+      <RecommendationQueuePanel onOpenAsset={onOpenAsset} />
       <form className="decisionForm" onSubmit={createAction}>
         <div className="surfaceHead">
           <h3>创建治理 Action</h3>

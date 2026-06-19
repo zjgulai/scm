@@ -34,6 +34,10 @@ require_ai_feedback = (
     or base_url.startswith("http://127.0.0.1")
     or base_url.startswith("http://localhost")
 )
+require_aip_phase1 = os.environ.get("REQUIRE_AIP_PHASE1") == "1"
+require_aip_scenarios = os.environ.get("REQUIRE_AIP_SCENARIOS") == "1"
+if require_aip_scenarios:
+    require_aip_phase1 = True
 expected = [
     "治理链路总览",
     "AI 对话",
@@ -151,6 +155,18 @@ for label in expected:
         if not workflow["filters"] or not workflow["bulk"] or workflow["summaryCards"] < 4:
           raise SystemExit(f"Workflow board feature check failed: {workflow}")
         feature_checks.append({"workflowBoard": workflow})
+        aip_command = js("""
+        (() => ({
+          commandCenter: !!document.querySelector('.aipCommandCenter'),
+          riskQueue: !!document.querySelector('.aipRiskQueue'),
+          recommendationQueue: !!document.querySelector('.recommendationQueue'),
+          assetProgress: !!document.querySelector('.assetProgressPanel'),
+          boundary: document.body.innerText.includes('provider') || document.body.innerText.includes('writeback') || document.body.innerText.includes('边界')
+        }))()
+        """)
+        if require_aip_phase1 and (not aip_command["commandCenter"] or not aip_command["riskQueue"] or not aip_command["recommendationQueue"] or not aip_command["assetProgress"]):
+          raise SystemExit(f"AIP Command Center feature check failed: {aip_command}")
+        feature_checks.append({"aipCommandCenter": aip_command})
     if label == "指标体系编排台":
         kpi = js("""
         (() => ({
@@ -175,6 +191,30 @@ for label in expected:
         if not ontology["pathPanel"] or ontology["pathCards"] < 4:
           raise SystemExit(f"Ontology path feature check failed: {ontology}")
         feature_checks.append({"ontologyPath": ontology})
+        object360 = js("""
+        (() => ({
+          object360: !!document.querySelector('.object360Panel'),
+          objectList: !!document.querySelector('.object360List'),
+          relationGraph: !!document.querySelector('.objectGraphCanvas, .objectRelationGraph'),
+          evidencePanel: !!document.querySelector('.objectEvidencePanel'),
+          eventTimeline: !!document.querySelector('.objectEventTimeline'),
+          ownerFilter: !!document.querySelector('.objectOwnerFilter select'),
+          createRecommendation: !!document.querySelector('.objectRecommendationCreate'),
+          metricEvidence: !!document.querySelector('.objectMetricEvidence'),
+          qualityEvidence: !!document.querySelector('.objectQualityEvidence')
+        }))()
+        """)
+        if require_aip_phase1 and (
+            not object360["object360"]
+            or not object360["objectList"]
+            or not object360["evidencePanel"]
+            or not object360["ownerFilter"]
+            or not object360["createRecommendation"]
+            or not object360["metricEvidence"]
+            or not object360["qualityEvidence"]
+        ):
+          raise SystemExit(f"AIP Object 360 feature check failed: {object360}")
+        feature_checks.append({"aipObject360": object360})
     if label == "决策闭环工作台":
         decision = js("""
         (() => ({
@@ -186,17 +226,31 @@ for label in expected:
         if decision["stateRail"] < 7 or not decision["decisionForm"]:
           raise SystemExit(f"Decision loop feature check failed: {decision}")
         feature_checks.append({"decisionLoop": decision})
+        recommendation = js("""
+        (() => ({
+          recommendationCards: document.querySelectorAll('.recommendationCard').length,
+          recommendationQueue: !!document.querySelector('.recommendationQueue'),
+          actionTier: !!document.querySelector('.actionTierBadge'),
+          reviewControl: !!document.querySelector('.recommendationReviewControl'),
+          exports: document.querySelectorAll('.recommendationExportActions a').length
+        }))()
+        """)
+        if require_aip_phase1 and (recommendation["recommendationCards"] < 1 or not recommendation["recommendationQueue"] or recommendation["exports"] < 2):
+          raise SystemExit(f"AIP Recommendation Card feature check failed: {recommendation}")
+        feature_checks.append({"aipRecommendationCards": recommendation})
     if label == "ChatBI 语义治理台":
         chatbi = js("""
         (() => ({
           summaryCards: document.querySelectorAll('.chatbiSummaryGrid > div').length,
+          answerabilityPanel: !!document.querySelector('.chatbiAnswerabilityPanel'),
+          answerabilityCards: document.querySelectorAll('.answerabilityMiniGrid > article').length,
           form: !!document.querySelector('.chatbiForm'),
           filters: !!document.querySelector('.chatbiFilters'),
           contextCards: document.querySelectorAll('.contextCards .contextCard').length,
           dryRun: !!document.querySelector('.chatBox button')
         }))()
         """)
-        if chatbi["summaryCards"] < 4 or not chatbi["form"] or not chatbi["filters"] or not chatbi["dryRun"]:
+        if chatbi["summaryCards"] < 4 or not chatbi["answerabilityPanel"] or chatbi["answerabilityCards"] < 2 or not chatbi["form"] or not chatbi["filters"] or not chatbi["dryRun"]:
           raise SystemExit(f"ChatBI certification feature check failed: {chatbi}")
         feature_checks.append({"chatbiCertification": chatbi})
     if label == "审计日志工作台":
@@ -219,15 +273,24 @@ for label in expected:
           domainQuality: !!document.querySelector('.kbDomainQualityTable'),
           staleFindings: !!document.querySelector('.staleFindingsPanel'),
           crosswalkMatrix: !!document.querySelector('.crosswalkMatrixTable'),
-          scoreBlocks: document.querySelectorAll('.kbScoreGrid').length
+          scoreBlocks: document.querySelectorAll('.kbScoreGrid').length,
+          knowledgeRulesWorkbench: !!document.querySelector('.knowledgeRulesWorkbench'),
+          ruleSummaryCards: document.querySelectorAll('.knowledgeRuleSummaryGrid > article').length,
+          ruleCards: document.querySelectorAll('.knowledgeRuleCard').length,
+          ruleExports: document.querySelectorAll('.knowledgeRuleExportActions a').length,
+          createRuleButtons: document.querySelectorAll('.createKnowledgeRuleButton').length
         }))()
         """)
         if require_kb_governance and (
-            kb["governanceCards"] < 4
+            kb["governanceCards"] < 5
             or not kb["sourceRegister"]
             or not kb["domainQuality"]
             or not kb["staleFindings"]
             or not kb["crosswalkMatrix"]
+            or not kb["knowledgeRulesWorkbench"]
+            or kb["ruleSummaryCards"] < 4
+            or kb["ruleExports"] < 2
+            or kb["createRuleButtons"] < 1
         ):
           raise SystemExit(f"KB governance feature check failed: {kb}")
         feature_checks.append({"kbGovernance": kb})
@@ -248,7 +311,44 @@ for label in expected:
         ):
           raise SystemExit(f"AI feedback governance feature check failed: {ai}")
         feature_checks.append({"aiFeedbackGovernance": ai})
+        trace = js("""
+        (() => ({
+          traceTimeline: !!document.querySelector('.agentTraceTimeline'),
+          traceSteps: document.querySelectorAll('.agentTraceTimeline .traceStep').length,
+          answerability: !!document.querySelector('.answerabilityBadge, .answerabilityPanel'),
+          evidenceGap: !!document.querySelector('.evidenceGapPanel'),
+          createRecommendation: !!document.querySelector('.createRecommendationButton')
+        }))()
+        """)
+        if require_aip_phase1 and (not trace["traceTimeline"] or trace["traceSteps"] < 1 or not trace["answerability"]):
+          raise SystemExit(f"AIP Agent Execution Trace feature check failed: {trace}")
+        feature_checks.append({"aipAgentTrace": trace})
     results.append({"label": label, "header": state["h1"]})
+
+if require_aip_scenarios:
+    clicked = js("""
+    (() => {
+      const button = Array.from(document.querySelectorAll('aside button')).find((el) => el.textContent.includes('治理链路总览'));
+      if (!button) return { ok: false, reason: 'overview nav button not found' };
+      button.click();
+      return { ok: true };
+    })()
+    """)
+    if not clicked.get("ok"):
+      raise SystemExit({"scenarioNavigation": clicked})
+    sleep(0.2)
+    scenario = js("""
+    (() => ({
+      negativeInventory: document.body.innerText.includes('FBA 可用库存为负') || !!document.querySelector('[data-scenario="negative_available_inventory"]'),
+      stockoutRisk: document.body.innerText.includes('断货风险') || !!document.querySelector('[data-scenario="stockout_risk"]'),
+      agingOverstock: document.body.innerText.includes('库龄') || document.body.innerText.includes('超储') || !!document.querySelector('[data-scenario="aging_overstock_risk"]'),
+      scenarioCards: document.querySelectorAll('.scenarioCard, .aipScenarioCard').length,
+      runButtons: document.querySelectorAll('.scenarioRunButton').length
+    }))()
+    """)
+    if not scenario["negativeInventory"] or not scenario["stockoutRisk"] or not scenario["agingOverstock"] or scenario["scenarioCards"] < 3 or scenario["runButtons"] < 3:
+      raise SystemExit(f"AIP scenario feature check failed: {scenario}")
+    feature_checks.append({"aipScenarios": scenario})
 
 responsive_results = []
 if os.environ.get("SCM_SKIP_RESPONSIVE_BROWSER_SMOKE") != "1":

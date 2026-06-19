@@ -47,6 +47,8 @@ ensureP0GovernanceSchema();
 ensureP1WorkflowSchema();
 ensureP1WorkbenchOperationSchema();
 ensureP2QuestionFeedbackSchema();
+ensureAipPhase1Schema();
+ensureKnowledgeRulesSchema();
 
 function json(res, payload, status = 200) {
   const body = JSON.stringify(payload);
@@ -682,6 +684,7 @@ function seedKbDomains() {
 }
 
 seedKbDomains();
+seedAipPhase1Data();
 
 function writeAudit(eventType, assetType, assetId, payload, actor = "local_user") {
   const id = makeId("audit");
@@ -1689,6 +1692,1143 @@ function tableExists(table) {
   return Boolean(get("SELECT name FROM sqlite_master WHERE name = ?", [table]));
 }
 
+function ensureAipPhase1Schema() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS object_instances (
+      id TEXT PRIMARY KEY,
+      object_type TEXT NOT NULL,
+      object_key TEXT NOT NULL,
+      display_name TEXT NOT NULL,
+      lifecycle_status TEXT NOT NULL DEFAULT 'active',
+      risk_level TEXT NOT NULL DEFAULT 'medium',
+      owner TEXT NOT NULL DEFAULT 'supply_chain_owner',
+      health_score REAL NOT NULL DEFAULT 0,
+      source_refs TEXT NOT NULL DEFAULT '[]',
+      properties TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_object_instances_type_key ON object_instances(object_type, object_key);
+    CREATE INDEX IF NOT EXISTS idx_object_instances_filters ON object_instances(object_type, lifecycle_status, risk_level, owner);
+
+    CREATE TABLE IF NOT EXISTS object_identity_links (
+      id TEXT PRIMARY KEY,
+      object_id TEXT NOT NULL,
+      identity_type TEXT NOT NULL,
+      identity_value TEXT NOT NULL,
+      confidence REAL NOT NULL DEFAULT 0,
+      evidence TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'draft',
+      created_at TEXT NOT NULL
+    );
+
+    CREATE UNIQUE INDEX IF NOT EXISTS idx_object_identity_unique ON object_identity_links(object_id, identity_type, identity_value);
+    CREATE INDEX IF NOT EXISTS idx_object_identity_lookup ON object_identity_links(identity_type, identity_value, status);
+
+    CREATE TABLE IF NOT EXISTS object_events (
+      id TEXT PRIMARY KEY,
+      object_id TEXT NOT NULL,
+      event_type TEXT NOT NULL,
+      severity TEXT NOT NULL DEFAULT 'medium',
+      event_title TEXT NOT NULL,
+      event_detail TEXT NOT NULL,
+      metric_refs TEXT NOT NULL DEFAULT '[]',
+      evidence_refs TEXT NOT NULL DEFAULT '[]',
+      status TEXT NOT NULL DEFAULT 'open',
+      occurred_at TEXT NOT NULL,
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_object_events_object ON object_events(object_id, occurred_at);
+    CREATE INDEX IF NOT EXISTS idx_object_events_type ON object_events(event_type, severity, status);
+
+    CREATE TABLE IF NOT EXISTS agent_execution_traces (
+      id TEXT PRIMARY KEY,
+      session_id TEXT NOT NULL DEFAULT '',
+      source_message_id TEXT NOT NULL DEFAULT '',
+      intent TEXT NOT NULL,
+      question TEXT NOT NULL,
+      target_object_type TEXT NOT NULL DEFAULT '',
+      target_object_id TEXT NOT NULL DEFAULT '',
+      target_metric_id TEXT NOT NULL DEFAULT '',
+      answerability TEXT NOT NULL DEFAULT 'partial',
+      answerability_score REAL NOT NULL DEFAULT 0,
+      status TEXT NOT NULL DEFAULT 'completed',
+      evidence_refs TEXT NOT NULL DEFAULT '[]',
+      created_by TEXT NOT NULL DEFAULT 'local_user',
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_agent_traces_target ON agent_execution_traces(target_object_type, target_object_id, created_at);
+    CREATE INDEX IF NOT EXISTS idx_agent_traces_status ON agent_execution_traces(answerability, status, created_at);
+
+    CREATE TABLE IF NOT EXISTS agent_trace_steps (
+      id TEXT PRIMARY KEY,
+      trace_id TEXT NOT NULL,
+      step_order INTEGER NOT NULL,
+      step_type TEXT NOT NULL,
+      step_title TEXT NOT NULL,
+      step_detail TEXT NOT NULL,
+      input_refs TEXT NOT NULL DEFAULT '[]',
+      output_refs TEXT NOT NULL DEFAULT '[]',
+      status TEXT NOT NULL DEFAULT 'completed',
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_agent_trace_steps_trace ON agent_trace_steps(trace_id, step_order);
+
+    CREATE TABLE IF NOT EXISTS recommendation_cards (
+      id TEXT PRIMARY KEY,
+      trace_id TEXT NOT NULL DEFAULT '',
+      target_object_type TEXT NOT NULL DEFAULT '',
+      target_object_id TEXT NOT NULL DEFAULT '',
+      scenario_type TEXT NOT NULL DEFAULT '',
+      recommendation_title TEXT NOT NULL,
+      recommendation_detail TEXT NOT NULL,
+      impact_summary TEXT NOT NULL DEFAULT '',
+      evidence_refs TEXT NOT NULL DEFAULT '[]',
+      action_options TEXT NOT NULL DEFAULT '[]',
+      action_tier TEXT NOT NULL DEFAULT 'L1',
+      owner TEXT NOT NULL DEFAULT 'supply_chain_owner',
+      priority TEXT NOT NULL DEFAULT 'P1',
+      approval_status TEXT NOT NULL DEFAULT 'draft',
+      workflow_id TEXT NOT NULL DEFAULT '',
+      due_date TEXT NOT NULL DEFAULT '',
+      created_by TEXT NOT NULL DEFAULT 'local_user',
+      reviewer TEXT NOT NULL DEFAULT '',
+      review_note TEXT NOT NULL DEFAULT '',
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_recommendation_cards_target ON recommendation_cards(target_object_type, target_object_id, approval_status);
+    CREATE INDEX IF NOT EXISTS idx_recommendation_cards_status ON recommendation_cards(approval_status, priority, owner);
+    CREATE INDEX IF NOT EXISTS idx_recommendation_cards_trace ON recommendation_cards(trace_id);
+
+    CREATE TABLE IF NOT EXISTS recommendation_transitions (
+      id TEXT PRIMARY KEY,
+      recommendation_id TEXT NOT NULL,
+      from_status TEXT NOT NULL,
+      to_status TEXT NOT NULL,
+      actor TEXT NOT NULL DEFAULT 'local_user',
+      note TEXT NOT NULL DEFAULT '',
+      evidence_refs TEXT NOT NULL DEFAULT '[]',
+      created_at TEXT NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_recommendation_transitions_card ON recommendation_transitions(recommendation_id, created_at);
+
+    CREATE TABLE IF NOT EXISTS action_policy_tiers (
+      id TEXT PRIMARY KEY,
+      tier_code TEXT NOT NULL UNIQUE,
+      tier_name TEXT NOT NULL,
+      description TEXT NOT NULL,
+      approval_required INTEGER NOT NULL DEFAULT 1,
+      writeback_allowed INTEGER NOT NULL DEFAULT 0,
+      allowed_actions TEXT NOT NULL DEFAULT '[]',
+      status TEXT NOT NULL DEFAULT 'active'
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_action_policy_tiers_status ON action_policy_tiers(status, tier_code);
+  `);
+}
+
+function ensureKnowledgeRulesSchema() {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS knowledge_rules (
+      id TEXT PRIMARY KEY,
+      source_card_id TEXT NOT NULL DEFAULT '',
+      source_domain_id TEXT NOT NULL DEFAULT '',
+      rule_code TEXT NOT NULL UNIQUE,
+      rule_name TEXT NOT NULL,
+      rule_type TEXT NOT NULL DEFAULT 'diagnostic',
+      target_object_type TEXT NOT NULL DEFAULT '',
+      target_metric_ids TEXT NOT NULL DEFAULT '[]',
+      target_dimension_ids TEXT NOT NULL DEFAULT '[]',
+      condition_expression TEXT NOT NULL DEFAULT '',
+      action_template TEXT NOT NULL DEFAULT '{}',
+      evidence_refs TEXT NOT NULL DEFAULT '[]',
+      conflict_key TEXT NOT NULL DEFAULT '',
+      conflict_status TEXT NOT NULL DEFAULT 'clear',
+      owner TEXT NOT NULL DEFAULT 'knowledge_governance_owner',
+      priority TEXT NOT NULL DEFAULT 'P1',
+      lifecycle_status TEXT NOT NULL DEFAULT 'draft',
+      workflow_id TEXT NOT NULL DEFAULT '',
+      reviewer TEXT NOT NULL DEFAULT '',
+      review_note TEXT NOT NULL DEFAULT '',
+      created_by TEXT NOT NULL DEFAULT 'local_user',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_knowledge_rules_source ON knowledge_rules(source_domain_id, source_card_id);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_rules_target ON knowledge_rules(target_object_type, lifecycle_status, priority);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_rules_conflict ON knowledge_rules(conflict_key, conflict_status);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_rules_workflow ON knowledge_rules(workflow_id);
+
+    CREATE TABLE IF NOT EXISTS knowledge_rule_conflicts (
+      id TEXT PRIMARY KEY,
+      rule_id TEXT NOT NULL,
+      conflicting_rule_id TEXT NOT NULL,
+      conflict_type TEXT NOT NULL DEFAULT 'same_target_condition',
+      conflict_detail TEXT NOT NULL DEFAULT '',
+      status TEXT NOT NULL DEFAULT 'open',
+      created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_knowledge_rule_conflicts_rule ON knowledge_rule_conflicts(rule_id, status);
+    CREATE INDEX IF NOT EXISTS idx_knowledge_rule_conflicts_peer ON knowledge_rule_conflicts(conflicting_rule_id, status);
+  `);
+}
+
+function parseJsonValue(value, fallback) {
+  if (value && typeof value === "object") return value;
+  try {
+    return JSON.parse(value || "");
+  } catch {
+    return fallback;
+  }
+}
+
+function rowToAipObject(row) {
+  return {
+    ...row,
+    source_refs: parseJsonValue(row.source_refs, []),
+    properties: parseJsonValue(row.properties, {})
+  };
+}
+
+function rowToAipTrace(row) {
+  return {
+    ...row,
+    evidence_refs: parseJsonValue(row.evidence_refs, [])
+  };
+}
+
+function rowToRecommendation(row) {
+  return {
+    ...row,
+    evidence_refs: parseJsonValue(row.evidence_refs, []),
+    action_options: parseJsonValue(row.action_options, [])
+  };
+}
+
+function rowToKnowledgeRule(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    target_metric_ids: parseJsonValue(row.target_metric_ids, []),
+    target_dimension_ids: parseJsonValue(row.target_dimension_ids, []),
+    action_template: parseJsonValue(row.action_template, {}),
+    evidence_refs: parseJsonValue(row.evidence_refs, [])
+  };
+}
+
+function seedAipPhase1Data() {
+  if (!tableExists("object_instances")) return;
+  const seededAt = nowIso();
+  const policyTiers = [
+    ["tier_l0", "L0", "Observation", "只读观察和证据整理，不触发审批，不允许写回业务系统。", 0, 0, ["explain", "export_evidence", "create_comment"]],
+    ["tier_l1", "L1", "Governed Suggestion", "生成建议、行动卡和人工审核任务，是当前默认动作层。", 1, 0, ["create_recommendation", "request_review", "export_json", "export_excel"]],
+    ["tier_l2", "L2", "Approved Workflow", "经 Owner 审批后进入执行跟踪和复盘，仍不直接写回积加/ERP。", 1, 0, ["approve_task", "assign_owner", "track_result", "replay"]],
+    ["tier_l3", "L3", "System Write-back Reserved", "未来 API write-back 预留层；当前状态 disabled。", 1, 0, ["reserved_writeback"]]
+  ];
+  policyTiers.forEach(([id, tierCode, tierName, description, approvalRequired, writebackAllowed, allowedActions]) => {
+    run(
+      `INSERT OR IGNORE INTO action_policy_tiers
+        (id, tier_code, tier_name, description, approval_required, writeback_allowed, allowed_actions, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      [id, tierCode, tierName, description, approvalRequired, writebackAllowed, JSON.stringify(allowedActions), tierCode === "L3" ? "disabled" : "active"]
+    );
+  });
+  if (tableCount("object_instances") > 0) return;
+
+  const objects = [
+    {
+      id: "obj_sku_momcozy_pillow_core",
+      object_type: "sku",
+      object_key: "SKU-MOMCOZY-PILLOW-CORE",
+      display_name: "Momcozy pregnancy pillow core SKU",
+      lifecycle_status: "active",
+      risk_level: "high",
+      owner: "计划 Owner",
+      health_score: 62,
+      source_refs: ["ontology:sku", "metric:business_available_qty", "kb:stocking-rules"],
+      properties: {
+        platform: "Amazon",
+        category: "maternity_pillow",
+        abc_class: "A",
+        scenario_tags: ["negative_available_inventory", "stockout_risk"],
+        canonical_policy: "draft_seed_for_aip_phase1"
+      }
+    },
+    {
+      id: "obj_listing_amz_us_pillow_core",
+      object_type: "listing",
+      object_key: "AMZ-US-ASIN-B0PILLOWCORE",
+      display_name: "Amazon US core maternity pillow Listing",
+      lifecycle_status: "active",
+      risk_level: "medium",
+      owner: "渠道运营 Owner",
+      health_score: 70,
+      source_refs: ["ontology:listing", "metric:sku_oos_rate"],
+      properties: { site: "US", channel: "Amazon", sku_ref: "obj_sku_momcozy_pillow_core" }
+    },
+    {
+      id: "obj_supplier_primary_textile",
+      object_type: "supplier",
+      object_key: "SUP-TEXTILE-PRIMARY",
+      display_name: "Primary textile supplier",
+      lifecycle_status: "active",
+      risk_level: "medium",
+      owner: "采购 Owner",
+      health_score: 74,
+      source_refs: ["ontology:supplier", "metric:supplier_otif_rate"],
+      properties: { supplier_tier: "core", moq: 1200, lead_time_days: 28 }
+    },
+    {
+      id: "obj_po_202606_pillow_core",
+      object_type: "po",
+      object_key: "PO-202606-PILLOW-CORE",
+      display_name: "PO 202606 pillow core replenishment",
+      lifecycle_status: "active",
+      risk_level: "medium",
+      owner: "采购 Owner",
+      health_score: 68,
+      source_refs: ["ontology:po", "metric:po_on_time_delivery_rate"],
+      properties: { supplier_ref: "obj_supplier_primary_textile", sku_ref: "obj_sku_momcozy_pillow_core", ordered_qty: 3600, open_qty: 1800 }
+    },
+    {
+      id: "obj_shipment_202606_us_eta",
+      object_type: "shipment",
+      object_key: "SHP-202606-US-ETA",
+      display_name: "US inbound shipment ETA watch",
+      lifecycle_status: "active",
+      risk_level: "high",
+      owner: "物流 Owner",
+      health_score: 58,
+      source_refs: ["ontology:shipment", "metric:eta_deviation_days"],
+      properties: { po_ref: "obj_po_202606_pillow_core", warehouse_ref: "obj_warehouse_fba_us_west", eta_deviation_days: 5 }
+    },
+    {
+      id: "obj_warehouse_fba_us_west",
+      object_type: "warehouse",
+      object_key: "FBA-US-WEST",
+      display_name: "FBA US West warehouse",
+      lifecycle_status: "active",
+      risk_level: "medium",
+      owner: "仓储 Owner",
+      health_score: 76,
+      source_refs: ["ontology:warehouse", "metric:inventory_sync_delay_minutes"],
+      properties: { warehouse_type: "FBA", region: "US-West" }
+    },
+    {
+      id: "obj_batch_fba_negative_available",
+      object_type: "inventory_batch",
+      object_key: "BATCH-FBA-NEG-202606",
+      display_name: "FBA negative available inventory batch",
+      lifecycle_status: "active",
+      risk_level: "critical",
+      owner: "库存 Owner",
+      health_score: 46,
+      source_refs: ["ontology:inventory_batch", "metric:business_available_qty", "tag:tag_negative_available"],
+      properties: {
+        sku_ref: "obj_sku_momcozy_pillow_core",
+        warehouse_ref: "obj_warehouse_fba_us_west",
+        business_available_qty: -37,
+        platform_available_qty: 0,
+        reserved_qty: 52,
+        exception_hypotheses: ["allocation_reservation", "sync_delay", "platform_adjustment"]
+      }
+    },
+    {
+      id: "obj_forecast_v202606_pillow",
+      object_type: "forecast_version",
+      object_key: "FCST-202606-PILLOW-V1",
+      display_name: "June 2026 pillow demand forecast",
+      lifecycle_status: "draft",
+      risk_level: "medium",
+      owner: "计划 Owner",
+      health_score: 66,
+      source_refs: ["ontology:forecast_version", "metric:forecast_accuracy_daily"],
+      properties: { sku_ref: "obj_sku_momcozy_pillow_core", forecast_qty_30d: 4200, confidence: "medium" }
+    },
+    {
+      id: "obj_cost_event_fba_storage",
+      object_type: "cost_event",
+      object_key: "COST-FBA-STORAGE-202606",
+      display_name: "FBA storage cost watch",
+      lifecycle_status: "active",
+      risk_level: "medium",
+      owner: "财务/成本 Owner",
+      health_score: 64,
+      source_refs: ["ontology:cost_event", "metric:storage_fee_rate"],
+      properties: { warehouse_ref: "obj_warehouse_fba_us_west", sku_ref: "obj_sku_momcozy_pillow_core", cost_type: "storage_fee" }
+    },
+    {
+      id: "obj_return_order_quality_watch",
+      object_type: "return_order",
+      object_key: "RET-QUALITY-WATCH-202606",
+      display_name: "Return quality watch sample",
+      lifecycle_status: "mapped",
+      risk_level: "low",
+      owner: "售后 Owner",
+      health_score: 80,
+      source_refs: ["ontology:return_order", "metric:return_recoverable_qty"],
+      properties: { sku_ref: "obj_sku_momcozy_pillow_core", return_reason: "fit_issue_sample" }
+    }
+  ];
+
+  objects.forEach((item) => {
+    run(
+      `INSERT OR IGNORE INTO object_instances
+        (id, object_type, object_key, display_name, lifecycle_status, risk_level, owner, health_score, source_refs, properties, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        item.id,
+        item.object_type,
+        item.object_key,
+        item.display_name,
+        item.lifecycle_status,
+        item.risk_level,
+        item.owner,
+        item.health_score,
+        JSON.stringify(item.source_refs),
+        JSON.stringify(item.properties),
+        seededAt,
+        seededAt
+      ]
+    );
+  });
+
+  [
+    ["id_sku_core_sku", "obj_sku_momcozy_pillow_core", "SKU", "SKU-MOMCOZY-PILLOW-CORE", 0.92, "Seeded from SCM ontology and metric blueprint."],
+    ["id_sku_core_msku", "obj_sku_momcozy_pillow_core", "MSKU", "AMZ-US-PILLOW-CORE", 0.74, "Draft identity bridge for AIP Object 360."],
+    ["id_sku_core_asin", "obj_sku_momcozy_pillow_core", "ASIN", "B0PILLOWCORE", 0.66, "Placeholder ASIN for local demo only."],
+    ["id_listing_core_asin", "obj_listing_amz_us_pillow_core", "ASIN", "B0PILLOWCORE", 0.66, "Listing to SKU identity bridge."],
+    ["id_batch_core_fnsku", "obj_batch_fba_negative_available", "FNSKU", "X00PILLOWCORE", 0.58, "Draft FBA identity placeholder."]
+  ].forEach(([id, objectId, identityType, identityValue, confidence, evidence]) => {
+    run(
+      `INSERT OR IGNORE INTO object_identity_links
+        (id, object_id, identity_type, identity_value, confidence, evidence, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, 'draft', ?)`,
+      [id, objectId, identityType, identityValue, confidence, evidence, seededAt]
+    );
+  });
+
+  [
+    {
+      id: "evt_negative_available_inventory",
+      object_id: "obj_batch_fba_negative_available",
+      event_type: "negative_available_inventory",
+      severity: "critical",
+      event_title: "FBA 可用库存为负",
+      event_detail: "业务可用库存为 -37，样例推断优先排查预占、平台同步延迟、平台调整和批次状态差异。",
+      metric_refs: ["business_available_qty", "inventory_sync_delay_minutes"],
+      evidence_refs: ["tag:tag_negative_available", "kb:stocking-rules"]
+    },
+    {
+      id: "evt_stockout_risk_sku",
+      object_id: "obj_sku_momcozy_pillow_core",
+      event_type: "stockout_risk",
+      severity: "high",
+      event_title: "核心 SKU 存在断货风险",
+      event_detail: "库存批次异常叠加在途 ETA 偏差，可能影响 Amazon US Listing 供给连续性。",
+      metric_refs: ["sku_oos_rate", "stockout_days", "stockout_loss_amount"],
+      evidence_refs: ["object:obj_listing_amz_us_pillow_core", "object:obj_shipment_202606_us_eta"]
+    },
+    {
+      id: "evt_storage_age_overstock",
+      object_id: "obj_cost_event_fba_storage",
+      event_type: "storage_age_overstock",
+      severity: "medium",
+      event_title: "库龄/超储成本需复核",
+      event_detail: "FBA 仓储成本事件与库龄/超储场景关联，建议结合批次库龄、销量和促销计划判断。",
+      metric_refs: ["storage_fee_rate", "slow_moving_inventory_ratio"],
+      evidence_refs: ["ontology:cost_event", "ontology:inventory_batch"]
+    },
+    {
+      id: "evt_shipment_eta_delay",
+      object_id: "obj_shipment_202606_us_eta",
+      event_type: "shipment_eta_delay",
+      severity: "high",
+      event_title: "货件 ETA 延迟",
+      event_detail: "US inbound shipment ETA 偏差 5 天，需要连接 PO、Listing 和库存覆盖天数评估经营影响。",
+      metric_refs: ["eta_deviation_days", "supplier_otif_rate"],
+      evidence_refs: ["object:obj_po_202606_pillow_core", "object:obj_warehouse_fba_us_west"]
+    }
+  ].forEach((event) => {
+    run(
+      `INSERT OR IGNORE INTO object_events
+        (id, object_id, event_type, severity, event_title, event_detail, metric_refs, evidence_refs, status, occurred_at, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'open', ?, ?)`,
+      [
+        event.id,
+        event.object_id,
+        event.event_type,
+        event.severity,
+        event.event_title,
+        event.event_detail,
+        JSON.stringify(event.metric_refs),
+        JSON.stringify(event.evidence_refs),
+        seededAt,
+        seededAt
+      ]
+    );
+  });
+
+  writeAudit("aip_phase1.seeded", "aip_phase1", "local_seed", {
+    objects: objects.length,
+    identityLinks: 5,
+    objectEvents: 4,
+    policyTiers: policyTiers.length,
+    boundary: "local SQLite governance seed only; no provider call; no ERP writeback"
+  }, "system");
+}
+
+function getAipObjects(url) {
+  const clauses = [];
+  const params = [];
+  const type = url.searchParams.get("type") || url.searchParams.get("objectType");
+  const status = url.searchParams.get("status");
+  const risk = url.searchParams.get("risk") || url.searchParams.get("riskLevel");
+  const owner = url.searchParams.get("owner");
+  const q = url.searchParams.get("q");
+  if (type) {
+    clauses.push("object_type = ?");
+    params.push(type);
+  }
+  if (status) {
+    clauses.push("lifecycle_status = ?");
+    params.push(status);
+  }
+  if (risk) {
+    clauses.push("risk_level = ?");
+    params.push(risk);
+  }
+  if (owner) {
+    clauses.push("owner = ?");
+    params.push(owner);
+  }
+  if (q) {
+    clauses.push("(display_name LIKE ? OR object_key LIKE ? OR object_type LIKE ? OR properties LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 80, 500));
+  return all(
+    `SELECT
+       oi.*,
+       (SELECT COUNT(*) FROM object_events oe WHERE oe.object_id = oi.id) AS event_count,
+       (SELECT COUNT(*) FROM recommendation_cards rc WHERE rc.target_object_id = oi.id) AS recommendation_count,
+       (SELECT COUNT(*) FROM agent_execution_traces tr WHERE tr.target_object_id = oi.id) AS trace_count
+     FROM object_instances oi
+     ${where}
+     ORDER BY
+       CASE risk_level WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
+       health_score ASC,
+       updated_at DESC
+     LIMIT ?`,
+    params
+  ).map(rowToAipObject);
+}
+
+function getAipObjectDetail(id) {
+  const object = get("SELECT * FROM object_instances WHERE id = ?", [id]);
+  if (!object) return null;
+  const normalized = rowToAipObject(object);
+  const ontology = get("SELECT * FROM ontology_objects WHERE id = ?", [normalized.object_type]) || null;
+  const ontologyOutbound = all(
+    `SELECT ol.*, target.name AS target_name, target.object_type AS target_type
+     FROM ontology_links ol
+     LEFT JOIN ontology_objects target ON target.id = ol.target_object_id
+     WHERE ol.source_object_id = ?
+     ORDER BY ol.link_type, ol.target_object_id`,
+    [normalized.object_type]
+  );
+  const ontologyInbound = all(
+    `SELECT ol.*, source.name AS source_name, source.object_type AS source_type
+     FROM ontology_links ol
+     LEFT JOIN ontology_objects source ON source.id = ol.source_object_id
+     WHERE ol.target_object_id = ?
+     ORDER BY ol.link_type, ol.source_object_id`,
+    [normalized.object_type]
+  );
+  const identityLinks = all("SELECT * FROM object_identity_links WHERE object_id = ? ORDER BY confidence DESC, identity_type", [id]);
+  const events = getAipObjectEvents(id, new URL("http://local/api/aip/objects/events?limit=40"));
+  const recommendations = all("SELECT * FROM recommendation_cards WHERE target_object_id = ? ORDER BY updated_at DESC LIMIT 40", [id]).map(rowToRecommendation);
+  const traces = all("SELECT * FROM agent_execution_traces WHERE target_object_id = ? ORDER BY created_at DESC LIMIT 30", [id]).map(rowToAipTrace);
+  const objectMetrics = all(
+    `SELECT DISTINCT m.*
+     FROM metrics m
+     LEFT JOIN metric_dimensions md ON md.metric_id = m.id
+     LEFT JOIN dimensions d ON d.id = md.dimension_id
+     WHERE d.bound_object_id = ?
+        OR m.definition LIKE ?
+        OR m.name LIKE ?
+        OR m.code LIKE ?
+     ORDER BY CASE m.level WHEN 'L0' THEN 0 WHEN 'L1' THEN 1 WHEN 'L2' THEN 2 ELSE 3 END, m.l1_domain, m.code
+     LIMIT 40`,
+    [normalized.object_type, `%${normalized.object_type}%`, `%${normalized.object_type}%`, `%${normalized.object_type}%`]
+  );
+  const tags = all("SELECT * FROM tags WHERE target_object_id = ? ORDER BY lifecycle_status, id LIMIT 30", [normalized.object_type]);
+  const kbCards = all(
+    `SELECT DISTINCT c.*, d.name AS domain_name, s.source_path
+     FROM kb_cards c
+     JOIN kb_domains d ON d.id = c.domain_id
+     JOIN kb_sources s ON s.id = c.source_id
+     LEFT JOIN kb_crosswalks x ON x.card_id = c.id
+     WHERE x.asset_id = ?
+        OR x.asset_id = ?
+        OR c.related_assets LIKE ?
+        OR c.summary LIKE ?
+     ORDER BY c.created_at DESC
+     LIMIT 30`,
+    [normalized.object_type, id, `%${normalized.object_type}%`, `%${normalized.display_name.split(" ")[0]}%`]
+  );
+  const qualityIssues = all(
+    `SELECT *
+     FROM quality_issues
+     WHERE asset_id IN (?, ?)
+        OR evidence LIKE ?
+        OR issue_detail LIKE ?
+     ORDER BY detected_at DESC
+     LIMIT 30`,
+    [id, normalized.object_type, `%${id}%`, `%${normalized.object_type}%`]
+  );
+  return {
+    object: normalized,
+    ontology,
+    relations: { outbound: ontologyOutbound, inbound: ontologyInbound },
+    identityLinks,
+    metrics: objectMetrics,
+    tags,
+    kbCards,
+    qualityIssues,
+    recommendations,
+    events,
+    traces,
+    boundary: {
+      ontologyReadOnly: true,
+      canonicalMetricDictionaryReadOnly: true,
+      writeBackPolicy: "suggestion_approval_replay_only"
+    }
+  };
+}
+
+function getAipObjectEvents(objectId, url) {
+  const clauses = ["object_id = ?"];
+  const params = [objectId];
+  const eventType = url.searchParams.get("eventType") || url.searchParams.get("type");
+  const status = url.searchParams.get("status");
+  if (eventType) {
+    clauses.push("event_type = ?");
+    params.push(eventType);
+  }
+  if (status) {
+    clauses.push("status = ?");
+    params.push(status);
+  }
+  params.push(parseLimit(url, 80, 300));
+  return all(
+    `SELECT * FROM object_events
+     WHERE ${clauses.join(" AND ")}
+     ORDER BY occurred_at DESC, severity
+     LIMIT ?`,
+    params
+  ).map((row) => ({
+    ...row,
+    metric_refs: parseJsonValue(row.metric_refs, []),
+    evidence_refs: parseJsonValue(row.evidence_refs, [])
+  }));
+}
+
+function getAipTraces(url) {
+  const clauses = [];
+  const params = [];
+  const objectId = url.searchParams.get("objectId");
+  const answerability = url.searchParams.get("answerability");
+  const q = url.searchParams.get("q");
+  if (objectId) {
+    clauses.push("target_object_id = ?");
+    params.push(objectId);
+  }
+  if (answerability) {
+    clauses.push("answerability = ?");
+    params.push(answerability);
+  }
+  if (q) {
+    clauses.push("(question LIKE ? OR intent LIKE ? OR evidence_refs LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 80, 300));
+  return all(`SELECT * FROM agent_execution_traces ${where} ORDER BY created_at DESC LIMIT ?`, params).map(rowToAipTrace);
+}
+
+function getAipTraceDetail(id) {
+  const trace = get("SELECT * FROM agent_execution_traces WHERE id = ?", [id]);
+  if (!trace) return null;
+  return {
+    trace: rowToAipTrace(trace),
+    steps: all("SELECT * FROM agent_trace_steps WHERE trace_id = ? ORDER BY step_order", [id]).map((step) => ({
+      ...step,
+      input_refs: parseJsonValue(step.input_refs, []),
+      output_refs: parseJsonValue(step.output_refs, [])
+    })),
+    recommendations: all("SELECT * FROM recommendation_cards WHERE trace_id = ? ORDER BY updated_at DESC", [id]).map(rowToRecommendation)
+  };
+}
+
+function createAipTrace(body) {
+  const question = normalizeText(body.question);
+  if (!question) {
+    const error = new Error("Missing required fields: question");
+    error.statusCode = 400;
+    throw error;
+  }
+  const id = makeId("trace");
+  const createdAt = nowIso();
+  const actor = normalizeText(body.createdBy || body.actor, "local_user");
+  const targetObjectId = normalizeText(body.targetObjectId || body.target_object_id);
+  let targetObjectType = normalizeText(body.targetObjectType || body.target_object_type);
+  if (targetObjectId && !targetObjectType) {
+    targetObjectType = normalizeText(get("SELECT object_type FROM object_instances WHERE id = ?", [targetObjectId])?.object_type);
+  }
+  const evidenceRefs = normalizeJsonText(body.evidenceRefs || body.evidence_refs, []);
+  run(
+    `INSERT INTO agent_execution_traces
+      (id, session_id, source_message_id, intent, question, target_object_type, target_object_id,
+       target_metric_id, answerability, answerability_score, status, evidence_refs, created_by, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      id,
+      normalizeText(body.sessionId || body.session_id),
+      normalizeText(body.sourceMessageId || body.source_message_id),
+      normalizeText(body.intent, "supply_chain_diagnosis"),
+      question,
+      targetObjectType,
+      targetObjectId,
+      normalizeText(body.targetMetricId || body.target_metric_id),
+      normalizeText(body.answerability, "partial"),
+      Number(body.answerabilityScore || body.answerability_score || 50),
+      normalizeText(body.status, "completed"),
+      evidenceRefs,
+      actor,
+      createdAt
+    ]
+  );
+  const steps = Array.isArray(body.steps) && body.steps.length
+    ? body.steps
+    : [
+        { stepType: "intent_parse", stepTitle: "识别问题意图", stepDetail: `Intent=${normalizeText(body.intent, "supply_chain_diagnosis")}` },
+        { stepType: "object_resolve", stepTitle: "解析业务对象", stepDetail: targetObjectId ? `Resolved object ${targetObjectId}` : "No target object supplied." },
+        { stepType: "evidence_bind", stepTitle: "绑定证据", stepDetail: "Evidence refs are attached to the trace." },
+        { stepType: "answerability_gate", stepTitle: "可回答性判断", stepDetail: `Answerability=${normalizeText(body.answerability, "partial")}` }
+      ];
+  steps.forEach((step, index) => {
+    run(
+      `INSERT INTO agent_trace_steps
+        (id, trace_id, step_order, step_type, step_title, step_detail, input_refs, output_refs, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        makeId("step"),
+        id,
+        Number(step.stepOrder || step.step_order || index + 1),
+        normalizeText(step.stepType || step.step_type, `step_${index + 1}`),
+        normalizeText(step.stepTitle || step.step_title, `Trace step ${index + 1}`),
+        normalizeText(step.stepDetail || step.step_detail),
+        normalizeJsonText(step.inputRefs || step.input_refs, []),
+        normalizeJsonText(step.outputRefs || step.output_refs, []),
+        normalizeText(step.status, "completed"),
+        createdAt
+      ]
+    );
+  });
+  writeAudit("agent_trace.created", "agent_execution_trace", id, { question, targetObjectId, targetObjectType, steps: steps.length }, actor);
+  return getAipTraceDetail(id);
+}
+
+function getAipRecommendations(url) {
+  const clauses = [];
+  const params = [];
+  const status = url.searchParams.get("status");
+  const objectId = url.searchParams.get("objectId");
+  const scenarioType = url.searchParams.get("scenarioType");
+  const owner = url.searchParams.get("owner");
+  const q = url.searchParams.get("q");
+  if (status) {
+    clauses.push("approval_status = ?");
+    params.push(status);
+  }
+  if (objectId) {
+    clauses.push("target_object_id = ?");
+    params.push(objectId);
+  }
+  if (scenarioType) {
+    clauses.push("scenario_type = ?");
+    params.push(scenarioType);
+  }
+  if (owner) {
+    clauses.push("owner = ?");
+    params.push(owner);
+  }
+  if (q) {
+    clauses.push("(recommendation_title LIKE ? OR recommendation_detail LIKE ? OR impact_summary LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 80, 300));
+  return all(`SELECT * FROM recommendation_cards ${where} ORDER BY updated_at DESC, priority, created_at DESC LIMIT ?`, params).map(rowToRecommendation);
+}
+
+function createAipRecommendation(body) {
+  const title = normalizeText(body.recommendationTitle || body.recommendation_title || body.title);
+  const detail = normalizeText(body.recommendationDetail || body.recommendation_detail || body.detail);
+  if (!title || !detail) {
+    const error = new Error("Missing required fields: recommendationTitle, recommendationDetail");
+    error.statusCode = 400;
+    throw error;
+  }
+  const id = makeId("rec");
+  const actor = normalizeText(body.createdBy || body.actor, "local_user");
+  const targetObjectId = normalizeText(body.targetObjectId || body.target_object_id);
+  let targetObjectType = normalizeText(body.targetObjectType || body.target_object_type);
+  if (targetObjectId && !targetObjectType) {
+    targetObjectType = normalizeText(get("SELECT object_type FROM object_instances WHERE id = ?", [targetObjectId])?.object_type);
+  }
+  const priority = normalizeText(body.priority, "P1");
+  const owner = normalizeText(body.owner, "supply_chain_owner");
+  const workflow = createWorkflowInstance({
+    workflowType: "recommendation_card_review",
+    assetType: "recommendation_card",
+    assetId: id,
+    title: `推荐动作审核: ${title.slice(0, 48)}`,
+    sourceRef: `recommendation_card:${id}`,
+    moduleId: "decision-loop",
+    priority,
+    owner,
+    dueDate: normalizeText(body.dueDate || body.due_date),
+    createdBy: actor,
+    steps: [
+      { key: "intake", name: "推荐动作接收", status: "completed", note: "Recommendation card created in SQLite ledger." },
+      { key: "impact_review", name: "影响与证据审核", status: "pending", note: "Check impact, object path and evidence refs." },
+      { key: "approval_decision", name: "审批决策", status: "pending", note: "No ERP/Jijia writeback in current phase." },
+      { key: "replay", name: "执行复盘", status: "pending", note: "Record result and replay after action." }
+    ]
+  });
+  const createdAt = nowIso();
+  run(
+    `INSERT INTO recommendation_cards
+      (id, trace_id, target_object_type, target_object_id, scenario_type, recommendation_title,
+       recommendation_detail, impact_summary, evidence_refs, action_options, action_tier, owner,
+       priority, approval_status, workflow_id, due_date, created_by, reviewer, review_note, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?)`,
+    [
+      id,
+      normalizeText(body.traceId || body.trace_id),
+      targetObjectType,
+      targetObjectId,
+      normalizeText(body.scenarioType || body.scenario_type, "supply_chain_exception"),
+      title,
+      detail,
+      normalizeText(body.impactSummary || body.impact_summary),
+      normalizeJsonText(body.evidenceRefs || body.evidence_refs, []),
+      normalizeJsonText(body.actionOptions || body.action_options, []),
+      normalizeText(body.actionTier || body.action_tier, "L1"),
+      owner,
+      priority,
+      normalizeText(body.approvalStatus || body.approval_status, "submitted"),
+      workflow.id,
+      normalizeText(body.dueDate || body.due_date, workflow.due_date),
+      actor,
+      createdAt,
+      createdAt
+    ]
+  );
+  run(
+    `INSERT INTO recommendation_transitions
+      (id, recommendation_id, from_status, to_status, actor, note, evidence_refs, created_at)
+     VALUES (?, ?, 'none', ?, ?, ?, ?, ?)`,
+    [
+      makeId("rect"),
+      id,
+      normalizeText(body.approvalStatus || body.approval_status, "submitted"),
+      actor,
+      "Recommendation card created.",
+      normalizeJsonText(body.evidenceRefs || body.evidence_refs, []),
+      createdAt
+    ]
+  );
+  writeAudit("recommendation_card.created", "recommendation_card", id, { targetObjectId, targetObjectType, workflowId: workflow.id, title }, actor);
+  return getAipRecommendationDetail(id);
+}
+
+function allowedRecommendationTransitions(status) {
+  const map = {
+    draft: ["submitted", "rejected"],
+    submitted: ["approved", "rejected"],
+    approved: ["in_progress", "done"],
+    in_progress: ["done", "rejected"],
+    done: ["replayed"],
+    replayed: [],
+    rejected: []
+  };
+  return map[normalizeText(status, "draft")] || [];
+}
+
+function getAipRecommendationDetail(id) {
+  const card = get("SELECT * FROM recommendation_cards WHERE id = ?", [id]);
+  if (!card) return null;
+  return {
+    recommendation: rowToRecommendation(card),
+    transitions: all("SELECT * FROM recommendation_transitions WHERE recommendation_id = ? ORDER BY created_at DESC", [id]).map((row) => ({
+      ...row,
+      evidence_refs: parseJsonValue(row.evidence_refs, [])
+    })),
+    trace: card.trace_id ? getAipTraceDetail(card.trace_id) : null,
+    object: card.target_object_id ? rowToAipObject(get("SELECT * FROM object_instances WHERE id = ?", [card.target_object_id]) || {}) : null,
+    allowedNext: allowedRecommendationTransitions(card.approval_status)
+  };
+}
+
+function transitionAipRecommendation(id, body) {
+  const current = get("SELECT * FROM recommendation_cards WHERE id = ?", [id]);
+  if (!current) return null;
+  const fromStatus = normalizeText(current.approval_status, "draft");
+  const toStatus = normalizeText(body.status || body.toStatus || body.to_status);
+  if (!toStatus) {
+    const error = new Error("Missing required fields: status");
+    error.statusCode = 400;
+    throw error;
+  }
+  const allowed = allowedRecommendationTransitions(fromStatus);
+  if (!allowed.includes(toStatus) && !body.force) {
+    const error = new Error(`Invalid recommendation transition: ${fromStatus} -> ${toStatus}`);
+    error.statusCode = 400;
+    throw error;
+  }
+  const actor = normalizeText(body.actor || body.reviewer, "local_user");
+  const note = normalizeText(body.note || body.reviewNote || body.review_note, `Recommendation moved from ${fromStatus} to ${toStatus}.`);
+  const evidenceRefs = normalizeJsonText(body.evidenceRefs || body.evidence_refs, []);
+  const updatedAt = nowIso();
+  run(
+    "UPDATE recommendation_cards SET approval_status = ?, reviewer = ?, review_note = ?, updated_at = ? WHERE id = ?",
+    [toStatus, actor, note, updatedAt, id]
+  );
+  run(
+    `INSERT INTO recommendation_transitions
+      (id, recommendation_id, from_status, to_status, actor, note, evidence_refs, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    [makeId("rect"), id, fromStatus, toStatus, actor, note, evidenceRefs, updatedAt]
+  );
+  if (current.workflow_id) {
+    completeWorkflowStep(current.workflow_id, "impact_review", ["approved", "rejected"].includes(toStatus) ? "completed" : "pending", actor, note);
+    completeWorkflowStep(current.workflow_id, "approval_decision", toStatus === "approved" ? "approved" : toStatus === "rejected" ? "rejected" : "pending", actor, note);
+    if (toStatus === "done" || toStatus === "replayed") {
+      completeWorkflowStep(current.workflow_id, "replay", toStatus === "replayed" ? "completed" : "pending", actor, note);
+    }
+    setWorkflowStatus(current.workflow_id, toStatus === "submitted" ? "open" : toStatus, actor, note);
+  }
+  writeAudit("recommendation_card.transitioned", "recommendation_card", id, { fromStatus, toStatus, note }, actor);
+  return getAipRecommendationDetail(id);
+}
+
+function getAipSummary() {
+  const health = getAipPhase1Summary();
+  const objectsByType = all("SELECT object_type, COUNT(*) AS count FROM object_instances GROUP BY object_type ORDER BY object_type");
+  const riskBuckets = all("SELECT risk_level, COUNT(*) AS count FROM object_instances GROUP BY risk_level ORDER BY count DESC");
+  const eventBuckets = all("SELECT event_type, severity, COUNT(*) AS count FROM object_events GROUP BY event_type, severity ORDER BY count DESC");
+  const recommendationBuckets = all("SELECT approval_status, COUNT(*) AS count FROM recommendation_cards GROUP BY approval_status ORDER BY count DESC");
+  return {
+    ...health,
+    objectsByType,
+    riskBuckets,
+    eventBuckets,
+    recommendationBuckets,
+    topRiskObjects: getAipObjects(new URL("http://local/api/aip/objects?limit=8")),
+    openRecommendations: getAipRecommendations(new URL("http://local/api/aip/recommendations?limit=8")),
+    policyTiers: all("SELECT * FROM action_policy_tiers ORDER BY tier_code")
+  };
+}
+
+function aipScenarioDefinitions() {
+  return [
+    {
+      id: "negative_available_inventory",
+      title: "FBA 可用库存为负",
+      subtitle: "库存异常诊断",
+      description: "业务可用库存小于 0 时，不直接判定规则错误；先区分平台预占、同步延迟、平台调整、批次状态和数据质量缺口。",
+      ruleSummary: "business_available_qty < 0 需要挂接 exception_hypotheses、库存流水、平台预占和同步状态证据。",
+      targetObjectId: "obj_batch_fba_negative_available",
+      targetObjectType: "inventory_batch",
+      targetMetricId: "business_available_qty",
+      eventTypes: ["negative_available_inventory"],
+      pathObjectIds: ["obj_sku_momcozy_pillow_core", "obj_warehouse_fba_us_west", "obj_batch_fba_negative_available", "obj_listing_amz_us_pillow_core"],
+      pathNarrative: ["SKU", "Warehouse", "InventoryBatch", "Listing"],
+      owner: "库存 Owner",
+      priority: "P0",
+      answerability: "partial",
+      answerabilityScore: 72,
+      traceIntent: "negative_available_inventory_diagnosis",
+      question: "FBA 可用库存为负是否合理，应该如何排查？",
+      recommendationTitle: "负可用库存排查行动卡",
+      recommendationDetail: "先核对平台预占、同步延迟、批次状态和调整流水，再决定是否发起库存修正或补货动作。",
+      impactSummary: "影响 business_available_qty、stockout_risk 和 Listing 可售连续性。",
+      actionOptions: ["核对平台预占", "检查库存同步延迟", "复核批次状态", "生成 Owner 审核任务"]
+    },
+    {
+      id: "stockout_risk",
+      title: "断货风险",
+      subtitle: "供给连续性诊断",
+      description: "核心 SKU 断货风险需要从 SKU、Listing、PO、Shipment 和 InventoryBatch 串联验证，避免只看单一库存数字。",
+      ruleSummary: "SKU coverage days、ETA deviation、open PO、Listing 可售状态和批次异常同时进入风险判断。",
+      targetObjectId: "obj_sku_momcozy_pillow_core",
+      targetObjectType: "sku",
+      targetMetricId: "stockout_days",
+      eventTypes: ["stockout_risk", "shipment_eta_delay"],
+      pathObjectIds: ["obj_sku_momcozy_pillow_core", "obj_listing_amz_us_pillow_core", "obj_po_202606_pillow_core", "obj_shipment_202606_us_eta", "obj_batch_fba_negative_available"],
+      pathNarrative: ["SKU", "Listing", "PO", "Shipment", "InventoryBatch"],
+      owner: "计划 Owner",
+      priority: "P1",
+      answerability: "partial",
+      answerabilityScore: 68,
+      traceIntent: "stockout_risk_diagnosis",
+      question: "核心 SKU 断货风险如何从 Listing、PO、货件和库存批次联动判断？",
+      recommendationTitle: "断货风险联动排查行动卡",
+      recommendationDetail: "联动检查 Listing 可售、PO open_qty、货件 ETA 偏差、批次异常和预计覆盖天数，形成补货或调拨建议。",
+      impactSummary: "影响 sku_oos_rate、stockout_days、stockout_loss_amount 和渠道销售连续性。",
+      actionOptions: ["核对 Listing 可售", "跟进 PO/Shipment ETA", "评估调拨或加急", "同步渠道促销降速"]
+    },
+    {
+      id: "aging_overstock_risk",
+      title: "库龄/超储风险",
+      subtitle: "库存健康与成本诊断",
+      description: "库龄/超储不能只看仓储费，需要把 InventoryBatch、Warehouse、Listing 销速和促销/清仓策略联动判断。",
+      ruleSummary: "storage_fee_rate、slow_moving_inventory_ratio、batch age、sales velocity 和 Listing 状态共同决定处置动作。",
+      targetObjectId: "obj_cost_event_fba_storage",
+      targetObjectType: "cost_event",
+      targetMetricId: "slow_moving_inventory_ratio",
+      eventTypes: ["storage_age_overstock", "aging_overstock_risk"],
+      pathObjectIds: ["obj_cost_event_fba_storage", "obj_batch_fba_negative_available", "obj_warehouse_fba_us_west", "obj_listing_amz_us_pillow_core"],
+      pathNarrative: ["CostEvent", "InventoryBatch", "Warehouse", "Listing"],
+      owner: "财务/成本 Owner",
+      priority: "P1",
+      answerability: "partial",
+      answerabilityScore: 64,
+      traceIntent: "aging_overstock_risk_diagnosis",
+      question: "库龄/超储风险应该如何结合库存批次、仓库、Listing 和成本事件判断？",
+      recommendationTitle: "库龄/超储处置行动卡",
+      recommendationDetail: "复核批次库龄、FBA 仓储费、销量趋势和 Listing 状态，再选择调拨、清仓、促销或停售检查。",
+      impactSummary: "影响 storage_fee_rate、slow_moving_inventory_ratio、库存健康分和现金周转。",
+      actionOptions: ["复核批次库龄", "核对仓储费", "评估调拨/清仓", "联动 Listing 促销计划"]
+    }
+  ];
+}
+
+function getAipScenario(id) {
+  const definition = aipScenarioDefinitions().find((scenario) => scenario.id === id);
+  if (!definition) return null;
+  const object = getAipObjectDetail(definition.targetObjectId)?.object || null;
+  const pathObjects = definition.pathObjectIds
+    .map((objectId) => {
+      const row = get("SELECT * FROM object_instances WHERE id = ?", [objectId]);
+      return row ? rowToAipObject(row) : null;
+    })
+    .filter(Boolean);
+  const events = all(
+    `SELECT * FROM object_events
+     WHERE event_type IN (${definition.eventTypes.map(() => "?").join(",")})
+        OR object_id IN (${definition.pathObjectIds.map(() => "?").join(",")})
+     ORDER BY
+       CASE severity WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 ELSE 3 END,
+       occurred_at DESC
+     LIMIT 20`,
+    [...definition.eventTypes, ...definition.pathObjectIds]
+  ).map((row) => ({
+    ...row,
+    metric_refs: parseJsonValue(row.metric_refs, []),
+    evidence_refs: parseJsonValue(row.evidence_refs, [])
+  }));
+  const recommendations = getAipRecommendations(new URL(`http://local/api/aip/recommendations?scenarioType=${encodeURIComponent(definition.id)}&limit=20`));
+  const traces = getAipTraces(new URL(`http://local/api/aip/traces?q=${encodeURIComponent(definition.traceIntent)}&limit=20`));
+  return {
+    ...definition,
+    object,
+    pathObjects,
+    events,
+    recommendations,
+    traces,
+    healthScore: object ? object.health_score : 0,
+    boundary: {
+      mode: "scenario_trace_and_recommendation_only",
+      importAllowed: false,
+      providerCalls: false,
+      erpWriteback: false
+    }
+  };
+}
+
+function getAipScenarios() {
+  return aipScenarioDefinitions().map((definition) => getAipScenario(definition.id));
+}
+
+function runAipScenario(id, body = {}) {
+  const scenario = getAipScenario(id);
+  if (!scenario) return null;
+  const actor = normalizeText(body.createdBy || body.actor, "local_user");
+  const evidenceRefs = [
+    { type: "scenario", ref: scenario.id },
+    { type: "aip_object", ref: scenario.targetObjectId },
+    ...scenario.events.slice(0, 5).map((event) => ({ type: "object_event", ref: event.id })),
+    ...scenario.pathObjects.slice(0, 5).map((object) => ({ type: "aip_object", ref: object.id }))
+  ];
+  const traceDetail = createAipTrace({
+    question: normalizeText(body.question, scenario.question),
+    intent: scenario.traceIntent,
+    targetObjectId: scenario.targetObjectId,
+    targetObjectType: scenario.targetObjectType,
+    targetMetricId: scenario.targetMetricId,
+    answerability: scenario.answerability,
+    answerabilityScore: scenario.answerabilityScore,
+    evidenceRefs,
+    createdBy: actor,
+    steps: [
+      { stepType: "scenario_intake", stepTitle: "识别供应链场景", stepDetail: `${scenario.title} / ${scenario.ruleSummary}`, outputRefs: [{ type: "scenario", ref: scenario.id }] },
+      { stepType: "object_path_resolve", stepTitle: "解析对象路径", stepDetail: scenario.pathNarrative.join(" -> "), outputRefs: scenario.pathObjects.map((object) => ({ type: "aip_object", ref: object.id })) },
+      { stepType: "event_metric_bind", stepTitle: "绑定事件和指标", stepDetail: `${scenario.events.length} events / metric=${scenario.targetMetricId}`, outputRefs: scenario.events.map((event) => ({ type: "object_event", ref: event.id })) },
+      { stepType: "answerability_gate", stepTitle: "可回答性门控", stepDetail: `answerability=${scenario.answerability}; score=${scenario.answerabilityScore}` }
+    ]
+  });
+  const recommendationDetail = createAipRecommendation({
+    traceId: traceDetail.trace.id,
+    targetObjectId: scenario.targetObjectId,
+    targetObjectType: scenario.targetObjectType,
+    scenarioType: scenario.id,
+    recommendationTitle: scenario.recommendationTitle,
+    recommendationDetail: scenario.recommendationDetail,
+    impactSummary: scenario.impactSummary,
+    evidenceRefs,
+    actionOptions: scenario.actionOptions,
+    actionTier: "L1",
+    owner: scenario.object?.owner || scenario.owner,
+    priority: scenario.priority,
+    createdBy: actor
+  });
+  return {
+    scenario: getAipScenario(id),
+    trace: traceDetail.trace,
+    steps: traceDetail.steps,
+    recommendation: recommendationDetail.recommendation,
+    boundary: {
+      mode: "ledger_only_scenario_run",
+      providerCalls: false,
+      erpWriteback: false
+    }
+  };
+}
+
 function hashText(text) {
   return createHash("sha256").update(text).digest("hex");
 }
@@ -2254,6 +3394,375 @@ function getKbCard(id) {
     chunks: all("SELECT * FROM kb_chunks WHERE card_id = ? ORDER BY chunk_index", [id]),
     crosswalks: all("SELECT * FROM kb_crosswalks WHERE card_id = ? ORDER BY asset_type, asset_id", [id])
   };
+}
+
+function normalizeKnowledgeRuleText(card, body = {}) {
+  return [
+    body.ruleName,
+    body.rule_name,
+    body.conditionExpression,
+    body.condition_expression,
+    body.actionTemplate,
+    card?.title,
+    card?.summary,
+    card?.business_terms,
+    card?.related_assets,
+    card?.source_path
+  ].map((item) => {
+    if (item && typeof item === "object") return JSON.stringify(item);
+    return normalizeText(item);
+  }).filter(Boolean).join(" ").toLowerCase();
+}
+
+function inferKnowledgeRuleShape(card, body = {}) {
+  const text = normalizeKnowledgeRuleText(card, body);
+  const has = (terms) => terms.some((term) => text.includes(term));
+  let targetObjectType = normalizeText(body.targetObjectType || body.target_object_type);
+  let ruleType = normalizeText(body.ruleType || body.rule_type, "diagnostic");
+  let priority = normalizeText(body.priority);
+  let metricIds = Array.isArray(body.targetMetricIds || body.target_metric_ids)
+    ? body.targetMetricIds || body.target_metric_ids
+    : parseJsonValue(body.targetMetricIds || body.target_metric_ids, []);
+  let dimensionIds = Array.isArray(body.targetDimensionIds || body.target_dimension_ids)
+    ? body.targetDimensionIds || body.target_dimension_ids
+    : parseJsonValue(body.targetDimensionIds || body.target_dimension_ids, []);
+  let conditionExpression = normalizeText(body.conditionExpression || body.condition_expression);
+  let actionTemplate = body.actionTemplate || body.action_template || null;
+
+  if (!targetObjectType) {
+    if (has(["库龄", "超储", "批次", "可用库存", "负库存", "库存"])) targetObjectType = "inventory_batch";
+    else if (has(["货件", "物流", "eta", "运输", "发运"])) targetObjectType = "shipment";
+    else if (has(["采购", "po", "供应商", "交期"])) targetObjectType = has(["供应商"]) ? "supplier" : "po";
+    else if (has(["listing", "asin", "断货", "动销"])) targetObjectType = "sku";
+    else if (has(["成本", "仓储费", "费用"])) targetObjectType = "cost_event";
+    else targetObjectType = "sku";
+  }
+
+  if (!metricIds.length) {
+    if (has(["可用库存", "负库存", "计划库存"])) metricIds = ["business_available_qty", "platform_available_qty", "reserved_qty"];
+    else if (has(["断货", "缺货", "oos"])) metricIds = ["stockout_days", "sku_oos_rate", "stockout_loss_amount"];
+    else if (has(["库龄", "超储", "滞销"])) metricIds = ["slow_moving_inventory_ratio", "storage_fee_rate", "inventory_turnover_days"];
+    else if (has(["eta", "延迟", "物流"])) metricIds = ["eta_deviation_days", "inbound_on_time_rate"];
+    else if (has(["供应商", "采购", "po"])) metricIds = ["supplier_otif_rate", "po_on_time_delivery_rate"];
+    else metricIds = ["business_available_qty"];
+  }
+
+  if (!dimensionIds.length) {
+    const defaults = {
+      inventory_batch: ["dim_sku", "dim_warehouse", "dim_inventory_status", "dim_snapshot_date"],
+      shipment: ["dim_shipment", "dim_warehouse", "dim_eta_date", "dim_logistics_provider"],
+      po: ["dim_po", "dim_supplier", "dim_sku", "dim_purchase_date"],
+      supplier: ["dim_supplier", "dim_sku", "dim_purchase_date"],
+      sku: ["dim_sku", "dim_listing", "dim_channel", "dim_snapshot_date"],
+      cost_event: ["dim_sku", "dim_warehouse", "dim_cost_type", "dim_month"]
+    };
+    dimensionIds = defaults[targetObjectType] || ["dim_sku", "dim_snapshot_date"];
+  }
+
+  if (!conditionExpression) {
+    if (has(["负库存", "可用库存"])) conditionExpression = "business_available_qty < 0 OR platform_available_qty != business_available_qty";
+    else if (has(["断货", "缺货", "oos"])) conditionExpression = "available_days < safety_stock_days OR stockout_days > 0";
+    else if (has(["库龄", "超储", "滞销"])) conditionExpression = "storage_age_days > threshold_days AND recent_sales_qty < sales_threshold";
+    else if (has(["eta", "延迟", "物流"])) conditionExpression = "eta_deviation_days > 0 OR shipment_status IN ('delayed','exception')";
+    else if (has(["供应商", "采购", "po"])) conditionExpression = "po_due_date < current_date AND received_qty < ordered_qty";
+    else conditionExpression = "knowledge_rule_requires_owner_threshold";
+  }
+
+  if (!priority) priority = /critical|严重|负库存|断货|缺货|延迟|超储/.test(text) ? "P0" : "P1";
+  if (has(["阈值", "规则", "口径", "可回答", "拒答"])) ruleType = "semantic_guardrail";
+  if (has(["预警", "异常", "诊断", "负库存", "断货", "库龄", "延迟"])) ruleType = "diagnostic";
+
+  if (!actionTemplate || typeof actionTemplate !== "object") {
+    actionTemplate = {
+      recommendationTitle: `${card?.title || "知识规则"} - 治理建议`,
+      recommendationDetail: "基于知识库规则候选创建治理建议卡，需 Owner 复核阈值、对象绑定、指标口径和证据链。",
+      actionOptions: [
+        "复核对象主键与快照时间",
+        "核对指标口径、字段映射和异常阈值",
+        "形成建议卡后进入人工审批与复盘"
+      ]
+    };
+  }
+
+  return { targetObjectType, metricIds, dimensionIds, conditionExpression, actionTemplate, ruleType, priority };
+}
+
+function knowledgeRuleConflictKey(targetObjectType, conditionExpression, metricIds) {
+  const normalizedCondition = normalizeText(conditionExpression).toLowerCase().replace(/\s+/g, " ");
+  const normalizedMetrics = [...metricIds].sort().join(",");
+  return `${targetObjectType}:${normalizedMetrics}:${hashText(normalizedCondition).slice(0, 12)}`;
+}
+
+function getKnowledgeRuleConflicts(ruleId = "") {
+  const params = [];
+  const where = [];
+  if (ruleId) {
+    where.push("(c.rule_id = ? OR c.conflicting_rule_id = ?)");
+    params.push(ruleId, ruleId);
+  }
+  return all(
+    `SELECT
+       c.*,
+       r.rule_name AS rule_name,
+       peer.rule_name AS conflicting_rule_name
+     FROM knowledge_rule_conflicts c
+     LEFT JOIN knowledge_rules r ON r.id = c.rule_id
+     LEFT JOIN knowledge_rules peer ON peer.id = c.conflicting_rule_id
+     ${where.length ? `WHERE ${where.join(" AND ")}` : ""}
+     ORDER BY c.created_at DESC
+     LIMIT 200`,
+    params
+  );
+}
+
+function getKnowledgeRules(url) {
+  const clauses = [];
+  const params = [];
+  const status = url.searchParams.get("status");
+  const conflictStatus = url.searchParams.get("conflictStatus") || url.searchParams.get("conflict_status");
+  const targetObjectType = url.searchParams.get("targetObjectType") || url.searchParams.get("target_object_type");
+  const sourceCardId = url.searchParams.get("sourceCardId") || url.searchParams.get("source_card_id");
+  const q = url.searchParams.get("q");
+  if (status) {
+    clauses.push("kr.lifecycle_status = ?");
+    params.push(status);
+  }
+  if (conflictStatus) {
+    clauses.push("kr.conflict_status = ?");
+    params.push(conflictStatus);
+  }
+  if (targetObjectType) {
+    clauses.push("kr.target_object_type = ?");
+    params.push(targetObjectType);
+  }
+  if (sourceCardId) {
+    clauses.push("kr.source_card_id = ?");
+    params.push(sourceCardId);
+  }
+  if (q) {
+    clauses.push("(kr.rule_name LIKE ? OR kr.rule_code LIKE ? OR kr.condition_expression LIKE ? OR kr.evidence_refs LIKE ?)");
+    params.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`);
+  }
+  const where = clauses.length ? `WHERE ${clauses.join(" AND ")}` : "";
+  params.push(parseLimit(url, 80, 300));
+  return all(
+    `SELECT
+       kr.*,
+       c.title AS source_card_title,
+       d.name AS source_domain_name,
+       (SELECT COUNT(*) FROM knowledge_rule_conflicts rc WHERE (rc.rule_id = kr.id OR rc.conflicting_rule_id = kr.id) AND rc.status = 'open') AS open_conflict_count,
+       (SELECT COUNT(*) FROM recommendation_cards rec WHERE rec.scenario_type = 'knowledge_rule_trigger' AND rec.evidence_refs LIKE '%' || kr.id || '%') AS recommendation_count
+     FROM knowledge_rules kr
+     LEFT JOIN kb_cards c ON c.id = kr.source_card_id
+     LEFT JOIN kb_domains d ON d.id = kr.source_domain_id
+     ${where}
+     ORDER BY
+       CASE kr.priority WHEN 'P0' THEN 0 WHEN 'P1' THEN 1 WHEN 'P2' THEN 2 ELSE 3 END,
+       kr.updated_at DESC,
+       kr.rule_name
+     LIMIT ?`,
+    params
+  ).map(rowToKnowledgeRule);
+}
+
+function getKnowledgeRuleSummary() {
+  return {
+    total: tableCount("knowledge_rules"),
+    draft: scalar("SELECT COUNT(*) AS count FROM knowledge_rules WHERE lifecycle_status IN ('draft', 'review_pending')"),
+    certified: scalar("SELECT COUNT(*) AS count FROM knowledge_rules WHERE lifecycle_status = 'certified'"),
+    conflicts: scalar("SELECT COUNT(*) AS count FROM knowledge_rule_conflicts WHERE status = 'open'"),
+    byStatus: all("SELECT lifecycle_status, COUNT(*) AS count FROM knowledge_rules GROUP BY lifecycle_status ORDER BY count DESC"),
+    byTargetObject: all("SELECT target_object_type, COUNT(*) AS count FROM knowledge_rules GROUP BY target_object_type ORDER BY count DESC"),
+    byConflictStatus: all("SELECT conflict_status, COUNT(*) AS count FROM knowledge_rules GROUP BY conflict_status ORDER BY count DESC"),
+    boundary: {
+      mode: "local_rule_governance",
+      importAllowed: false,
+      providerCalls: false,
+      erpWriteback: false
+    }
+  };
+}
+
+function createKnowledgeRule(body) {
+  const sourceCardId = normalizeText(body.sourceCardId || body.source_card_id);
+  const card = sourceCardId ? getKbCard(sourceCardId) : null;
+  const ruleName = normalizeText(body.ruleName || body.rule_name, card?.title ? `${card.title} - 规则候选` : "");
+  if (!ruleName && !card) {
+    const error = new Error("Missing required fields: sourceCardId or ruleName");
+    error.statusCode = 400;
+    throw error;
+  }
+  const id = makeId("krule");
+  const actor = normalizeText(body.createdBy || body.created_by || body.actor, "local_user");
+  const shape = inferKnowledgeRuleShape(card, body);
+  const ruleCode = normalizeText(
+    body.ruleCode || body.rule_code,
+    `KR-${hashText(`${sourceCardId}:${ruleName}:${shape.conditionExpression}`).slice(0, 12).toUpperCase()}`
+  );
+  const conflictKey = knowledgeRuleConflictKey(shape.targetObjectType, shape.conditionExpression, shape.metricIds);
+  const conflicts = all(
+    `SELECT id, rule_name, lifecycle_status
+     FROM knowledge_rules
+     WHERE conflict_key = ?
+       AND lifecycle_status NOT IN ('rejected', 'deprecated')
+     ORDER BY updated_at DESC`,
+    [conflictKey]
+  );
+  const conflictStatus = conflicts.length ? "conflict" : normalizeText(body.conflictStatus || body.conflict_status, "clear");
+  const evidenceRefs = body.evidenceRefs || body.evidence_refs || [
+    { type: "kb_card", ref: sourceCardId || "", domainId: card?.domain_id || "" },
+    ...(card?.chunks || []).slice(0, 2).map((chunk) => ({ type: "kb_chunk", ref: chunk.id, index: chunk.chunk_index }))
+  ].filter((item) => item.ref);
+  const workflow = createWorkflowInstance({
+    workflowType: "knowledge_rule_review",
+    assetType: "knowledge_rule",
+    assetId: id,
+    title: `知识规则审核: ${ruleName.slice(0, 48)}`,
+    sourceRef: sourceCardId ? `kb_card:${sourceCardId}` : `knowledge_rule:${id}`,
+    moduleId: "ai-knowledge",
+    priority: shape.priority,
+    owner: normalizeText(body.owner, "knowledge_governance_owner"),
+    createdBy: actor,
+    steps: [
+      { key: "rule_intake", name: "知识规则接收", status: "completed", note: "Rule candidate created from local knowledge evidence." },
+      { key: "conflict_review", name: "冲突复核", status: conflicts.length ? "pending" : "completed", note: conflicts.length ? `${conflicts.length} possible conflict(s) detected.` : "No same-target condition conflict detected." },
+      { key: "binding_review", name: "对象/指标/维度绑定复核", status: "pending", note: "Check object, metric, dimension and threshold bindings." },
+      { key: "certification_decision", name: "认证发布决策", status: "pending", note: "Certified rules can guide ChatBI context and AIP recommendation cards." }
+    ]
+  });
+  const createdAt = nowIso();
+  run(
+    `INSERT INTO knowledge_rules
+      (id, source_card_id, source_domain_id, rule_code, rule_name, rule_type, target_object_type,
+       target_metric_ids, target_dimension_ids, condition_expression, action_template, evidence_refs,
+       conflict_key, conflict_status, owner, priority, lifecycle_status, workflow_id, reviewer,
+       review_note, created_by, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '', '', ?, ?, ?)`,
+    [
+      id,
+      sourceCardId,
+      normalizeText(body.sourceDomainId || body.source_domain_id, card?.domain_id || ""),
+      ruleCode,
+      ruleName || `${card?.title || "Knowledge"} - 规则候选`,
+      shape.ruleType,
+      shape.targetObjectType,
+      JSON.stringify(shape.metricIds),
+      JSON.stringify(shape.dimensionIds),
+      shape.conditionExpression,
+      JSON.stringify(shape.actionTemplate),
+      normalizeJsonText(evidenceRefs, []),
+      conflictKey,
+      conflictStatus,
+      normalizeText(body.owner, "knowledge_governance_owner"),
+      shape.priority,
+      normalizeText(body.status || body.lifecycle_status, "draft"),
+      workflow.id,
+      actor,
+      createdAt,
+      createdAt
+    ]
+  );
+  conflicts.forEach((conflict) => {
+    run(
+      `INSERT INTO knowledge_rule_conflicts
+        (id, rule_id, conflicting_rule_id, conflict_type, conflict_detail, status, created_at)
+       VALUES (?, ?, ?, 'same_target_condition', ?, 'open', ?)`,
+      [
+        makeId("krconf"),
+        id,
+        conflict.id,
+        `同一对象类型 ${shape.targetObjectType} 和条件表达式存在相似规则：${conflict.rule_name}`,
+        createdAt
+      ]
+    );
+  });
+  writeAudit("knowledge_rule.created", "knowledge_rule", id, { sourceCardId, ruleCode, conflictStatus, workflowId: workflow.id }, actor);
+  return {
+    rule: rowToKnowledgeRule(get("SELECT * FROM knowledge_rules WHERE id = ?", [id])),
+    conflicts: getKnowledgeRuleConflicts(id),
+    workflow
+  };
+}
+
+function reviewKnowledgeRule(id, body) {
+  const current = get("SELECT * FROM knowledge_rules WHERE id = ?", [id]);
+  if (!current) return null;
+  const status = normalizeText(body.status || body.lifecycleStatus || body.lifecycle_status, "reviewed");
+  const reviewer = normalizeText(body.reviewer || body.actor, "local_user");
+  const reviewNote = normalizeText(body.reviewNote || body.review_note, "Knowledge rule reviewed in local ledger.");
+  const conflictStatus = normalizeText(body.conflictStatus || body.conflict_status, status === "rejected" ? "rejected" : current.conflict_status);
+  const updatedAt = nowIso();
+  run(
+    "UPDATE knowledge_rules SET lifecycle_status = ?, conflict_status = ?, reviewer = ?, review_note = ?, updated_at = ? WHERE id = ?",
+    [status, conflictStatus, reviewer, reviewNote, updatedAt, id]
+  );
+  if (current.workflow_id) {
+    completeWorkflowStep(current.workflow_id, "conflict_review", conflictStatus === "conflict" ? "pending" : "completed", reviewer, reviewNote);
+    completeWorkflowStep(current.workflow_id, "binding_review", ["reviewed", "certified", "rejected"].includes(status) ? "completed" : "pending", reviewer, reviewNote);
+    completeWorkflowStep(current.workflow_id, "certification_decision", status === "certified" ? "approved" : status === "rejected" ? "rejected" : "pending", reviewer, reviewNote);
+    setWorkflowStatus(current.workflow_id, status === "certified" ? "approved" : status, reviewer, reviewNote);
+  }
+  if (status === "rejected") {
+    run("UPDATE knowledge_rule_conflicts SET status = 'closed' WHERE rule_id = ? OR conflicting_rule_id = ?", [id, id]);
+  }
+  writeAudit("knowledge_rule.reviewed", "knowledge_rule", id, { status, conflictStatus, reviewNote }, reviewer);
+  return {
+    rule: rowToKnowledgeRule(get("SELECT * FROM knowledge_rules WHERE id = ?", [id])),
+    conflicts: getKnowledgeRuleConflicts(id)
+  };
+}
+
+function defaultObjectForKnowledgeRule(rule) {
+  const preferred = {
+    inventory_batch: "obj_batch_fba_negative_available",
+    sku: "obj_sku_momcozy_pillow_core",
+    listing: "obj_listing_amz_us_pillow_core",
+    shipment: "obj_shipment_202606_us_eta",
+    warehouse: "obj_warehouse_fba_us_west",
+    supplier: "obj_supplier_primary_textile",
+    po: "obj_po_202606_pillow_core",
+    cost_event: "obj_cost_event_fba_storage",
+    forecast_version: "obj_forecast_v202606_pillow",
+    return_order: "obj_return_order_quality_watch"
+  };
+  const targetId = preferred[rule.target_object_type] || "";
+  return targetId ? rowToAipObject(get("SELECT * FROM object_instances WHERE id = ?", [targetId]) || {}) : null;
+}
+
+function runKnowledgeRule(id, body = {}) {
+  const rule = rowToKnowledgeRule(get("SELECT * FROM knowledge_rules WHERE id = ?", [id]));
+  if (!rule) return null;
+  const actor = normalizeText(body.actor || body.createdBy || body.created_by, "local_user");
+  const targetObjectId = normalizeText(body.targetObjectId || body.target_object_id, defaultObjectForKnowledgeRule(rule)?.id || "");
+  const targetObject = targetObjectId ? rowToAipObject(get("SELECT * FROM object_instances WHERE id = ?", [targetObjectId]) || {}) : defaultObjectForKnowledgeRule(rule);
+  const actionTemplate = rule.action_template || {};
+  const evidenceRefs = [
+    { type: "knowledge_rule", ref: rule.id, code: rule.rule_code },
+    ...rule.evidence_refs,
+    ...(targetObject?.id ? [{ type: "object", ref: targetObject.id, objectType: targetObject.object_type }] : [])
+  ];
+  const recommendation = createAipRecommendation({
+    recommendationTitle: normalizeText(actionTemplate.recommendationTitle, `${rule.rule_name} - 触发建议卡`),
+    recommendationDetail: normalizeText(
+      actionTemplate.recommendationDetail,
+      `规则条件：${rule.condition_expression}。请复核对象、指标口径、证据链和业务阈值后进入审批。`
+    ),
+    impactSummary: `由知识规则 ${rule.rule_code} 触发；目标对象 ${targetObject?.display_name || rule.target_object_type || "待绑定"}。`,
+    targetObjectType: targetObject?.object_type || rule.target_object_type,
+    targetObjectId: targetObject?.id || targetObjectId,
+    scenarioType: "knowledge_rule_trigger",
+    evidenceRefs,
+    actionOptions: Array.isArray(actionTemplate.actionOptions)
+      ? actionTemplate.actionOptions
+      : ["复核规则条件", "补齐字段血缘", "提交 Owner 审核"],
+    actionTier: "L1",
+    owner: normalizeText(body.owner, rule.owner || "knowledge_governance_owner"),
+    priority: normalizeText(body.priority, rule.priority || "P1"),
+    approvalStatus: "submitted",
+    createdBy: actor
+  });
+  writeAudit("knowledge_rule.triggered", "knowledge_rule", id, { recommendationId: recommendation.recommendation?.id, targetObjectId: targetObject?.id || targetObjectId }, actor);
+  return { rule, recommendation, targetObject };
 }
 
 function getKbQualitySummary(url = new URL("http://local/api/kb/quality-summary")) {
@@ -2869,6 +4378,64 @@ function getAiChatSession(id) {
   return { ...session, messages };
 }
 
+function renderAiEvidenceMarkdown(payload) {
+  const message = payload.message || {};
+  const session = payload.session || {};
+  const evidenceLines = payload.evidence.map((item, index) => (
+    `## Evidence ${index + 1}\n\n` +
+    `- source_id: ${item.source_id}\n` +
+    `- card_id: ${item.card_id || ""}\n` +
+    `- chunk_id: ${item.chunk_id || ""}\n` +
+    `- score: ${item.score || 0}\n` +
+    `- path: ${item.evidence_path || ""}\n\n` +
+    `${String(item.evidence_text || "").trim()}\n`
+  )).join("\n");
+  return `---\n` +
+    `title: AI Evidence Export\n` +
+    `message_id: ${message.id || ""}\n` +
+    `session_id: ${session.id || ""}\n` +
+    `exported_at: ${payload.exportedAt}\n` +
+    `provider_calls: false\n` +
+    `---\n\n` +
+    `# AI Evidence Export\n\n` +
+    `- Session: ${session.title || session.id || ""}\n` +
+    `- Answerability: ${message.answerability || ""}\n` +
+    `- Answerability score: ${message.answerability_score || 0}\n` +
+    `- Boundary: local evidence only; no provider call; no ERP writeback\n\n` +
+    `## Answer\n\n${message.content || ""}\n\n` +
+    `${evidenceLines || "No evidence rows captured."}\n`;
+}
+
+function exportAiEvidence(res, messageId, url) {
+  const message = get("SELECT * FROM ai_chat_messages WHERE id = ?", [messageId]);
+  if (!message) return json(res, { error: "AI chat message not found" }, 404);
+  const session = get("SELECT * FROM ai_chat_sessions WHERE id = ?", [message.session_id]) || {};
+  const evidence = all("SELECT * FROM ai_retrieval_evidence WHERE message_id = ? ORDER BY score DESC, created_at DESC", [messageId]);
+  const payload = {
+    exportedAt: nowIso(),
+    boundary: {
+      mode: "local_evidence_export",
+      providerCalls: false,
+      productionWrites: false,
+      erpWriteback: false,
+      certification: "evidence_package_only"
+    },
+    session,
+    message: {
+      ...message,
+      answerability_details: parseJsonValue(message.answerability_details, {}),
+      source_context: parseJsonValue(message.source_context, {})
+    },
+    evidence
+  };
+  const format = normalizeText(url.searchParams.get("format"), "json").toLowerCase();
+  const baseName = `ai-evidence-${safeExportName(messageId)}-${new Date().toISOString().slice(0, 10)}`;
+  if (format === "markdown" || format === "md") {
+    return sendDownload(res, renderAiEvidenceMarkdown(payload), "text/markdown; charset=utf-8", `${baseName}.md`);
+  }
+  return sendDownload(res, JSON.stringify(payload, null, 2), "application/json; charset=utf-8", `${baseName}.json`);
+}
+
 function scoreQuestionSamplePayload(body) {
   const question = normalizeText(body.questionText || body.question_text || body.question);
   const domainIds = normalizeDomainIds(body.domainIds || body.domain_ids);
@@ -3320,9 +4887,9 @@ function getWorkbenchModules() {
       focus: "按主题域组织三大供应链知识库，提供本地检索、证据片段和资产 crosswalk。",
       stage: "Serve",
       status: "draft",
-      score: Math.min(90, Math.max(20, getKnowledgeSummary().cards ? 72 : 20)),
+      score: Math.min(90, Math.max(20, getKnowledgeSummary().cards ? 72 + Math.min(8, tableCount("knowledge_rules")) : 20)),
       primaryMetric: `${getKnowledgeSummary().cards} cards`,
-      secondaryMetric: `${getKnowledgeSummary().domains} domains`,
+      secondaryMetric: `${getKnowledgeSummary().domains} domains / ${tableCount("knowledge_rules")} rules`,
       apiPath: "/api/workbench/ai-knowledge"
     },
     {
@@ -3353,6 +4920,63 @@ function getWorkbenchModules() {
 }
 
 function getWorkbenchModule(id) {
+  if (id === "knowledge-rules") {
+    const rules = getKnowledgeRules(new URL("http://local/api/knowledge-rules?limit=500"));
+    return {
+      id: "knowledge-rules",
+      code: "KR",
+      title: "Knowledge Rules",
+      focus: "导出知识库规则候选、冲突检测、对象/指标绑定和建议卡触发记录。",
+      stage: "Serve",
+      status: "draft",
+      score: rules.length ? 72 : 20,
+      apiPath: "/api/knowledge-rules",
+      payload: {
+        summary: getKnowledgeRuleSummary(),
+        rules,
+        conflicts: getKnowledgeRuleConflicts(),
+        boundary: {
+          mode: "local_rule_governance_export",
+          importAllowed: false,
+          providerCalls: false,
+          erpWriteback: false
+        }
+      }
+    };
+  }
+  if (id === "aip-recommendations") {
+    const recommendations = getAipRecommendations(new URL("http://local/api/aip/recommendations?limit=500"));
+    return {
+      id: "aip-recommendations",
+      code: "AIP-R",
+      title: "AIP Recommendation Cards",
+      focus: "只读导出 AIP 建议卡、状态流转、行动层级和摘要。",
+      stage: "Act",
+      status: "active",
+      score: recommendations.length ? 80 : 20,
+      apiPath: "/api/aip/recommendations",
+      payload: {
+        summary: {
+          recommendationBuckets: all("SELECT approval_status, COUNT(*) AS count FROM recommendation_cards GROUP BY approval_status ORDER BY count DESC"),
+          actionTierBuckets: all("SELECT action_tier, COUNT(*) AS count FROM recommendation_cards GROUP BY action_tier ORDER BY action_tier"),
+          ownerBuckets: all("SELECT owner, COUNT(*) AS count FROM recommendation_cards GROUP BY owner ORDER BY count DESC LIMIT 30")
+        },
+        recommendations,
+        transitions: all("SELECT * FROM recommendation_transitions ORDER BY created_at DESC LIMIT 1000").map((row) => ({
+          ...row,
+          evidence_refs: parseJsonValue(row.evidence_refs, [])
+        })),
+        policyTiers: all("SELECT * FROM action_policy_tiers ORDER BY tier_code"),
+        boundary: {
+          mode: "read_only_export",
+          importAllowed: false,
+          productionWrites: false,
+          providerCalls: false,
+          erpWriteback: false
+        }
+      }
+    };
+  }
   const meta = getWorkbenchModules().find((module) => module.id === id);
   if (!meta) return null;
   const operationsForModule = () => getWorkbenchOperations(new URL(`http://local/api/workbench/operations?moduleId=${encodeURIComponent(id)}&limit=80`));
@@ -3376,7 +5000,13 @@ function getWorkbenchModule(id) {
       operations: operationsForModule()
     }),
     chatbi: () => ({ summary: getChatbiSummary(), contexts: getChatbiContext(), operations: operationsForModule() }),
-    "ai-knowledge": () => ({ domains: getKbDomains(), cards: getKbCards(new URL("http://local/api/kb/cards?limit=40")), operations: operationsForModule() }),
+    "ai-knowledge": () => ({
+      domains: getKbDomains(),
+      cards: getKbCards(new URL("http://local/api/kb/cards?limit=40")),
+      ruleSummary: getKnowledgeRuleSummary(),
+      rules: getKnowledgeRules(new URL("http://local/api/knowledge-rules?limit=40")),
+      operations: operationsForModule()
+    }),
     "ai-chat": () => ({ sessions: getAiChatSessions(new URL("http://local/api/ai-chat/sessions?limit=20")), summary: getAiChatSummary(), operations: operationsForModule() }),
     "decision-loop": () => ({
       decisions: all("SELECT * FROM decision_logs ORDER BY status, id"),
@@ -3536,7 +5166,8 @@ function getDeployHealth() {
       workflowInstances: tableCount("workflow_instances"),
       ledger: getLedgerSummary(),
       knowledgeBase: getKnowledgeSummary(),
-      aiChat: getAiChatSummary()
+      aiChat: getAiChatSummary(),
+      aipPhase1: getAipPhase1Summary()
     },
     boundary: {
       productionWrites: false,
@@ -3544,6 +5175,38 @@ function getDeployHealth() {
       erpWriteback: false,
       chatbiPolicy: "certified_metric_only"
     }
+  };
+}
+
+function getAipPhase1Summary() {
+  const tables = [
+    "object_instances",
+    "object_identity_links",
+    "object_events",
+    "agent_execution_traces",
+    "agent_trace_steps",
+    "recommendation_cards",
+    "recommendation_transitions",
+    "action_policy_tiers"
+  ];
+  const counts = Object.fromEntries(tables.map((table) => [table, tableExists(table) ? tableCount(table) : 0]));
+  const presentTables = tables.filter((table) => tableExists(table));
+  return {
+    schemaReady: presentTables.length === tables.length,
+    presentTables,
+    missingTables: tables.filter((table) => !tableExists(table)),
+    objectInstances: counts.object_instances,
+    identityLinks: counts.object_identity_links,
+    objectEvents: counts.object_events,
+    traces: counts.agent_execution_traces,
+    traceSteps: counts.agent_trace_steps,
+    recommendations: counts.recommendation_cards,
+    recommendationTransitions: counts.recommendation_transitions,
+    actionPolicyTiers: counts.action_policy_tiers,
+    actionTierPolicy: "L0-L2 only until explicit approval",
+    writeBackPolicy: "suggestion_approval_replay_only",
+    providerCalls: false,
+    erpWriteback: false
   };
 }
 
@@ -3990,8 +5653,16 @@ function getChatbiSummary() {
     certified: scalar("SELECT COUNT(*) AS count FROM chatbi_contexts WHERE answer_policy = 'certified_metric_only' AND status = 'certified'"),
     draft: scalar("SELECT COUNT(*) AS count FROM chatbi_contexts WHERE status IN ('draft', 'review_pending', 'reviewed')"),
     rejected: scalar("SELECT COUNT(*) AS count FROM chatbi_contexts WHERE status = 'rejected'"),
+    averageAnswerabilityScore: scalar("SELECT ROUND(AVG(answerability_score), 0) AS count FROM chatbi_contexts WHERE answerability_score > 0"),
+    weakContexts: scalar("SELECT COUNT(*) AS count FROM chatbi_contexts WHERE answerability IN ('insufficient', 'refused') OR answerability_score < 55"),
     byStatus: all("SELECT status, COUNT(*) AS count FROM chatbi_contexts GROUP BY status ORDER BY count DESC"),
     byPolicy: all("SELECT answer_policy, status, COUNT(*) AS count FROM chatbi_contexts GROUP BY answer_policy, status ORDER BY answer_policy, status"),
+    answerabilityBuckets: all("SELECT COALESCE(NULLIF(answerability, ''), 'unknown') AS answerability, COUNT(*) AS count FROM chatbi_contexts GROUP BY COALESCE(NULLIF(answerability, ''), 'unknown') ORDER BY count DESC"),
+    answerabilityPolicy: {
+      certifiedAnswerPolicy: "certified_metric_only",
+      localEvidenceSamplePolicy: "local_kb_evidence_sample",
+      refusalRule: "missing certified metric/context/evidence returns governed refusal instead of free NL2SQL"
+    },
     pending: all("SELECT id, metric_id, question_sample, answerability, answerability_score, evidence_count, status, workflow_id FROM chatbi_contexts WHERE status IN ('draft', 'review_pending', 'reviewed') ORDER BY updated_at DESC, created_at DESC LIMIT 12")
   };
 }
@@ -4137,6 +5808,24 @@ const server = createServer(async (req, res) => {
         const body = await readBody(req);
         return json(res, { ok: true, summary: reindexKnowledgeBase(body.actor || "local_user") }, 201);
       }
+      if (req.method === "GET" && url.pathname === "/api/knowledge-rules/summary") return json(res, getKnowledgeRuleSummary());
+      if (req.method === "GET" && url.pathname === "/api/knowledge-rules") return json(res, getKnowledgeRules(url));
+      if (req.method === "POST" && url.pathname === "/api/knowledge-rules") {
+        const body = await readBody(req);
+        return json(res, { ok: true, ...createKnowledgeRule(body) }, 201);
+      }
+      const knowledgeRuleReview = url.pathname.match(/^\/api\/knowledge-rules\/([^/]+)\/review$/);
+      if (req.method === "POST" && knowledgeRuleReview) {
+        const body = await readBody(req);
+        const result = reviewKnowledgeRule(knowledgeRuleReview[1], body);
+        return result ? json(res, { ok: true, ...result }) : json(res, { error: "Knowledge rule not found" }, 404);
+      }
+      const knowledgeRuleRun = url.pathname.match(/^\/api\/knowledge-rules\/([^/]+)\/run$/);
+      if (req.method === "POST" && knowledgeRuleRun) {
+        const body = await readBody(req);
+        const result = runKnowledgeRule(knowledgeRuleRun[1], body);
+        return result ? json(res, { ok: true, ...result }, 201) : json(res, { error: "Knowledge rule not found" }, 404);
+      }
       if (req.method === "GET" && url.pathname === "/api/ai-chat/summary") return json(res, getAiChatSummary());
       if (req.method === "GET" && url.pathname === "/api/ai-chat/governance-summary") return json(res, getAiGovernanceSummary());
       if (req.method === "GET" && url.pathname === "/api/ai-chat/sessions") return json(res, getAiChatSessions(url));
@@ -4156,6 +5845,8 @@ const server = createServer(async (req, res) => {
         const body = await readBody(req);
         return json(res, { ok: true, feedback: createAiFeedback(body) }, 201);
       }
+      const aiEvidenceExportRoute = url.pathname.match(/^\/api\/ai-chat\/messages\/([^/]+)\/evidence-export$/);
+      if (req.method === "GET" && aiEvidenceExportRoute) return exportAiEvidence(res, aiEvidenceExportRoute[1], url);
       const feedbackRoute = url.pathname.match(/^\/api\/ai-chat\/feedback\/([^/]+)\/review$/);
       if (req.method === "POST" && feedbackRoute) {
         const body = await readBody(req);
@@ -4170,6 +5861,62 @@ const server = createServer(async (req, res) => {
       if (req.method === "POST" && url.pathname === "/api/ai-chat/local") {
         const body = await readBody(req);
         return json(res, { ok: true, result: runLocalAiChat(body) }, 201);
+      }
+      if (req.method === "GET" && url.pathname === "/api/aip/summary") return json(res, getAipSummary());
+      if (req.method === "GET" && url.pathname === "/api/aip/scenarios") return json(res, getAipScenarios());
+      const aipScenarioRunRoute = url.pathname.match(/^\/api\/aip\/scenarios\/([^/]+)\/run$/);
+      if (req.method === "POST" && aipScenarioRunRoute) {
+        const body = await readBody(req);
+        const result = runAipScenario(aipScenarioRunRoute[1], body);
+        return result ? json(res, { ok: true, ...result }, 201) : json(res, { error: "AIP scenario not found" }, 404);
+      }
+      const aipScenarioRoute = url.pathname.match(/^\/api\/aip\/scenarios\/([^/]+)$/);
+      if (req.method === "GET" && aipScenarioRoute) {
+        const scenario = getAipScenario(aipScenarioRoute[1]);
+        return scenario ? json(res, scenario) : json(res, { error: "AIP scenario not found" }, 404);
+      }
+      if (req.method === "GET" && url.pathname === "/api/aip/objects") return json(res, getAipObjects(url));
+      const aipObjectEventsRoute = url.pathname.match(/^\/api\/aip\/objects\/([^/]+)\/events$/);
+      if (req.method === "GET" && aipObjectEventsRoute) return json(res, getAipObjectEvents(aipObjectEventsRoute[1], url));
+      const aipObjectRoute = url.pathname.match(/^\/api\/aip\/objects\/([^/]+)$/);
+      if (req.method === "GET" && aipObjectRoute) {
+        const object = getAipObjectDetail(aipObjectRoute[1]);
+        return object ? json(res, object) : json(res, { error: "AIP object not found" }, 404);
+      }
+      if (req.method === "GET" && url.pathname === "/api/aip/traces") return json(res, getAipTraces(url));
+      if (req.method === "POST" && url.pathname === "/api/aip/traces") {
+        const body = await readBody(req);
+        return json(res, { ok: true, ...createAipTrace(body) }, 201);
+      }
+      const aipTraceRoute = url.pathname.match(/^\/api\/aip\/traces\/([^/]+)$/);
+      if (req.method === "GET" && aipTraceRoute) {
+        const trace = getAipTraceDetail(aipTraceRoute[1]);
+        return trace ? json(res, trace) : json(res, { error: "AIP trace not found" }, 404);
+      }
+      if (req.method === "GET" && url.pathname === "/api/aip/recommendations") return json(res, getAipRecommendations(url));
+      if (req.method === "POST" && url.pathname === "/api/aip/recommendations") {
+        const body = await readBody(req);
+        return json(res, { ok: true, ...createAipRecommendation(body) }, 201);
+      }
+      const aipRecommendationTransitionRoute = url.pathname.match(/^\/api\/aip\/recommendations\/([^/]+)\/transition$/);
+      if (req.method === "POST" && aipRecommendationTransitionRoute) {
+        const body = await readBody(req);
+        const recommendation = transitionAipRecommendation(aipRecommendationTransitionRoute[1], body);
+        return recommendation ? json(res, { ok: true, ...recommendation }) : json(res, { error: "AIP recommendation not found" }, 404);
+      }
+      const aipRecommendationReviewRoute = url.pathname.match(/^\/api\/aip\/recommendations\/([^/]+)\/review$/);
+      if (req.method === "POST" && aipRecommendationReviewRoute) {
+        const body = await readBody(req);
+        const recommendation = transitionAipRecommendation(aipRecommendationReviewRoute[1], {
+          ...body,
+          status: body.status || "approved"
+        });
+        return recommendation ? json(res, { ok: true, ...recommendation }) : json(res, { error: "AIP recommendation not found" }, 404);
+      }
+      const aipRecommendationRoute = url.pathname.match(/^\/api\/aip\/recommendations\/([^/]+)$/);
+      if (req.method === "GET" && aipRecommendationRoute) {
+        const recommendation = getAipRecommendationDetail(aipRecommendationRoute[1]);
+        return recommendation ? json(res, recommendation) : json(res, { error: "AIP recommendation not found" }, 404);
       }
       if (req.method === "GET" && url.pathname === "/api/workbench/modules") return json(res, getWorkbenchModules());
       if (req.method === "GET" && url.pathname === "/api/workbench/operations") return json(res, getWorkbenchOperations(url));

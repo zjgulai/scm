@@ -3735,9 +3735,10 @@ function KpiTreePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
   const [canvasRefresh, setCanvasRefresh] = useState(0);
   const [selectedDomain, setSelectedDomain] = useState("");
   const [scope, setScope] = useState<"core" | "all">("core");
-  const [viewMode, setViewMode] = useState<"mindmap" | "object-graph">("mindmap");
+  const [viewMode, setViewMode] = useState<"mindmap" | "object-graph">("object-graph");
   const [kpiSearch, setKpiSearch] = useState("");
   const [zoom, setZoom] = useState(1);
+  const [canvasFullscreen, setCanvasFullscreen] = useState(false);
   const [selectedNodeId, setSelectedNodeId] = useState("");
   const [draftPositions, setDraftPositions] = useState<Record<string, { x: number; y: number }>>({});
   const suppressNextClickRef = useRef(false);
@@ -3830,6 +3831,13 @@ function KpiTreePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
     });
   }, [canvas.data, selectedDomain, scope, parentMap, nodeById]);
   const visibleNodeIds = useMemo(() => new Set(visibleNodes.map((node) => String(node.id))), [visibleNodes]);
+  const levelCounts = useMemo(() => {
+    return canvas.data.reduce<Record<string, number>>((acc, node) => {
+      const level = String(node.level || "unknown");
+      acc[level] = (acc[level] || 0) + 1;
+      return acc;
+    }, {});
+  }, [canvas.data]);
   const canvasEdges = useMemo(() => {
     return visibleNodes
       .map((node) => {
@@ -3986,6 +3994,7 @@ function KpiTreePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
           <button onClick={() => setZoom((value) => Math.max(0.7, Number((value - 0.1).toFixed(1))))}>-</button>
           <button onClick={() => setZoom(1)}>{Math.round(zoom * 100)}%</button>
           <button onClick={() => setZoom((value) => Math.min(1.4, Number((value + 0.1).toFixed(1))))}>+</button>
+          <button className="kpiFullscreenButton" onClick={() => setCanvasFullscreen(true)}>最大化预览</button>
           <select value={selectedDomain} onChange={(event) => setSelectedDomain(event.target.value)}>
             <option value="">全部 L1 域</option>
             {domains.map((domain) => <option key={domain} value={domain}>{domain}</option>)}
@@ -3993,7 +4002,43 @@ function KpiTreePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
           <input value={kpiSearch} onChange={(event) => setKpiSearch(event.target.value)} placeholder="搜索指标 / 编码" />
         </div>
       </div>
-      <div className="kpiWorkbench">
+      {tree.error ? <div className="error">{tree.error}</div> : null}
+      {canvas.error ? <div className="error">{canvas.error}</div> : null}
+      <div className="kpiCanvasStatusGrid" aria-label="KPI canvas data status">
+        <article>
+          <span>画布节点</span>
+          <strong>{canvas.data.length}</strong>
+          <small>{visibleNodes.length} visible / {canvasEdges.length} links</small>
+        </article>
+        <article>
+          <span>L0-L3 分布</span>
+          <strong>{["L0", "L1", "L2", "L3"].map((level) => `${level}:${levelCounts[level] || 0}`).join(" / ")}</strong>
+          <small>来自 `/api/kpi-canvas/nodes`</small>
+        </article>
+        <article>
+          <span>指标树</span>
+          <strong>{flat.length}</strong>
+          <small>来自 `/api/kpi-tree`</small>
+        </article>
+        <article>
+          <span>当前视图</span>
+          <strong>{viewMode === "object-graph" ? "Palantir 对象图谱" : "思维导图"}</strong>
+          <small>{scope === "core" ? "L0-L2" : "L0-L3"} / {selectedDomain || "全部 L1 域"}</small>
+        </article>
+      </div>
+      <div className={`kpiPreviewShell ${canvasFullscreen ? "fullscreen" : ""}`} role={canvasFullscreen ? "dialog" : undefined} aria-modal={canvasFullscreen ? "true" : undefined} aria-label="指标体系画布预览">
+        <div className="kpiPreviewTopbar">
+          <div>
+            <p className="eyebrow">Canvas preview</p>
+            <h3>{viewMode === "object-graph" ? "Palantir 对象图谱" : "指标思维导图"}</h3>
+          </div>
+          <div className="badgeCluster">
+            <Badge tone="blue">{visibleNodes.length} nodes</Badge>
+            <Badge>{canvasEdges.length} links</Badge>
+            {canvasFullscreen ? <button className="textButton" onClick={() => setCanvasFullscreen(false)}>退出最大化</button> : null}
+          </div>
+        </div>
+        <div className="kpiWorkbench">
         <div className="kpiMainCanvas">
           {viewMode === "mindmap" ? (
             <div className="kpiMindMapPanel">
@@ -4056,6 +4101,7 @@ function KpiTreePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
                       <em>{Number(node.collapsed || 0) ? "collapsed" : "expanded"}</em>
                     </div>
                   ))}
+                  {!visibleNodes.length ? <div className="empty compact kpiCanvasEmpty">没有匹配的指标节点，请调整域、层级或搜索条件。</div> : null}
                 </div>
               </div>
             </div>
@@ -4083,6 +4129,7 @@ function KpiTreePanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpen
             <p className="muted">点击任一指标节点后，可在这里查看层级、上级/下级、状态，并进入注解、评论和修订建议。</p>
           )}
         </aside>
+        </div>
       </div>
       <div className="canvasHint">
         <span>{visibleNodes.length} nodes visible / {canvas.data.length} total / {canvasEdges.length} links</span>
@@ -6036,8 +6083,19 @@ function roleWorkbenchAsset(role: RoleWorkbench): AssetRef {
   };
 }
 
+const roleDetailSections = [
+  { id: "command", label: "角色总览", helper: "使命、筛选、对象/事件/推荐队列" },
+  { id: "actions", label: "行动草稿", helper: "单项行动、批量行动、Owner 审核入口" },
+  { id: "provider", label: "Provider 治理", helper: "模型策略、Prompt、Blocked audit" },
+  { id: "platform", label: "平台就绪度", helper: "RBAC、Postgres、Write-back 评估" },
+  { id: "evidence", label: "证据与指标", helper: "Playbook、Eval、角色指标映射" }
+] as const;
+
+type RoleDetailSectionId = typeof roleDetailSections[number]["id"];
+
 function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset: (asset: AssetRef) => void }) {
   const [selectedRoleId, setSelectedRoleId] = useState("role_inventory");
+  const [activeRoleSection, setActiveRoleSection] = useState<RoleDetailSectionId>("command");
   const [selectedRoleTargetIds, setSelectedRoleTargetIds] = useState<string[]>([]);
   const [refresh, setRefresh] = useState(0);
   const [actionNote, setActionNote] = useState("");
@@ -6136,6 +6194,7 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
 
   async function createActionDraft(mode: "single" | "bulk" = "single") {
     if (!activeRole.id) return;
+    setActiveRoleSection("actions");
     setDrafting(true);
     setActionNote("");
     try {
@@ -6176,6 +6235,7 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
   async function recordProviderBlockedDryRun() {
     const prompt = detail.data.promptVersions[0];
     const evaluation = detail.data.evalCases[0];
+    setActiveRoleSection("provider");
     setProviderDryRun(true);
     setProviderAuditNote("");
     try {
@@ -6250,7 +6310,7 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
               </button>
             ))}
           </aside>
-          <div className="roleWorkbenchMain">
+          <div className={`roleWorkbenchMain roleSection-${activeRoleSection}`}>
             <div className="roleMissionPanel">
               <div>
                 <p className="eyebrow">Role mission</p>
@@ -6267,6 +6327,22 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
             <div className="roleObjectChips">
               {activeRole.primary_object_types.map((item) => <span key={item}>{item}</span>)}
               {activeRole.metric_refs.map((item) => <span key={item} className="metricChip">{item}</span>)}
+            </div>
+            <div className="roleSectionNav" role="tablist" aria-label="角色工作台二级分区">
+              {roleDetailSections.map((section, index) => (
+                <button
+                  key={section.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeRoleSection === section.id}
+                  className={activeRoleSection === section.id ? "active" : ""}
+                  onClick={() => setActiveRoleSection(section.id)}
+                >
+                  <span>{String(index + 1).padStart(2, "0")}</span>
+                  <strong>{section.label}</strong>
+                  <small>{section.helper}</small>
+                </button>
+              ))}
             </div>
             <div className="roleDomainPanel">
               <div className="surfaceHead">

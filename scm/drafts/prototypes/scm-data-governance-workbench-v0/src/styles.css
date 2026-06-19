@@ -4600,6 +4600,111 @@ tbody tr:hover td {
   border-color: rgba(33, 79, 128, 0.16);
 }
 
+.roleSectionNav {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+  gap: 10px;
+  min-width: 0;
+}
+
+.roleSectionNav button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 4px 10px;
+  align-items: start;
+  min-width: 0;
+  min-height: 84px;
+  padding: 12px;
+  border: 1px solid rgba(29, 29, 31, 0.08);
+  border-radius: 8px;
+  color: var(--ink-2);
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  box-shadow: var(--shadow-soft);
+}
+
+.roleSectionNav button:hover,
+.roleSectionNav button.active {
+  border-color: rgba(0, 113, 227, 0.22);
+  background: var(--blue-soft);
+}
+
+.roleSectionNav span {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  color: var(--blue);
+  background: #fff;
+  font-size: 12px;
+  font-weight: 760;
+  grid-row: 1 / span 2;
+}
+
+.roleSectionNav strong,
+.roleSectionNav small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.roleSectionNav strong {
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.35;
+}
+
+.roleSectionNav small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.roleWorkbenchMain > .roleDomainPanel,
+.roleWorkbenchMain > .roleFilterPanel,
+.roleWorkbenchMain > .roleSlaShiftGrid,
+.roleWorkbenchMain > .roleQueueGrid,
+.roleWorkbenchMain > .roleActionPanel,
+.roleWorkbenchMain > .roleBatchActionPanel,
+.roleWorkbenchMain > .roleSupportingGrid,
+.roleWorkbenchMain > .kbNotice {
+  display: none;
+}
+
+.roleWorkbenchMain.roleSection-command > .roleDomainPanel,
+.roleWorkbenchMain.roleSection-command > .roleFilterPanel,
+.roleWorkbenchMain.roleSection-command > .roleSlaShiftGrid,
+.roleWorkbenchMain.roleSection-command > .roleQueueGrid,
+.roleWorkbenchMain.roleSection-actions > .roleActionPanel,
+.roleWorkbenchMain.roleSection-actions > .roleBatchActionPanel,
+.roleWorkbenchMain.roleSection-actions > .kbNotice,
+.roleWorkbenchMain.roleSection-provider > .roleSupportingGrid,
+.roleWorkbenchMain.roleSection-platform > .roleSupportingGrid,
+.roleWorkbenchMain.roleSection-evidence > .roleSupportingGrid {
+  display: grid;
+}
+
+.roleWorkbenchMain.roleSection-provider .roleSupportingGrid > section,
+.roleWorkbenchMain.roleSection-platform .roleSupportingGrid > section,
+.roleWorkbenchMain.roleSection-evidence .roleSupportingGrid > section {
+  display: none;
+}
+
+.roleWorkbenchMain.roleSection-provider .roleSupportingGrid > .providerPolicyPanel,
+.roleWorkbenchMain.roleSection-platform .roleSupportingGrid > .platformReadinessPanel,
+.roleWorkbenchMain.roleSection-evidence .roleSupportingGrid > .rolePlaybookPanel,
+.roleWorkbenchMain.roleSection-evidence .roleSupportingGrid > .evalCasePanel,
+.roleWorkbenchMain.roleSection-evidence .roleSupportingGrid > .roleMetricsPanel {
+  display: grid;
+}
+
+.roleWorkbenchMain.roleSection-provider .roleSupportingGrid,
+.roleWorkbenchMain.roleSection-platform .roleSupportingGrid,
+.roleWorkbenchMain.roleSection-evidence .roleSupportingGrid {
+  grid-template-columns: 1fr;
+}
+
 .roleDomainPanel {
   display: grid;
   gap: 14px;
@@ -6851,4 +6956,119 @@ nav button strong,
 
 .roleBatchSelector small {
   -webkit-line-clamp: 2;
+}
+
+.kpiCanvasStatusGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.kpiCanvasStatusGrid article {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 13px;
+  border: 1px solid rgba(29, 29, 31, 0.08);
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: var(--shadow-soft);
+}
+
+.kpiCanvasStatusGrid span,
+.kpiCanvasStatusGrid small {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.kpiCanvasStatusGrid strong {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1.28;
+  overflow-wrap: anywhere;
+}
+
+.kpiPreviewShell {
+  min-width: 0;
+}
+
+.kpiPreviewTopbar {
+  display: none;
+}
+
+.kpiPreviewShell.fullscreen {
+  position: fixed;
+  inset: 18px;
+  z-index: 1000;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid rgba(29, 29, 31, 0.12);
+  border-radius: 12px;
+  background: rgba(250, 251, 253, 0.98);
+  box-shadow: 0 28px 70px rgba(20, 32, 46, 0.28);
+}
+
+.kpiPreviewShell.fullscreen .kpiPreviewTopbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  min-width: 0;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(29, 29, 31, 0.08);
+}
+
+.kpiPreviewShell.fullscreen .kpiPreviewTopbar h3 {
+  margin: 0;
+}
+
+.kpiPreviewShell.fullscreen .kpiWorkbench {
+  min-height: 0;
+  height: 100%;
+}
+
+.kpiPreviewShell.fullscreen .kpiCanvasWrap,
+.kpiPreviewShell.fullscreen .kpiMindMapPanel {
+  max-height: none;
+  height: calc(100vh - 178px);
+}
+
+.kpiPreviewShell.fullscreen .kpiInspector {
+  top: 0;
+  max-height: calc(100vh - 178px);
+  overflow: auto;
+}
+
+.kpiFullscreenButton {
+  border-color: rgba(0, 113, 227, 0.24) !important;
+  color: var(--blue) !important;
+  background: #fff !important;
+}
+
+.kpiCanvasEmpty {
+  position: absolute;
+  left: 24px;
+  top: 24px;
+  width: min(420px, calc(100% - 48px));
+}
+
+@media (max-width: 900px) {
+  .kpiPreviewShell.fullscreen {
+    inset: 8px;
+    padding: 12px;
+  }
+
+  .kpiPreviewShell.fullscreen .kpiWorkbench {
+    grid-template-columns: 1fr;
+  }
+
+  .kpiPreviewShell.fullscreen .kpiCanvasWrap,
+  .kpiPreviewShell.fullscreen .kpiMindMapPanel {
+    height: calc(100vh - 260px);
+  }
 }

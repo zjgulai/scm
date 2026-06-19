@@ -15,7 +15,10 @@ if ! command -v "$BROWSER_HARNESS_BIN" >/dev/null 2>&1; then
 fi
 
 "$BROWSER_HARNESS_BIN" <<'PY'
+import json
 import os
+import urllib.request
+from urllib.parse import urljoin
 from time import sleep
 
 base_url = os.environ["BASE_URL"]
@@ -55,6 +58,31 @@ expected = [
     "决策闭环工作台",
     "审计日志工作台",
 ]
+
+def api_url(path):
+    return urljoin(base_url if base_url.endswith("/") else f"{base_url}/", path.lstrip("/"))
+
+def payload_count(payload):
+    if isinstance(payload, list):
+        return len(payload)
+    if isinstance(payload, dict):
+        for key in ["items", "rows", "cards", "contexts", "data", "modules", "roles", "nodes", "objects"]:
+            value = payload.get(key)
+            if isinstance(value, list):
+                return len(value)
+        return 1 if payload else 0
+    return 1 if payload else 0
+
+def fetch_api(path):
+    url = api_url(path)
+    with urllib.request.urlopen(url, timeout=20) as response:
+        raw = response.read().decode("utf-8")
+        payload = json.loads(raw)
+        return {
+            "path": path,
+            "status": response.status,
+            "count": payload_count(payload),
+        }
 
 new_tab(base_url)
 wait_for_load()
@@ -99,6 +127,23 @@ if positions != sorted(positions):
 results = []
 feature_checks = []
 layout_reports = []
+api_connectivity = [
+    {**fetch_api("/api/workbench/modules"), "label": "workbenchModules", "minCount": 15},
+    {**fetch_api("/api/governance/overview"), "label": "governanceOverview", "minCount": 1},
+    {**fetch_api("/api/kpi-tree"), "label": "kpiTree", "minCount": 1},
+    {**fetch_api("/api/kpi-canvas/nodes?limit=1000"), "label": "kpiCanvasNodes", "minCount": 20},
+    {**fetch_api("/api/roles/workbenches"), "label": "roleWorkbenches", "minCount": 5},
+    {**fetch_api("/api/roles/workbenches/role_inventory"), "label": "roleInventoryDetail", "minCount": 1},
+    {**fetch_api("/api/kb/cards?limit=10"), "label": "knowledgeCards", "minCount": 1},
+    {**fetch_api("/api/chatbi/answerability-scorecard"), "label": "chatbiAnswerabilityScorecard", "minCount": 1},
+]
+api_failures = [
+    item for item in api_connectivity
+    if item["status"] != 200 or item["count"] < item["minCount"]
+]
+if api_failures:
+    raise SystemExit(f"API connectivity check failed: {api_failures}")
+feature_checks.append({"apiConnectivity": api_connectivity})
 for label in expected:
     clicked = js(f"""
     (() => {{
@@ -280,25 +325,78 @@ for label in expected:
         for _ in range(30):
             kpi_ready = js("""
             (() => ({
-              mindNodes: document.querySelectorAll('.kpiMindMapPanel .mindNode').length,
+              graphNodes: document.querySelectorAll('.kpiCanvas .kpiNode').length,
+              statusCards: document.querySelectorAll('.kpiCanvasStatusGrid article').length,
               inspector: !!document.querySelector('.kpiInspector')
             }))()
             """)
-            if kpi_ready["mindNodes"] >= 1 and kpi_ready["inspector"]:
+            if kpi_ready["graphNodes"] >= 8 and kpi_ready["statusCards"] >= 4 and kpi_ready["inspector"]:
                 break
             sleep(0.25)
         kpi = js("""
         (() => ({
           mindmapButton: !!Array.from(document.querySelectorAll('.canvasControls button')).find((button) => button.textContent.includes('思维导图')),
           objectGraphButton: !!Array.from(document.querySelectorAll('.canvasControls button')).find((button) => button.textContent.includes('Palantir')),
-          mindNodes: document.querySelectorAll('.kpiMindMapPanel .mindNode').length,
+          graphNodes: document.querySelectorAll('.kpiCanvas .kpiNode').length,
+          statusCards: document.querySelectorAll('.kpiCanvasStatusGrid article').length,
+          fullscreenButton: !!document.querySelector('.kpiFullscreenButton'),
           inspector: !!document.querySelector('.kpiInspector'),
           exports: document.querySelectorAll('.exportActions a').length,
           flow: !!document.querySelector('.workbenchFlowStrip')
         }))()
         """)
-        if not kpi["mindmapButton"] or not kpi["objectGraphButton"] or kpi["mindNodes"] < 1 or not kpi["inspector"] or kpi["exports"] < 2 or not kpi["flow"]:
+        if not kpi["mindmapButton"] or not kpi["objectGraphButton"] or kpi["graphNodes"] < 8 or kpi["statusCards"] < 4 or not kpi["fullscreenButton"] or not kpi["inspector"] or kpi["exports"] < 2 or not kpi["flow"]:
           raise SystemExit(f"KPI canvas feature check failed: {kpi}")
+        fullscreen_open = js("""
+        (() => {
+          const button = document.querySelector('.kpiFullscreenButton');
+          if (!button) return { ok: false };
+          button.click();
+          return { ok: true };
+        })()
+        """)
+        sleep(0.15)
+        fullscreen_state = js("""
+        (() => ({
+          opened: !!document.querySelector('.kpiPreviewShell.fullscreen'),
+          graphNodes: document.querySelectorAll('.kpiPreviewShell.fullscreen .kpiNode').length,
+          closeButton: !!Array.from(document.querySelectorAll('.kpiPreviewShell.fullscreen button')).find((button) => button.textContent.includes('退出最大化'))
+        }))()
+        """)
+        if not fullscreen_open["ok"] or not fullscreen_state["opened"] or fullscreen_state["graphNodes"] < 8 or not fullscreen_state["closeButton"]:
+          raise SystemExit(f"KPI fullscreen check failed: open={fullscreen_open}; state={fullscreen_state}")
+        fullscreen_close = js("""
+        (() => {
+          const button = Array.from(document.querySelectorAll('.kpiPreviewShell.fullscreen button')).find((el) => el.textContent.includes('退出最大化'));
+          if (!button) return { ok: false };
+          button.click();
+          return { ok: true };
+        })()
+        """)
+        sleep(0.15)
+        fullscreen_closed = js("(() => ({ opened: !!document.querySelector('.kpiPreviewShell.fullscreen') }))()")
+        if not fullscreen_close["ok"] or fullscreen_closed["opened"]:
+          raise SystemExit(f"KPI fullscreen close failed: close={fullscreen_close}; state={fullscreen_closed}")
+        mindmap_open = js("""
+        (() => {
+          const button = Array.from(document.querySelectorAll('.canvasControls button')).find((el) => el.textContent.includes('思维导图'));
+          if (!button) return { ok: false };
+          button.click();
+          return { ok: true };
+        })()
+        """)
+        sleep(0.2)
+        mindmap_state = js("(() => ({ mindNodes: document.querySelectorAll('.kpiMindMapPanel .mindNode').length }))()")
+        if not mindmap_open["ok"] or mindmap_state["mindNodes"] < 1:
+          raise SystemExit(f"KPI mindmap check failed: open={mindmap_open}; state={mindmap_state}")
+        js("""
+        (() => {
+          const button = Array.from(document.querySelectorAll('.canvasControls button')).find((el) => el.textContent.includes('Palantir'));
+          if (button) button.click();
+          return true;
+        })()
+        """)
+        kpi["mindNodesAfterSwitch"] = mindmap_state["mindNodes"]
         feature_checks.append({"kpiDualCanvas": kpi})
     if label == "对象本体工作台":
         ontology = js("""
@@ -359,6 +457,8 @@ for label in expected:
           roleWorkbench: !!document.querySelector('.roleWorkbench'),
           summaryCards: document.querySelectorAll('.roleSummaryGrid > article').length,
           roleButtons: document.querySelectorAll('.roleRail button').length,
+          roleSectionNav: !!document.querySelector('.roleSectionNav'),
+          roleSectionTabs: document.querySelectorAll('.roleSectionNav button').length,
           roleDomainPanel: !!document.querySelector('.roleDomainPanel'),
           roleDomainCards: document.querySelectorAll('.roleDomainGrid > article').length,
           roleWorkstreams: document.querySelectorAll('.roleWorkstreamGrid > article').length,
@@ -389,13 +489,15 @@ for label in expected:
           exports: document.querySelectorAll('.exportActions a').length,
           flow: !!document.querySelector('.workbenchFlowStrip'),
           providerOffText: document.body.innerText.includes('provider off') || document.body.innerText.includes('default off'),
-          platformBoundaryText: document.body.innerText.includes('login off') && document.body.innerText.includes('writeback disabled')
+          platformBoundaryText: (document.querySelector('.platformReadinessPanel')?.textContent || '').includes('login off') && (document.querySelector('.platformReadinessPanel')?.textContent || '').includes('writeback disabled')
         }))()
         """)
         if (
             not role["roleWorkbench"]
             or role["summaryCards"] < 4
             or role["roleButtons"] < 5
+            or not role["roleSectionNav"]
+            or role["roleSectionTabs"] < 5
             or not role["roleDomainPanel"]
             or role["roleDomainCards"] < 3
             or role["roleWorkstreams"] < 4
@@ -429,6 +531,59 @@ for label in expected:
             or not role["platformBoundaryText"]
         ):
           raise SystemExit(f"Role workbench feature check failed: {role}")
+        role_section_specs = [
+            {"label": "角色总览", "className": "roleSection-command", "selectors": [".roleDomainPanel", ".roleQueueGrid"]},
+            {"label": "行动草稿", "className": "roleSection-actions", "selectors": [".roleActionPanel", ".roleBatchActionPanel"]},
+            {"label": "Provider 治理", "className": "roleSection-provider", "selectors": [".providerPolicyPanel"]},
+            {"label": "平台就绪度", "className": "roleSection-platform", "selectors": [".platformReadinessPanel"]},
+            {"label": "证据与指标", "className": "roleSection-evidence", "selectors": [".rolePlaybookPanel", ".evalCasePanel", ".roleMetricsPanel"]},
+        ]
+        role_section_states = []
+        for section in role_section_specs:
+            clicked = js(f"""
+            (() => {{
+              const label = {json.dumps(section["label"], ensure_ascii=False)};
+              const button = Array.from(document.querySelectorAll('.roleSectionNav button')).find((el) => el.textContent.includes(label));
+              if (!button) return {{ clicked: false }};
+              button.click();
+              return {{ clicked: true }};
+            }})()
+            """)
+            sleep(0.2)
+            selectors = json.dumps(section["selectors"], ensure_ascii=False)
+            section_state = js(f"""
+            (() => {{
+              const visible = (selector) => {{
+                const node = document.querySelector(selector);
+                if (!node) return false;
+                const style = getComputedStyle(node);
+                return style.display !== 'none' && style.visibility !== 'hidden' && node.getClientRects().length > 0;
+              }};
+              const main = document.querySelector('.roleWorkbenchMain');
+              const selectors = {selectors};
+              return {{
+                label: {json.dumps(section["label"], ensure_ascii=False)},
+                classOk: main?.classList.contains({json.dumps(section["className"], ensure_ascii=False)}) || false,
+                visibleOk: selectors.every(visible),
+                currentClass: main?.className || ''
+              }};
+            }})()
+            """)
+            role_section_states.append({**clicked, **section_state})
+        js("""
+        (() => {
+          const first = Array.from(document.querySelectorAll('.roleSectionNav button')).find((el) => el.textContent.includes('角色总览'));
+          if (first) first.click();
+          return true;
+        })()
+        """)
+        role_sections = {
+            "tabCount": js("(() => document.querySelectorAll('.roleSectionNav button').length)()"),
+            "states": role_section_states,
+        }
+        if role_sections["tabCount"] < 5 or any((not item["clicked"] or not item["classOk"] or not item["visibleOk"]) for item in role_sections["states"]):
+          raise SystemExit(f"Role section navigation check failed: {role_sections}")
+        role["sectionNavigation"] = role_sections
         feature_checks.append({"roleWorkbench": role})
     if label == "决策闭环工作台":
         for _ in range(30):

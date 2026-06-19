@@ -23,10 +23,10 @@ source: human+ai
 ## 当前发布快照
 
 - 线上地址：`https://scm.lute-tlz-dddd.top/`
-- 当前部署追溯 SHA：`75494ae`，分支 `codex/scm-ledger-workbench`
-- 当前 P2 release：`/opt/scm-governance-workbench/releases/scm-workbench-p2-ai-75494ae-20260619133036`
-- 当前 P2 部署备份：`/opt/scm-governance-workbench/backups/20260619133036-before-p2-ai/governance_workbench.sqlite`
-- 当前 P2 release 来自远端仓库 `zjgulai/scm` 的 `codex/scm-ledger-workbench` 分支 `75494ae` 提交。
+- 当前部署追溯 SHA：`09fbf24`，分支 `codex/scm-ledger-workbench`
+- 当前 P0 UI/workflow release：`/opt/scm-governance-workbench/releases/scm-workbench-p0-ui-09fbf24-20260619141831`
+- 当前 P0 UI/workflow 部署备份：`/opt/scm-governance-workbench/backups/20260619141831-before-p0-ui/governance_workbench.sqlite`
+- 当前 P0 UI/workflow release 来自远端仓库 `zjgulai/scm` 的 `codex/scm-ledger-workbench` 分支 `09fbf24` 提交。
 - 容器名：`scm-governance-workbench`
 - 内部端口：`127.0.0.1:5174`
 - 模块数量：13 个工作台模块
@@ -35,16 +35,16 @@ source: human+ai
 13 个模块为：
 
 1. 治理链路总览
-2. 对象本体工作台
-3. 标签工程工作台
-4. 维度工程工作台
-5. 指标工程工作台
-6. 指标字典工作台
-7. 指标体系编排台
-8. 血缘与质量工作台
-9. ChatBI 语义治理台
-10. AI 知识库
-11. AI 对话
+2. AI 对话
+3. 对象本体工作台
+4. 标签工程工作台
+5. 维度工程工作台
+6. 指标工程工作台
+7. 指标字典工作台
+8. 指标体系编排台
+9. 血缘与质量工作台
+10. ChatBI 语义治理台
+11. AI 知识库
 12. 决策闭环工作台
 13. 审计日志工作台
 
@@ -144,6 +144,8 @@ server {
 - P2 AI 知识库治理只读 API 检查通过：`/api/kb/quality-summary` 返回 `sources=295`、`cards=295`、`chunks=945`、`crosswalks=1918`、`average_quality_score=82`、`stale_findings=22`、`uncrosswalked=22`；`/api/kb/crosswalk-matrix` 返回 `mapped_metrics=88`、`total_l3_metrics=139`、`metric_coverage_rate=0.6331`；`/api/deploy/health` 仍返回 `productionWrites=false`、`providerCalls=false`、`erpWriteback=false`。
 - P2 AI 问法样本与反馈闭环 release 公开站点强校验通过：`REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser` 返回 13 个模块导航通过，并确认 `.aiGovernanceGrid > article = 3`、`.questionSampleLibrary=true`、`.aiFeedbackQueue=true`。
 - P2 AI 问法样本与反馈闭环只读 API 检查通过：`/api/ai-chat/governance-summary` 返回 `questionSamples.total=0`、`feedback.total=0`、`providerCalls=false`、`writeBackPolicy=semantic_governance_ledger_only`；`/api/deploy/health` 显示 `questionSamples=0`、`feedback=0`、`openFeedback=0`，且仍为 `productionWrites=false`、`providerCalls=false`、`erpWriteback=false`。
+- P0 UI/workflow release 公开站点强校验通过：`REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser` 返回 13 个模块导航通过，并确认 `AI 对话` 位于 `治理链路总览` 后方；总览页 `.cockpitSearch=true`、模块入口 `6`、资产盘点项 `4`、任务中心存在、工作流条存在、导出入口 `2`；指标体系页存在 `思维导图`、`Palantir 对象图谱`、`.kpiInspector=true`、导出入口 `2`。
+- P0 UI/workflow 只读 API 检查通过：`/api/workbench/modules` 返回 `13`，前四个模块为 `overview -> ai-chat -> ontology -> tags`；`/api/export/overview?format=json` 返回 `200` 和 `attachment; filename="overview-2026-06-19.json"`；`/api/export/kpi-system?format=excel` 返回 `200`、`application/vnd.ms-excel` 和 `kpi-system-2026-06-19.xls`；`/api/deploy/health` 仍返回 `productionWrites=false`、`providerCalls=false`、`erpWriteback=false`。
 
 P0 验收命令：
 

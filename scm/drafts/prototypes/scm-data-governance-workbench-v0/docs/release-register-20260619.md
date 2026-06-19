@@ -15,7 +15,7 @@ This register is the release source of truth for the AIP-SCM data workbench prot
 
 ## 2. Current Verified Snapshot
 
-Verified at: `2026-06-19T22:50:20+0800`
+Verified at: `2026-06-19T23:06:39+0800`
 
 | Field | Value | Evidence |
 |---|---|---|
@@ -26,8 +26,8 @@ Verified at: `2026-06-19T22:50:20+0800`
 | Static build | `true` | live `/api/deploy/health` |
 | Live DB path | `/app/data/governance_workbench.sqlite` | live `/api/deploy/health` |
 | Live DB persistence | Docker external named volume `scm_governance_workbench_scm-governance-data` mounted at `/app/data` | `docker inspect scm-governance-workbench --format '{{range .Mounts}}...'` |
-| Deployment release id | `scm-workbench-pagination-layout-49b93dc-20260619224832` | live `/api/deploy/health` |
-| Deployment git SHA | `49b93dc` | live `/api/deploy/health` |
+| Deployment release id | `scm-workbench-role-kpi-4fce5f7-20260619230433` | live `/api/deploy/health` |
+| Deployment git SHA | `4fce5f7` | live `/api/deploy/health` |
 | Ontology objects | `14` | live `/api/deploy/health` |
 | Metrics | `178` | live `/api/deploy/health` |
 | Lineage edges | `278` | live `/api/deploy/health` |
@@ -38,6 +38,7 @@ Verified at: `2026-06-19T22:50:20+0800`
 | AIP objects/events/traces/recommendations | `10 / 4 / 1 / 1` | live `/api/deploy/health` |
 | Provider gateway policies/decision records/prompt versions/call audits | `2 / 2 / 3 / 1` | live `/api/deploy/health` |
 | Provider gateway boundary | `providerCalls=false`, `erpWriteback=false`, `preferredProvider=deepseek` | live `/api/provider-gateway/summary` |
+| Role workbench refinement | `5` role workbenches; five secondary sections verified: role overview, action drafts, provider governance, platform readiness, evidence/metrics | public Browser Harness `roleWorkbench.sectionNavigation` |
 | Knowledge rules | `0` | live `/api/knowledge-rules/summary`; UI/API ready, no certified rule assets yet |
 | Production writes | `false` | live `/api/deploy/health` |
 | Provider calls | `false` | live `/api/deploy/health` |
@@ -48,21 +49,22 @@ Verified at: `2026-06-19T22:50:20+0800`
 | Professional SaaS layout refinement | Module header, workflow contract strip, transparent page container, section surfaces, calmer borders, table/control rhythm | commit `b10c384`; live Browser Harness layout checks |
 | Readability layout refinement | Scenario board full-row layout, adaptive card grid, readable KPI/stat minimum widths, non-vertical signal labels | commit `70a09b6`; live Browser Harness `overviewScenarioReadability` |
 | Pagination layout governance | DataTable global row index, reusable pagination, knowledge cards 6/page, audit timeline 10/page, workflow board 6/page, module contracts 4/page, role batch pool 4/page | commit `49b93dc`; live Browser Harness `layoutReports` and `kbPaginationLayout` |
-| Public Browser Harness | Passed 15-module navigation, professional border check, scenario readability check, AIP scenario check, ChatBI scorecard DOM, AI evidence registry empty state, KB pagination layout check, layout reports, and 1350/1024/768/390 responsive checks | `REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser` |
-| Active deployed commit | `49b93dc` | live `/api/deploy/health` and release package |
-| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-pagination-layout-49b93dc-20260619224832` | SSH deploy output |
-| Active deployment backups | pre-deploy SQLite snapshot under `/opt/scm-governance-workbench/backups/*-before-scm-workbench-pagination-layout-49b93dc-20260619224832.sqlite` | pre `docker cp` SQLite snapshot |
+| Role/KPI canvas refinement | Role secondary sections, KPI object graph default, canvas status cards, fullscreen preview, and API connectivity checks | commit `4fce5f7`; public Browser Harness `apiConnectivity`, `kpiDualCanvas`, `roleWorkbench.sectionNavigation` |
+| Public Browser Harness | Passed 15-module navigation, API connectivity, professional border check, scenario readability check, AIP scenario check, ChatBI scorecard DOM, AI evidence registry empty state, KB pagination layout check, KPI fullscreen/mind-map/object-graph checks, role five-section checks, layout reports, and 1350/1024/768/390 responsive checks | `REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_WORKBENCH_URL=https://scm.lute-tlz-dddd.top/ npm run smoke:browser` |
+| Active deployed commit | `4fce5f7` | live `/api/deploy/health` and release package |
+| Active release directory | `/opt/scm-governance-workbench/releases/scm-workbench-role-kpi-4fce5f7-20260619230433` | SSH deploy output |
+| Active deployment backups | `/opt/scm-governance-workbench/backups/20260619230509-before-scm-workbench-role-kpi-4fce5f7-20260619230433.sqlite` | pre `docker cp` SQLite snapshot |
 
 ## 3. Local Workspace Snapshot
 
-Verified at: `2026-06-19T22:50:20+0800`
+Verified at: `2026-06-19T23:06:39+0800`
 
 | Field | Value |
 |---|---|
 | Git root | `/Users/pray/project/ecom_ana_overview` |
 | Working subdirectory | `/Users/pray/project/ecom_ana_overview/scm` |
 | Branch | `codex/scm-ledger-workbench` |
-| Local application HEAD | `49b93dc` before this release-register update |
+| Local application HEAD | `4fce5f7` before this release-register update |
 | Parent remote | `origin=https://github.com/zjgulai/data_analysis_expert.git` |
 | Scoped SCM remote | `scm=https://github.com/zjgulai/scm.git` |
 | Prototype path | `drafts/prototypes/scm-data-governance-workbench-v0` |

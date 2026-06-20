@@ -1249,6 +1249,37 @@ textarea {
   line-height: 1;
 }
 
+.auditExportBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 0;
+  margin: -2px 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.auditExportBar > div:first-child {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.auditExportBar strong,
+.auditExportBar span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.auditExportBar span {
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
 .chatbiAnswerabilityPanel {
   display: grid;
   grid-template-columns: minmax(220px, 0.8fr) minmax(0, 1.2fr);
@@ -2774,8 +2805,13 @@ textarea {
 }
 
 .inlineAssetButton {
+  display: block;
   justify-self: start;
+  max-width: 100%;
+  overflow: hidden;
   text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .objectTimelineColumns {
@@ -2811,6 +2847,53 @@ textarea {
 
 .objectTimelineColumns small {
   color: var(--muted);
+}
+
+.objectUnifiedTimeline {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid rgba(0, 94, 184, 0.14);
+  border-radius: 8px;
+  background: linear-gradient(180deg, #fff, #f8fbff);
+  min-width: 0;
+}
+
+.objectUnifiedTimelineList {
+  display: grid;
+  gap: 8px;
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.objectUnifiedTimelineList button {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto minmax(110px, auto);
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.objectUnifiedTimelineList strong,
+.objectUnifiedTimelineList small,
+.objectUnifiedTimelineList time {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  line-height: 1.35;
+}
+
+.objectUnifiedTimelineList small,
+.objectUnifiedTimelineList time {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 .ontologySelector {
@@ -3850,6 +3933,43 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+.decisionMappingPanel {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.decisionMappingList {
+  display: grid;
+  gap: 8px;
+}
+
+.decisionMappingList article {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  gap: 10px;
+  align-items: center;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel-soft);
+}
+
+.decisionMappingList strong,
+.decisionMappingList small,
+.decisionMappingList span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.decisionMappingList small,
+.decisionMappingList span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .recommendationMetaGrid {
   display: grid;
   gap: 7px;
@@ -4451,6 +4571,8 @@ tbody tr:hover td {
 
 .textButton {
   justify-self: start;
+  min-width: 0;
+  max-width: 100%;
   min-height: 30px;
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -4460,6 +4582,8 @@ tbody tr:hover td {
   cursor: pointer;
   font-size: 12px;
   font-weight: 760;
+  overflow-wrap: anywhere;
+  white-space: normal;
 }
 
 .textButton:hover {
@@ -6394,7 +6518,6 @@ nav button strong,
 .statusPill,
 .metricChip,
 .scenarioPath span,
-.textButton,
 .exportActions a,
 .cockpitSearchActions button,
 .scenarioActions button,
@@ -6581,6 +6704,16 @@ nav button strong,
   .aiGovernanceGrid,
   .moduleContractStats {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .auditExportBar,
+  .objectUnifiedTimelineList button,
+  .decisionMappingList article {
+    grid-template-columns: 1fr;
+  }
+
+  .auditExportBar {
+    display: grid;
   }
 }
 

@@ -647,6 +647,20 @@ type AipRecommendation = {
   updated_at: string;
 };
 
+type AipTimelineItem = {
+  id: string;
+  item_type: string;
+  title: string;
+  detail: string;
+  status: string;
+  severity: string;
+  actor: string;
+  occurred_at: string;
+  asset_type: string;
+  asset_id: string;
+  source_ref: string;
+};
+
 type AipObjectDetail = {
   object: AipObject;
   ontology: AnyRow | null;
@@ -659,6 +673,7 @@ type AipObjectDetail = {
   recommendations: AipRecommendation[];
   events: AipEvent[];
   traces: AipTrace[];
+  timeline: AipTimelineItem[];
   boundary: AnyRow;
 };
 
@@ -3228,6 +3243,7 @@ function Object360Panel({ onOpenAsset }: { onOpenAsset: (asset: AssetRef) => voi
     recommendations: [],
     events: [],
     traces: [],
+    timeline: [],
     boundary: {}
   });
   const selectedObject = detail.data.object;
@@ -3424,7 +3440,30 @@ function Object360Panel({ onOpenAsset }: { onOpenAsset: (asset: AssetRef) => voi
           <div className="objectEventTimeline objectEventTimelineGrid">
             <div className="surfaceHead">
               <h3>事件 / Trace / 建议卡</h3>
-              <Badge tone="blue">{detail.data.events.length + detail.data.traces.length + detail.data.recommendations.length}</Badge>
+              <Badge tone="blue">{detail.data.timeline.length || detail.data.events.length + detail.data.traces.length + detail.data.recommendations.length}</Badge>
+            </div>
+            <div className="objectUnifiedTimeline">
+              <div className="sectionLabel">
+                <span>Unified timeline</span>
+                <strong>对象合并时间线</strong>
+              </div>
+              <div className="objectUnifiedTimelineList">
+                {detail.data.timeline.slice(0, 10).map((item, index) => (
+                  <button
+                    key={`${item.item_type}-${item.id}-${index}`}
+                    onClick={() => onOpenAsset(makeAsset(item.asset_type || item.item_type, item as unknown as AnyRow, ["title", "id"], ["item_type", "status", "actor"], true))}
+                  >
+                    <span className="inlineIndex">#{index + 1}</span>
+                    <div>
+                      <strong>{item.title}</strong>
+                      <small>{item.item_type} / {item.status} / {item.actor || "--"}</small>
+                    </div>
+                    <Badge tone={toneFromStatus(item.status || item.severity)}>{item.severity || item.status}</Badge>
+                    <time>{item.occurred_at}</time>
+                  </button>
+                ))}
+                {!detail.data.timeline.length ? <div className="empty compact">暂无合并时间线。</div> : null}
+              </div>
             </div>
             <div className="objectTimelineColumns">
               <div>
@@ -6959,6 +6998,7 @@ function DecisionPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
   });
   const actions = useApi<AnyRow[]>(`/api/decision/action-tasks?limit=100&refresh=${refresh}`, []);
   const decisions = useApi<AnyRow[]>(`/api/decision/logs?refresh=${refresh}`, []);
+  const recommendations = useApi<AipRecommendation[]>(`/api/aip/recommendations?limit=100&refresh=${refresh}`, []);
   const summary = useApi<DecisionSummary>(`/api/decision/summary?refresh=${refresh}`, {
     decisions: { total: 0, byStatus: [] },
     actions: { total: 0, byStatus: [], byOwner: [] },
@@ -6994,8 +7034,15 @@ function DecisionPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
   const decisionSections = [
     { id: "recommendations", label: "建议队列", helper: "AIP 建议卡、审批状态、行动分层", badge: summary.data.actions.total },
     { id: "action", label: "创建 Action", helper: "洞察引用、Owner、审批复盘", badge: summary.data.stateOrder.length },
-    { id: "ledger", label: "台账复盘", helper: "洞察记录与 Action 执行轨迹", badge: decisions.data.length + actions.data.length }
+    { id: "ledger", label: "台账复盘", helper: "洞察记录、建议卡映射与 Action 执行轨迹", badge: decisions.data.length + actions.data.length + recommendations.data.length }
   ];
+  const recommendationMappings = recommendations.data.slice(0, 10).map((recommendation) => {
+    const linkedActions = actions.data.filter((action) => {
+      const insightRef = String(action.insight_ref || "");
+      return [recommendation.id, recommendation.workflow_id, recommendation.trace_id].filter(Boolean).includes(insightRef);
+    });
+    return { recommendation, linkedActions };
+  });
 
   return (
     <section className="panel">
@@ -7043,6 +7090,11 @@ function DecisionPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
             洞察引用
             <select value={form.insightRef} onChange={(event) => setForm({ ...form, insightRef: event.target.value })}>
               <option value="manual">manual</option>
+              <optgroup label="AIP 建议卡">
+                {recommendations.data.slice(0, 12).map((recommendation) => (
+                  <option key={recommendation.id} value={recommendation.id}>{recommendation.recommendation_title}</option>
+                ))}
+              </optgroup>
               {decisions.data.map((decision) => <option key={String(decision.id)} value={String(decision.id)}>{cellValue(decision.insight_title)}</option>)}
             </select>
           </label>
@@ -7063,6 +7115,28 @@ function DecisionPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
       </form>
       </div>
       <div className={sectionPaneClass(activeDecisionSection, "ledger")}>
+      <div className="surface decisionMappingPanel">
+        <div className="surfaceHead">
+          <div>
+            <h3>建议卡 / Action 映射</h3>
+            <p className="muted">用 recommendation id、trace id 或 workflow id 串联建议卡与治理 Action；未匹配表示仍停留在建议或审批层。</p>
+          </div>
+          <Badge tone="blue">{recommendationMappings.length} mappings</Badge>
+        </div>
+        <div className="decisionMappingList">
+          {recommendationMappings.length ? recommendationMappings.map(({ recommendation, linkedActions }) => (
+            <article key={recommendation.id}>
+              <div>
+                <strong>{recommendation.recommendation_title}</strong>
+                <small>{recommendation.id} / workflow {recommendation.workflow_id || "--"}</small>
+              </div>
+              <Badge tone={toneFromStatus(recommendation.approval_status)}>{recommendation.approval_status}</Badge>
+              <span>{linkedActions.length ? `${linkedActions.length} linked actions` : "待转 Action"}</span>
+              <button className="textButton" onClick={() => onOpenAsset(aipRecommendationAsset(recommendation))}>打开建议卡</button>
+            </article>
+          )) : <div className="empty compact">暂无建议卡映射。</div>}
+        </div>
+      </div>
       <div className="split">
         <div className="surface">
           <div className="surfaceHead">
@@ -7127,6 +7201,13 @@ function AuditLogPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
   });
   const events = useApi<AuditEvent[]>(`/api/audit-events?${query}`, []);
   const eventPager = usePagination<AuditEvent>(events.data, 10);
+  const auditExportParams = new URLSearchParams({ limit: "500" });
+  if (filters.eventType) auditExportParams.set("eventType", filters.eventType);
+  if (filters.assetType) auditExportParams.set("assetType", filters.assetType);
+  if (filters.assetId) auditExportParams.set("assetId", filters.assetId);
+  if (filters.actor) auditExportParams.set("actor", filters.actor);
+  if (filters.q) auditExportParams.set("q", filters.q);
+  const auditExportQuery = auditExportParams.toString();
 
   useEffect(() => {
     eventPager.setPage(1);
@@ -7175,6 +7256,16 @@ function AuditLogPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
           <span>操作者</span>
           <strong>{summary.data.byActor.length}</strong>
           <small>{summary.data.byActor.slice(0, 3).map((item) => `${item.actor}:${item.count}`).join(" / ") || "no actors"}</small>
+        </div>
+      </div>
+      <div className="auditExportBar">
+        <div>
+          <strong>审计导出</strong>
+          <span>按当前筛选导出 append-only 事件，不删除、不覆盖审计账本。</span>
+        </div>
+        <div className="exportActions auditExportActions" aria-label="audit export actions">
+          <a href={`/api/export/audit-log?format=json&${auditExportQuery}`} className="textButton" target="_blank" rel="noreferrer">导出 JSON</a>
+          <a href={`/api/export/audit-log?format=excel&${auditExportQuery}`} className="textButton" target="_blank" rel="noreferrer">导出 Excel</a>
         </div>
       </div>
       <WorkbenchSectionNav

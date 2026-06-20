@@ -810,6 +810,18 @@ assert(Array.isArray(aipTrace.steps) && aipTrace.steps.length >= 4, "AIP trace s
 
 const aipTraceDetail = await request(`/api/aip/traces/${aipTrace.trace.id}`);
 assert(aipTraceDetail.trace?.target_object_id === "obj_batch_fba_negative_available", "AIP trace detail target object mismatch", aipTraceDetail);
+const traceStepAudits = await request(`/api/audit-events?eventType=agent_trace.step_created&q=${encodeURIComponent(aipTrace.trace.id)}&limit=20`);
+assert(
+  Array.isArray(traceStepAudits) && traceStepAudits.length >= aipTrace.steps.length,
+  "AIP trace step audit events missing",
+  traceStepAudits
+);
+const aipObjectDetailAfterTrace = await request("/api/aip/objects/obj_batch_fba_negative_available");
+assert(
+  Array.isArray(aipObjectDetailAfterTrace.timeline) && aipObjectDetailAfterTrace.timeline.some((item) => item.id === aipTrace.trace.id && item.item_type === "agent_trace"),
+  "AIP object unified timeline missing trace",
+  aipObjectDetailAfterTrace.timeline
+);
 
 const aipRecommendation = await request("/api/aip/recommendations", {
   method: "POST",
@@ -834,6 +846,12 @@ const aipRecommendation = await request("/api/aip/recommendations", {
 assert(aipRecommendation.recommendation?.id, "AIP recommendation was not created", aipRecommendation);
 assert(aipRecommendation.recommendation?.workflow_id, "AIP recommendation workflow was not created", aipRecommendation);
 assert(aipRecommendation.recommendation?.approval_status === "submitted", "AIP recommendation default status changed", aipRecommendation);
+const aipObjectDetailAfterRecommendation = await request("/api/aip/objects/obj_batch_fba_negative_available");
+assert(
+  Array.isArray(aipObjectDetailAfterRecommendation.timeline) && aipObjectDetailAfterRecommendation.timeline.some((item) => item.id === aipRecommendation.recommendation.id && item.item_type === "recommendation_card"),
+  "AIP object unified timeline missing recommendation card",
+  aipObjectDetailAfterRecommendation.timeline
+);
 
 const reviewedRecommendation = await request(`/api/aip/recommendations/${aipRecommendation.recommendation.id}/review`, {
   method: "POST",
@@ -1109,6 +1127,25 @@ assert(Array.isArray(auditEvents) && auditEvents.length > 0, "audit events not r
 
 const auditSummary = await request("/api/audit/summary");
 assert(auditSummary.total >= auditEvents.length, "audit summary count is inconsistent", auditSummary);
+const auditLogExport = await request(`/api/export/audit-log?format=json&eventType=agent_trace.step_created&q=${encodeURIComponent(aipTrace.trace.id)}&limit=50`);
+assert(auditLogExport.boundary?.mode === "read_only_export", "Audit log JSON export is not read-only", auditLogExport.boundary);
+assert(
+  auditLogExport.payload?.events?.some((event) => event.event_type === "agent_trace.step_created"),
+  "Audit log JSON export missing trace step events",
+  auditLogExport.payload
+);
+assert(auditLogExport.payload?.retentionPolicy?.deletePolicy === "no_ui_delete", "Audit retention policy changed", auditLogExport.payload?.retentionPolicy);
+
+const auditExcelExport = await requestRaw(`/api/export/audit-log?format=excel&eventType=agent_trace.step_created&q=${encodeURIComponent(aipTrace.trace.id)}&limit=50`);
+assert(
+  auditExcelExport.response.headers.get("content-type")?.includes("application/vnd.ms-excel"),
+  "Audit log Excel export content type is wrong",
+  { contentType: auditExcelExport.response.headers.get("content-type") }
+);
+assert(
+  auditExcelExport.text.includes("审计日志工作台") && auditExcelExport.text.includes("agent_trace.step_created"),
+  "Audit log Excel export missing trace step audit content"
+);
 
 const chatbiAuditEvents = await request(`/api/audit-events?eventType=chatbi_context.reviewed&assetType=chatbi_context&actor=p1_chatbi_smoke&q=${encodeURIComponent(chatbiContext.context.id)}&limit=20`);
 assert(
@@ -1199,6 +1236,8 @@ console.log(
         "aipObject.events",
         "aipTrace.create",
         "aipTrace.read",
+        "aipTrace.stepAudit",
+        "aipObject.timeline",
         "aipRecommendation.create",
         "aipRecommendation.review",
         "aipRecommendation.transition",
@@ -1236,6 +1275,8 @@ console.log(
         "roleWorkbench.exportExcel",
         "auditSummary.read",
         "auditEvents.read",
+        "auditExport.json",
+        "auditExport.excel",
         "auditEvents.filterChatbi"
       ]
     },

@@ -3616,6 +3616,7 @@ function getAipObjectDetail(id) {
      LIMIT 30`,
     [id, normalized.object_type, `%${id}%`, `%${normalized.object_type}%`]
   );
+  const timeline = getAipObjectTimeline(normalized, events, traces, recommendations);
   return {
     object: normalized,
     ontology,
@@ -3628,12 +3629,107 @@ function getAipObjectDetail(id) {
     recommendations,
     events,
     traces,
+    timeline,
     boundary: {
       ontologyReadOnly: true,
       canonicalMetricDictionaryReadOnly: true,
       writeBackPolicy: "suggestion_approval_replay_only"
     }
   };
+}
+
+function getAipObjectTimeline(object, events = [], traces = [], recommendations = []) {
+  const objectId = object?.id || "";
+  const auditRows = objectId
+    ? all(
+        `SELECT * FROM audit_events
+         WHERE asset_id = ?
+            OR payload LIKE ?
+         ORDER BY created_at DESC
+         LIMIT 40`,
+        [objectId, `%${objectId}%`]
+      )
+    : [];
+  const workflowIds = recommendations.map((item) => item.workflow_id).filter(Boolean);
+  const workflowRows = workflowIds.length
+    ? all(
+        `SELECT * FROM workflow_instances
+         WHERE id IN (${workflowIds.map(() => "?").join(",")})
+         ORDER BY updated_at DESC
+         LIMIT 40`,
+        workflowIds
+      )
+    : [];
+  const items = [
+    ...events.map((event) => ({
+      id: event.id,
+      item_type: "object_event",
+      title: event.event_title,
+      detail: event.event_detail,
+      status: event.status,
+      severity: event.severity,
+      actor: "system",
+      occurred_at: event.occurred_at,
+      asset_type: "object_event",
+      asset_id: event.id,
+      source_ref: event.event_type
+    })),
+    ...traces.map((trace) => ({
+      id: trace.id,
+      item_type: "agent_trace",
+      title: trace.intent,
+      detail: trace.question,
+      status: trace.status,
+      severity: trace.answerability,
+      actor: trace.created_by,
+      occurred_at: trace.created_at,
+      asset_type: "agent_execution_trace",
+      asset_id: trace.id,
+      source_ref: trace.answerability
+    })),
+    ...recommendations.map((recommendation) => ({
+      id: recommendation.id,
+      item_type: "recommendation_card",
+      title: recommendation.recommendation_title,
+      detail: recommendation.impact_summary || recommendation.recommendation_detail,
+      status: recommendation.approval_status,
+      severity: recommendation.priority,
+      actor: recommendation.owner,
+      occurred_at: recommendation.updated_at || recommendation.created_at,
+      asset_type: "recommendation_card",
+      asset_id: recommendation.id,
+      source_ref: recommendation.workflow_id
+    })),
+    ...workflowRows.map((workflow) => ({
+      id: workflow.id,
+      item_type: "workflow",
+      title: workflow.title || workflow.workflow_type,
+      detail: workflow.source_ref,
+      status: workflow.status,
+      severity: workflow.priority,
+      actor: workflow.owner,
+      occurred_at: workflow.updated_at || workflow.created_at,
+      asset_type: "workflow",
+      asset_id: workflow.id,
+      source_ref: workflow.module_id
+    })),
+    ...auditRows.map((audit) => ({
+      id: audit.id,
+      item_type: "audit_event",
+      title: audit.event_type,
+      detail: audit.asset_type ? `${audit.asset_type}:${audit.asset_id}` : audit.payload,
+      status: "recorded",
+      severity: audit.event_type.includes("step") ? "trace" : "audit",
+      actor: audit.actor,
+      occurred_at: audit.created_at,
+      asset_type: audit.asset_type,
+      asset_id: audit.asset_id,
+      source_ref: audit.event_type
+    }))
+  ];
+  return items
+    .sort((a, b) => String(b.occurred_at || "").localeCompare(String(a.occurred_at || "")))
+    .slice(0, 80);
 }
 
 function getAipObjectEvents(objectId, url) {
@@ -3747,22 +3843,37 @@ function createAipTrace(body) {
         { stepType: "answerability_gate", stepTitle: "可回答性判断", stepDetail: `Answerability=${normalizeText(body.answerability, "partial")}` }
       ];
   steps.forEach((step, index) => {
+    const stepId = makeId("step");
+    const stepOrder = Number(step.stepOrder || step.step_order || index + 1);
+    const stepType = normalizeText(step.stepType || step.step_type, `step_${index + 1}`);
+    const stepTitle = normalizeText(step.stepTitle || step.step_title, `Trace step ${index + 1}`);
+    const stepDetail = normalizeText(step.stepDetail || step.step_detail);
+    const stepInputRefs = normalizeJsonText(step.inputRefs || step.input_refs, []);
+    const stepOutputRefs = normalizeJsonText(step.outputRefs || step.output_refs, []);
+    const stepStatus = normalizeText(step.status, "completed");
     run(
       `INSERT INTO agent_trace_steps
         (id, trace_id, step_order, step_type, step_title, step_detail, input_refs, output_refs, status, created_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        makeId("step"),
+        stepId,
         id,
-        Number(step.stepOrder || step.step_order || index + 1),
-        normalizeText(step.stepType || step.step_type, `step_${index + 1}`),
-        normalizeText(step.stepTitle || step.step_title, `Trace step ${index + 1}`),
-        normalizeText(step.stepDetail || step.step_detail),
-        normalizeJsonText(step.inputRefs || step.input_refs, []),
-        normalizeJsonText(step.outputRefs || step.output_refs, []),
-        normalizeText(step.status, "completed"),
+        stepOrder,
+        stepType,
+        stepTitle,
+        stepDetail,
+        stepInputRefs,
+        stepOutputRefs,
+        stepStatus,
         createdAt
       ]
+    );
+    writeAudit(
+      "agent_trace.step_created",
+      "agent_trace_step",
+      stepId,
+      { traceId: id, stepOrder, stepType, stepTitle, status: stepStatus, targetObjectId, targetObjectType },
+      actor
     );
   });
   writeAudit("agent_trace.created", "agent_execution_trace", id, { question, targetObjectId, targetObjectType, steps: steps.length }, actor);
@@ -7196,7 +7307,7 @@ function getWorkbenchModules() {
   ];
 }
 
-function getWorkbenchModule(id) {
+function getWorkbenchModule(id, url = null) {
   if (id === "knowledge-rules") {
     const rules = getKnowledgeRules(new URL("http://local/api/knowledge-rules?limit=500"));
     return {
@@ -7311,11 +7422,37 @@ function getWorkbenchModule(id) {
       summary: getDecisionSummary(),
       operations: operationsForModule()
     }),
-    "audit-log": () => ({
-      summary: getAuditSummary(),
-      events: getAuditEvents(new URL("http://local/api/audit-events?limit=100")),
-      operations: operationsForModule()
-    })
+    "audit-log": () => {
+      const auditUrl = new URL("http://local/api/audit-events?limit=500");
+      if (url) {
+        ["eventType", "assetType", "assetId", "actor", "q"].forEach((key) => {
+          const value = url.searchParams.get(key);
+          if (value) auditUrl.searchParams.set(key, value);
+        });
+        auditUrl.searchParams.set("limit", normalizeText(url.searchParams.get("limit"), "500"));
+      }
+      const events = getAuditEvents(auditUrl);
+      return {
+        summary: getAuditSummary(),
+        events,
+        exportFilter: {
+          eventType: auditUrl.searchParams.get("eventType") || "",
+          assetType: auditUrl.searchParams.get("assetType") || "",
+          assetId: auditUrl.searchParams.get("assetId") || "",
+          actor: auditUrl.searchParams.get("actor") || "",
+          q: auditUrl.searchParams.get("q") || "",
+          limit: auditUrl.searchParams.get("limit") || "500"
+        },
+        retentionPolicy: {
+          mode: "append_only_sqlite_ledger",
+          deletePolicy: "no_ui_delete",
+          exportAllowed: ["json", "excel"],
+          providerCalls: false,
+          erpWriteback: false
+        },
+        operations: operationsForModule()
+      };
+    }
   };
   return { ...meta, payload: payloads[id]() };
 }
@@ -7401,7 +7538,7 @@ function renderExcelHtml(moduleExport) {
 }
 
 function exportWorkbenchModule(res, id, url) {
-  const modulePayload = getWorkbenchModule(id);
+  const modulePayload = getWorkbenchModule(id, url);
   if (!modulePayload) return json(res, { error: "Workbench module not found" }, 404);
   const format = normalizeText(url.searchParams.get("format"), "json").toLowerCase();
   const moduleExport = {

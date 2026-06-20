@@ -481,6 +481,8 @@ for label in expected:
           relationGraph: !!document.querySelector('.objectGraphCanvas, .objectRelationGraph'),
           evidencePanel: !!document.querySelector('.objectEvidencePanel'),
           eventTimeline: !!document.querySelector('.objectEventTimeline'),
+          unifiedTimeline: !!document.querySelector('.objectUnifiedTimeline'),
+          unifiedTimelineItems: document.querySelectorAll('.objectUnifiedTimelineList button').length,
           ownerFilter: !!document.querySelector('.objectOwnerFilter select'),
           createRecommendation: !!document.querySelector('.objectRecommendationCreate'),
           metricEvidence: !!document.querySelector('.objectMetricEvidence'),
@@ -491,6 +493,8 @@ for label in expected:
             not object360["object360"]
             or not object360["objectList"]
             or not object360["evidencePanel"]
+            or not object360["unifiedTimeline"]
+            or object360["unifiedTimelineItems"] < 1
             or not object360["ownerFilter"]
             or not object360["createRecommendation"]
             or not object360["metricEvidence"]
@@ -674,10 +678,12 @@ for label in expected:
         (() => ({
           stateRail: document.querySelectorAll('.stateRail span').length,
           decisionForm: !!document.querySelector('.decisionForm'),
-          actionCards: document.querySelectorAll('.actionCards .actionCard').length
+          actionCards: document.querySelectorAll('.actionCards .actionCard').length,
+          mappingPanel: !!document.querySelector('.decisionMappingPanel'),
+          mappingRows: document.querySelectorAll('.decisionMappingList article').length
         }))()
         """)
-        if decision["stateRail"] < 7 or not decision["decisionForm"]:
+        if decision["stateRail"] < 7 or not decision["decisionForm"] or not decision["mappingPanel"]:
           raise SystemExit(f"Decision loop feature check failed: {decision}")
         feature_checks.append({"decisionLoop": decision})
         recommendation = js("""
@@ -694,7 +700,7 @@ for label in expected:
         decision_sections = check_workbench_sections([
             {"label": "建议队列", "selectors": [".recommendationQueue"]},
             {"label": "创建 Action", "selectors": [".stateRail", ".decisionForm"]},
-            {"label": "台账复盘", "selectors": [".actionCards"]},
+            {"label": "台账复盘", "selectors": [".actionCards", ".decisionMappingPanel"]},
         ])
         if decision_sections["tabCount"] < 3 or any((not item["clicked"] or not item["active"] or not item["visibleOk"]) for item in decision_sections["states"]):
           raise SystemExit(f"Decision section navigation check failed: {decision_sections}")
@@ -733,10 +739,11 @@ for label in expected:
           summaryCards: document.querySelectorAll('.auditSummaryGrid > div').length,
           facets: document.querySelectorAll('.auditFacets .facetList button').length,
           filters: !!document.querySelector('.auditFilters'),
-          timeline: !!document.querySelector('.auditTimeline')
+          timeline: !!document.querySelector('.auditTimeline'),
+          exportActions: document.querySelectorAll('.auditExportActions a').length
         }))()
         """)
-        if audit["summaryCards"] < 4 or not audit["filters"] or not audit["timeline"]:
+        if audit["summaryCards"] < 4 or not audit["filters"] or not audit["timeline"] or audit["exportActions"] < 2:
           raise SystemExit(f"Audit log feature check failed: {audit}")
         audit_sections = check_workbench_sections([
             {"label": "事件时间线", "selectors": [".auditFilters", ".auditTimeline"]},

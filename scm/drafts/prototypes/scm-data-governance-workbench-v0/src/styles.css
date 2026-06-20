@@ -7113,6 +7113,190 @@ nav button strong,
   -webkit-line-clamp: 2;
 }
 
+.missionHero {
+  gap: 10px;
+  padding: clamp(12px, 1.3vw, 18px);
+}
+
+.missionHero .heroCopy h1 {
+  margin-bottom: 8px;
+}
+
+.missionHero .cockpitLead,
+.missionHero .cockpitSide {
+  gap: 10px;
+}
+
+.missionHero .cockpitSearch,
+.missionHero .assetProgressPanel,
+.missionHero .taskCenterPanel,
+.missionHero .releaseStatusPanel,
+.missionHero .aipRiskQueue,
+.missionHero .aipRecommendationQueue {
+  gap: 8px;
+  padding: 10px;
+}
+
+.missionHero .heroCopy p:last-child,
+.missionHero .aipScenarioCard p,
+.missionHero .scenarioRule span {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+}
+
+.missionHero .heroCopy p:last-child {
+  -webkit-line-clamp: 2;
+}
+
+.missionHero .aipScenarioCard p,
+.missionHero .scenarioRule span {
+  -webkit-line-clamp: 2;
+}
+
+.missionHero > .scenarioSelector {
+  grid-column: 1 / -1;
+  gap: 8px;
+  padding: 10px;
+}
+
+.missionHero > .scenarioSelector .scenarioGrid {
+  gap: 8px;
+}
+
+.missionHero > .scenarioSelector .aipScenarioCard {
+  gap: 7px;
+  padding: 9px;
+}
+
+.missionHero > .scenarioSelector .scenarioSignals {
+  gap: 6px;
+}
+
+.missionHero > .scenarioSelector .scenarioSignals > div {
+  min-height: 56px;
+  padding: 5px;
+}
+
+.missionHero > .scenarioSelector .scenarioRule {
+  padding: 7px;
+}
+
+.missionHero > .scenarioSelector .scenarioActions {
+  justify-content: flex-start;
+}
+
+.cockpitSearch textarea {
+  min-height: 76px;
+}
+
+.missionHero .aipQueueList {
+  gap: 7px;
+  max-height: 236px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.missionHero .moduleLaunchGrid {
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.missionHero .aipQueueCard {
+  gap: 6px;
+  padding: 8px;
+}
+
+.missionHero .aipQueueCard small,
+.missionHero .recommendationCardMini p,
+.missionHero .releaseBoundaryLine span,
+.missionHero .heroCopy p:last-child {
+  line-height: 1.35;
+}
+
+.missionHero .aipQueueCard small,
+.missionHero .recommendationCardMini p {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.missionHero .assetProgressItem {
+  gap: 4px;
+}
+
+.missionHero .taskStatusList {
+  gap: 6px;
+}
+
+.missionHero .taskStatusList > div {
+  min-height: 30px;
+  padding: 6px 8px;
+}
+
+.missionHero .releaseMetaGrid {
+  gap: 6px;
+}
+
+.missionHero .releaseMetaItem {
+  gap: 3px;
+  padding: 7px;
+}
+
+.missionHero .moduleLaunchGrid button {
+  min-height: 72px;
+}
+
+.aipCommandGrid .aipQueueList,
+.decisionMappingList,
+.actionCards,
+.recommendationCards {
+  max-height: min(560px, calc(100vh - 260px));
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.decisionSummaryGrid,
+.auditSummaryGrid {
+  margin-bottom: 10px;
+}
+
+.decisionSummaryGrid > div,
+.auditSummaryGrid > div {
+  min-height: 86px;
+  padding: 12px;
+}
+
+.decisionSummaryGrid strong,
+.auditSummaryGrid strong {
+  font-size: 24px;
+}
+
+.stateRail {
+  margin-bottom: 10px;
+}
+
+.decisionForm {
+  padding: 12px;
+}
+
+.auditExportBar {
+  margin-bottom: 10px;
+  padding: 10px 12px;
+}
+
+.auditFilters {
+  margin-bottom: 10px;
+  padding: 10px;
+}
+
+.auditTimeline {
+  max-height: min(780px, calc(100vh - 270px));
+  overflow: auto;
+  padding-right: 2px;
+}
+
 .roleQueueList,
 .playbookList,
 .providerPolicyList,

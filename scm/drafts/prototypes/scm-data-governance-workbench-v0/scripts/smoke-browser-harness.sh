@@ -59,6 +59,12 @@ expected = [
     "审计日志工作台",
 ]
 
+height_ratio_thresholds = {
+    "治理链路总览": 4.8,
+    "决策闭环工作台": 3.3,
+    "审计日志工作台": 3.4,
+}
+
 def api_url(path):
     return urljoin(base_url if base_url.endswith("/") else f"{base_url}/", path.lstrip("/"))
 
@@ -278,6 +284,9 @@ for label in expected:
     })()
     """)
     layout_reports.append(page_layout)
+    height_threshold = height_ratio_thresholds.get(label)
+    if height_threshold and page_layout["heightRatio"] > height_threshold:
+        raise SystemExit(f"Page density threshold exceeded for {label}: threshold={height_threshold}, layout={page_layout}")
     operation_dock = js("""
     (() => ({
       panel: !!document.querySelector('.moduleOpsPanel'),

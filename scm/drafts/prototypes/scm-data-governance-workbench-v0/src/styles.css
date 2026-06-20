@@ -1491,6 +1491,20 @@ textarea {
   align-items: start;
 }
 
+.auditTimelineWorkbench {
+  grid-template-columns: 1fr;
+}
+
+.auditFacetWorkbench {
+  grid-template-columns: minmax(260px, 0.36fr) minmax(0, 1fr);
+}
+
+.auditActorPanel {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
 .auditFacets {
   display: grid;
   gap: 12px;

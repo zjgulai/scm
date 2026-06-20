@@ -2583,52 +2583,73 @@ function OverviewPanel({
   onOpenAsset: (asset: AssetRef) => void;
 }) {
   const overviewModule = modules.find((module) => module.id === "overview") || fallbackModules[0];
+  const [activeOverviewSection, setActiveOverviewSection] = useState("cockpit");
+  const overviewSections = [
+    { id: "cockpit", label: "驾驶舱", helper: "AI 搜索、资产状态、治理边界", badge: overview.tasks.length },
+    { id: "architecture", label: "架构地图", helper: "九层治理与工作台入口", badge: overview.architectureLayers?.length || 0 },
+    { id: "readiness", label: "成熟度", helper: "模块健康扫描与缺口", badge: overview.moduleHealth?.length || 0 },
+    { id: "tasks", label: "治理任务", helper: "候选资产、审批、SLA", badge: overview.counts.governanceTasks || 0 }
+  ];
   return (
     <div className="stack">
       <MissionHero overview={overview} modules={modules} onSelect={onSelect} onOpenAsset={onOpenAsset} />
-      <div className="overviewControlBar">
-        <WorkbenchFlowStrip module={overviewModule} />
-        <div className="overviewExportCard">
-          <p className="eyebrow">Export</p>
-          <h3>只读导出</h3>
-          <p className="muted">不允许导入；支持管理驾驶舱当前模块的 JSON 和 Excel 快照。</p>
-          <ExportActions module={overviewModule} />
+      <WorkbenchSectionNav
+        sections={overviewSections}
+        active={activeOverviewSection}
+        onChange={setActiveOverviewSection}
+        ariaLabel="治理链路总览页面分区"
+      />
+      <div className={sectionPaneClass(activeOverviewSection, "cockpit")}>
+        <div className="overviewControlBar">
+          <WorkbenchFlowStrip module={overviewModule} />
+          <div className="overviewExportCard">
+            <p className="eyebrow">Export</p>
+            <h3>只读导出</h3>
+            <p className="muted">不允许导入；支持管理驾驶舱当前模块的 JSON 和 Excel 快照。</p>
+            <ExportActions module={overviewModule} />
+          </div>
         </div>
+        <WorkbenchOperationDock module={overviewModule} />
       </div>
-      <WorkbenchOperationDock module={overviewModule} />
-      <ArchitectureRail layers={overview.architectureLayers || []} />
-      <section className="panel">
-        <div className="sectionHeader">
-          <div>
-            <p className="eyebrow">Workbench map</p>
-            <h2>十个工作台模块</h2>
-          </div>
-          <Badge tone="good">Certified semantic first</Badge>
-        </div>
-        <ModuleGrid modules={modules} onSelect={onSelect} />
-      </section>
-      <section className="panel">
-        <div className="sectionHeader">
-          <div>
-            <p className="eyebrow">Readiness</p>
-            <h2>治理成熟度扫描</h2>
-          </div>
-          <Badge>sample seeded</Badge>
-        </div>
-        <div className="readinessGrid">
-          {overview.moduleHealth?.map((item) => (
-            <div className="readinessItem" key={item.module}>
-              <div>
-                <strong>{item.module}</strong>
-                <Badge tone={toneFromStatus(item.status)}>{item.status}</Badge>
-              </div>
-              <ScoreLine score={item.score} />
-              <p>{item.note}</p>
+      <div className={sectionPaneClass(activeOverviewSection, "architecture")}>
+        <ArchitectureRail layers={overview.architectureLayers || []} />
+        <section className="panel">
+          <div className="sectionHeader">
+            <div>
+              <p className="eyebrow">Workbench map</p>
+              <h2>十个工作台模块</h2>
             </div>
-          ))}
-        </div>
-      </section>
-      <WorkflowBoard onOpenAsset={onOpenAsset} />
+            <Badge tone="good">Certified semantic first</Badge>
+          </div>
+          <ModuleGrid modules={modules} onSelect={onSelect} />
+        </section>
+      </div>
+      <div className={sectionPaneClass(activeOverviewSection, "readiness")}>
+        <section className="panel">
+          <div className="sectionHeader">
+            <div>
+              <p className="eyebrow">Readiness</p>
+              <h2>治理成熟度扫描</h2>
+            </div>
+            <Badge>sample seeded</Badge>
+          </div>
+          <div className="readinessGrid">
+            {overview.moduleHealth?.map((item) => (
+              <div className="readinessItem" key={item.module}>
+                <div>
+                  <strong>{item.module}</strong>
+                  <Badge tone={toneFromStatus(item.status)}>{item.status}</Badge>
+                </div>
+                <ScoreLine score={item.score} />
+                <p>{item.note}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      </div>
+      <div className={sectionPaneClass(activeOverviewSection, "tasks")}>
+        <WorkflowBoard onOpenAsset={onOpenAsset} />
+      </div>
     </div>
   );
 }
@@ -5515,6 +5536,7 @@ function AiChatPanel({
   const [feedbackNote, setFeedbackNote] = useState("");
   const [feedbackText, setFeedbackText] = useState("");
   const [refresh, setRefresh] = useState(0);
+  const [activeAiSection, setActiveAiSection] = useState("answer");
   const domains = useApi<KbDomain[]>(`/api/kb/domains?refresh=${refresh}`, []);
   const sessions = useApi<AnyRow[]>(`/api/ai-chat/sessions?limit=12&refresh=${refresh}`, []);
   const governance = useApi<AiGovernanceSummary>(`/api/ai-chat/governance-summary?refresh=${refresh}`, {
@@ -5692,6 +5714,13 @@ function AiChatPanel({
     setRefresh((value) => value + 1);
   }
 
+  const aiSections = [
+    { id: "answer", label: "问答台", helper: "范围、问题、证据回答", badge: result?.evidence.length || selectedDomains.length || "all" },
+    { id: "trace", label: "执行轨迹", helper: "Agent trace 与证据门控", badge: "AIP" },
+    { id: "exports", label: "证据导出", helper: "JSON/Markdown 证据包台账", badge: evidenceExports.data.length },
+    { id: "samples", label: "样本反馈", helper: "问法样本与回答反馈队列", badge: questionSamples.data.length + feedbackItems.data.length }
+  ];
+
   return (
     <section className="panel">
       <ModuleHeader module={module} />
@@ -5713,6 +5742,13 @@ function AiChatPanel({
         </article>
       </div>
       {feedbackNote ? <div className="kbNotice">{feedbackNote}</div> : null}
+      <WorkbenchSectionNav
+        sections={aiSections}
+        active={activeAiSection}
+        onChange={setActiveAiSection}
+        ariaLabel="AI 对话页面分区"
+      />
+      <div className={sectionPaneClass(activeAiSection, "answer")}>
       <div className="aiChatLayout">
         <aside className="aiChatScope">
           <div className="surfaceHead">
@@ -5862,7 +5898,11 @@ function AiChatPanel({
           )}
         </div>
       </div>
+      </div>
+      <div className={sectionPaneClass(activeAiSection, "trace")}>
       <AgentTraceTimelinePanel refresh={refresh} onOpenAsset={onOpenAsset} />
+      </div>
+      <div className={sectionPaneClass(activeAiSection, "exports")}>
       <div className="surface aiEvidenceExportRegistry">
         <div className="surfaceHead">
           <div>
@@ -5891,6 +5931,8 @@ function AiChatPanel({
           )) : <div className="empty compact">暂无证据导出记录。先运行一次本地证据回答。</div>}
         </div>
       </div>
+      </div>
+      <div className={sectionPaneClass(activeAiSection, "samples")}>
       <div className="aiGovernanceWorkbench">
         <div className="surface questionSampleLibrary">
           <div className="surfaceHead">
@@ -5946,6 +5988,7 @@ function AiChatPanel({
             )) : <div className="empty compact">暂无反馈。回答后可以标记有用、证据不足或证据错误。</div>}
           </div>
         </div>
+      </div>
       </div>
     </section>
   );
@@ -6907,6 +6950,7 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
 function DecisionPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset: (asset: AssetRef) => void }) {
   const [refresh, setRefresh] = useState(0);
   const [note, setNote] = useState("");
+  const [activeDecisionSection, setActiveDecisionSection] = useState("recommendations");
   const [form, setForm] = useState({
     insightRef: "decision_1",
     actionName: "创建供应链治理动作",
@@ -6947,6 +6991,12 @@ function DecisionPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
     setRefresh((value) => value + 1);
   }
 
+  const decisionSections = [
+    { id: "recommendations", label: "建议队列", helper: "AIP 建议卡、审批状态、行动分层", badge: summary.data.actions.total },
+    { id: "action", label: "创建 Action", helper: "洞察引用、Owner、审批复盘", badge: summary.data.stateOrder.length },
+    { id: "ledger", label: "台账复盘", helper: "洞察记录与 Action 执行轨迹", badge: decisions.data.length + actions.data.length }
+  ];
+
   return (
     <section className="panel">
       <ModuleHeader module={module} />
@@ -6968,12 +7018,21 @@ function DecisionPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
         </div>
       </div>
       {note ? <div className="kbNotice">{note}</div> : null}
+      <WorkbenchSectionNav
+        sections={decisionSections}
+        active={activeDecisionSection}
+        onChange={setActiveDecisionSection}
+        ariaLabel="决策闭环页面分区"
+      />
+      <div className={sectionPaneClass(activeDecisionSection, "recommendations")}>
+        <RecommendationQueuePanel onOpenAsset={onOpenAsset} />
+      </div>
+      <div className={sectionPaneClass(activeDecisionSection, "action")}>
       <div className="stateRail">
         {summary.data.stateOrder.map((state) => (
           <span key={state} className={summary.data.terminalStates.includes(state) ? "terminal" : ""}>{state}</span>
         ))}
       </div>
-      <RecommendationQueuePanel onOpenAsset={onOpenAsset} />
       <form className="decisionForm" onSubmit={createAction}>
         <div className="surfaceHead">
           <h3>创建治理 Action</h3>
@@ -7002,6 +7061,8 @@ function DecisionPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
         </label>
         <button type="submit">创建 Action</button>
       </form>
+      </div>
+      <div className={sectionPaneClass(activeDecisionSection, "ledger")}>
       <div className="split">
         <div className="surface">
           <div className="surfaceHead">
@@ -7039,6 +7100,7 @@ function DecisionPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
           </div>
         </div>
       </div>
+      </div>
     </section>
   );
 }
@@ -7046,6 +7108,7 @@ function DecisionPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
 function AuditLogPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset: (asset: AssetRef) => void }) {
   const [refresh, setRefresh] = useState(0);
   const [filters, setFilters] = useState({ eventType: "", assetType: "", assetId: "", actor: "", q: "" });
+  const [activeAuditSection, setActiveAuditSection] = useState("timeline");
   const query = [
     "limit=220",
     `refresh=${refresh}`,
@@ -7084,6 +7147,11 @@ function AuditLogPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
     setFilters((current) => ({ ...current, [key]: current[key] === value ? "" : value }));
   }
 
+  const auditSections = [
+    { id: "timeline", label: "事件时间线", helper: "筛选、分页、打开审计详情", badge: events.data.length },
+    { id: "facets", label: "审计分面", helper: "按事件、资产、操作者聚合", badge: summary.data.byEventType.length + summary.data.byAssetType.length }
+  ];
+
   return (
     <section className="panel">
       <ModuleHeader module={module} />
@@ -7109,7 +7177,14 @@ function AuditLogPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
           <small>{summary.data.byActor.slice(0, 3).map((item) => `${item.actor}:${item.count}`).join(" / ") || "no actors"}</small>
         </div>
       </div>
-      <div className="auditWorkbench">
+      <WorkbenchSectionNav
+        sections={auditSections}
+        active={activeAuditSection}
+        onChange={setActiveAuditSection}
+        ariaLabel="审计日志页面分区"
+      />
+      <div className={sectionPaneClass(activeAuditSection, "facets")}>
+      <div className="auditWorkbench auditFacetWorkbench">
         <aside className="auditFacets">
           <div className="surfaceHead">
             <h3>事件类型</h3>
@@ -7144,6 +7219,28 @@ function AuditLogPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
             ))}
           </div>
         </aside>
+        <div className="surface auditActorPanel">
+          <div className="surfaceHead">
+            <h3>操作者分布</h3>
+            <Badge>{summary.data.byActor.length}</Badge>
+          </div>
+          <div className="facetList">
+            {summary.data.byActor.map((item) => (
+              <button
+                key={String(item.actor)}
+                className={filters.actor === item.actor ? "active" : ""}
+                onClick={() => selectFacet("actor", String(item.actor))}
+              >
+                <span>{cellValue(item.actor) || "empty"}</span>
+                <strong>{cellValue(item.count)}</strong>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      </div>
+      <div className={sectionPaneClass(activeAuditSection, "timeline")}>
+      <div className="auditWorkbench auditTimelineWorkbench">
         <div className="auditMain">
           <div className="auditFilters">
             <label>
@@ -7191,6 +7288,7 @@ function AuditLogPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpe
           </div>
           <PaginationBar pager={eventPager} label="审计时间线" />
         </div>
+      </div>
       </div>
     </section>
   );

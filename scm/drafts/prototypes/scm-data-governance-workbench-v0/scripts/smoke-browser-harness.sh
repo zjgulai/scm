@@ -357,6 +357,14 @@ for label in expected:
         ):
           raise SystemExit(f"Overview scenario readability check failed: {scenario_readability}")
         feature_checks.append({"overviewScenarioReadability": scenario_readability})
+        overview_sections = check_workbench_sections([
+            {"label": "驾驶舱", "selectors": [".overviewControlBar", ".moduleOpsPanel"]},
+            {"label": "架构地图", "selectors": [".railPanel", ".moduleGrid"]},
+            {"label": "成熟度", "selectors": [".readinessGrid"]},
+            {"label": "治理任务", "selectors": [".workflowFilters", ".bulkActionBar"]},
+        ])
+        if overview_sections["tabCount"] < 4 or any((not item["clicked"] or not item["active"] or not item["visibleOk"]) for item in overview_sections["states"]):
+          raise SystemExit(f"Overview section navigation check failed: {overview_sections}")
         workflow = js("""
         (() => ({
           filters: !!document.querySelector('.workflowFilters'),
@@ -683,6 +691,14 @@ for label in expected:
         """)
         if require_aip_phase1 and (recommendation["recommendationCards"] < 1 or not recommendation["recommendationQueue"] or recommendation["exports"] < 2):
           raise SystemExit(f"AIP Recommendation Card feature check failed: {recommendation}")
+        decision_sections = check_workbench_sections([
+            {"label": "建议队列", "selectors": [".recommendationQueue"]},
+            {"label": "创建 Action", "selectors": [".stateRail", ".decisionForm"]},
+            {"label": "台账复盘", "selectors": [".actionCards"]},
+        ])
+        if decision_sections["tabCount"] < 3 or any((not item["clicked"] or not item["active"] or not item["visibleOk"]) for item in decision_sections["states"]):
+          raise SystemExit(f"Decision section navigation check failed: {decision_sections}")
+        decision["sectionNavigation"] = decision_sections
         feature_checks.append({"aipRecommendationCards": recommendation})
     if label == "ChatBI 语义治理台":
         chatbi = js("""
@@ -722,6 +738,13 @@ for label in expected:
         """)
         if audit["summaryCards"] < 4 or not audit["filters"] or not audit["timeline"]:
           raise SystemExit(f"Audit log feature check failed: {audit}")
+        audit_sections = check_workbench_sections([
+            {"label": "事件时间线", "selectors": [".auditFilters", ".auditTimeline"]},
+            {"label": "审计分面", "selectors": [".auditFacets", ".auditActorPanel"]},
+        ])
+        if audit_sections["tabCount"] < 2 or any((not item["clicked"] or not item["active"] or not item["visibleOk"]) for item in audit_sections["states"]):
+          raise SystemExit(f"Audit section navigation check failed: {audit_sections}")
+        audit["sectionNavigation"] = audit_sections
         feature_checks.append({"auditLog": audit})
     if label == "AI 知识库":
         if require_kb_governance:
@@ -893,6 +916,15 @@ for label in expected:
         """)
         if require_aip_phase1 and (not trace["traceTimeline"] or trace["traceSteps"] < 1 or not trace["answerability"]):
           raise SystemExit(f"AIP Agent Execution Trace feature check failed: {trace}")
+        ai_sections = check_workbench_sections([
+            {"label": "问答台", "selectors": [".aiChatLayout"]},
+            {"label": "执行轨迹", "selectors": [".agentTraceTimeline"]},
+            {"label": "证据导出", "selectors": [".aiEvidenceExportRegistry"]},
+            {"label": "样本反馈", "selectors": [".questionSampleLibrary", ".aiFeedbackQueue"]},
+        ])
+        if ai_sections["tabCount"] < 4 or any((not item["clicked"] or not item["active"] or not item["visibleOk"]) for item in ai_sections["states"]):
+          raise SystemExit(f"AI chat section navigation check failed: {ai_sections}")
+        ai["sectionNavigation"] = ai_sections
         feature_checks.append({"aipAgentTrace": trace})
     results.append({"label": label, "header": state["h1"]})
 

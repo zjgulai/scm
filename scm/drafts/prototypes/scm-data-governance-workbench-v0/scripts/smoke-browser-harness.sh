@@ -61,6 +61,11 @@ expected = [
 
 height_ratio_thresholds = {
     "治理链路总览": 4.8,
+    "对象本体工作台": 5.0,
+    "指标体系编排台": 3.8,
+    "ChatBI 语义治理台": 4.2,
+    "AI 知识库": 4.8,
+    "角色工作台": 4.8,
     "决策闭环工作台": 3.3,
     "审计日志工作台": 3.4,
 }
@@ -551,11 +556,20 @@ for label in expected:
           roleWorkstreams: document.querySelectorAll('.roleWorkstreamGrid > article').length,
           roleFilters: document.querySelectorAll('.roleFilterPanel label').length,
           roleDomainExports: document.querySelectorAll('.roleDomainPanel .exportGroup a').length,
-          roleQueueGrid: !!document.querySelector('.roleQueueGrid'),
-          queueColumns: document.querySelectorAll('.roleQueueGrid > article').length,
-          providerPolicyPanel: !!document.querySelector('.providerPolicyPanel'),
-          providerReadinessStats: document.querySelectorAll('.providerReadinessStats > div').length,
-          providerDecisionList: !!document.querySelector('.providerDecisionList'),
+	          roleQueueGrid: !!document.querySelector('.roleQueueGrid'),
+	          queueColumns: document.querySelectorAll('.roleQueueGrid > article').length,
+	          roleRuleCoverage: document.querySelectorAll('.roleRuleCoverage > article').length,
+	          roleObjectDrawer: !!document.querySelector('.roleObjectDrawer'),
+	          roleObjectMetrics: document.querySelectorAll('.roleObjectMetrics > article').length,
+	          roleObjectEvidence: !!document.querySelector('.roleObjectEvidence'),
+	          roleObjectActions: !!document.querySelector('.roleObjectActions'),
+	          roleRecommendationHandoff: !!document.querySelector('.roleRecommendationHandoff'),
+	          roleScenarioPlaybookPanel: !!document.querySelector('.roleScenarioPlaybookPanel'),
+	          providerPolicyPanel: !!document.querySelector('.providerPolicyPanel'),
+	          providerReadinessStats: document.querySelectorAll('.providerReadinessStats > div').length,
+	          providerEvalGate: !!document.querySelector('.providerEvalGate'),
+	          providerEvalCases: document.querySelectorAll('.providerEvalGrid article').length,
+	          providerDecisionList: !!document.querySelector('.providerDecisionList'),
           promptVersionList: !!document.querySelector('.promptVersionList'),
           providerCallAuditList: !!document.querySelector('.providerCallAuditList'),
           providerDryRunButton: !!document.querySelector('.providerDryRunButton'),
@@ -590,10 +604,19 @@ for label in expected:
             or role["roleWorkstreams"] < 4
             or role["roleFilters"] < 5
             or role["roleDomainExports"] < 2
-            or not role["roleQueueGrid"]
-            or role["queueColumns"] < 3
-            or not role["providerPolicyPanel"]
-            or role["providerReadinessStats"] < 4
+	            or not role["roleQueueGrid"]
+	            or role["queueColumns"] < 3
+	            or role["roleRuleCoverage"] < 4
+	            or not role["roleObjectDrawer"]
+	            or role["roleObjectMetrics"] < 4
+	            or not role["roleObjectEvidence"]
+	            or not role["roleObjectActions"]
+	            or not role["roleRecommendationHandoff"]
+	            or not role["roleScenarioPlaybookPanel"]
+	            or not role["providerPolicyPanel"]
+	            or role["providerReadinessStats"] < 4
+	            or not role["providerEvalGate"]
+	            or role["providerEvalCases"] < 1
             or not role["providerDecisionList"]
             or not role["promptVersionList"]
             or not role["providerCallAuditList"]
@@ -619,11 +642,11 @@ for label in expected:
         ):
           raise SystemExit(f"Role workbench feature check failed: {role}")
         role_section_specs = [
-            {"label": "角色总览", "className": "roleSection-command", "selectors": [".roleDomainPanel", ".roleQueueGrid"]},
-            {"label": "行动草稿", "className": "roleSection-actions", "selectors": [".roleActionPanel", ".roleBatchActionPanel"]},
-            {"label": "Provider 治理", "className": "roleSection-provider", "selectors": [".providerPolicyPanel"]},
-            {"label": "平台就绪度", "className": "roleSection-platform", "selectors": [".platformReadinessPanel"]},
-            {"label": "证据与指标", "className": "roleSection-evidence", "selectors": [".rolePlaybookPanel", ".evalCasePanel", ".roleMetricsPanel"]},
+	            {"label": "角色总览", "className": "roleSection-command", "selectors": [".roleDomainPanel", ".roleQueueGrid", ".roleObjectDrawer"]},
+	            {"label": "行动草稿", "className": "roleSection-actions", "selectors": [".roleActionPanel", ".roleBatchActionPanel"]},
+	            {"label": "Provider 治理", "className": "roleSection-provider", "selectors": [".providerPolicyPanel", ".providerEvalGate"]},
+	            {"label": "平台就绪度", "className": "roleSection-platform", "selectors": [".platformReadinessPanel"]},
+	            {"label": "证据与指标", "className": "roleSection-evidence", "selectors": [".roleScenarioPlaybookPanel", ".evalCasePanel", ".roleMetricsPanel"]},
         ]
         role_section_states = []
         for section in role_section_specs:
@@ -721,9 +744,12 @@ for label in expected:
           summaryCards: document.querySelectorAll('.chatbiSummaryGrid > div').length,
           answerabilityPanel: !!document.querySelector('.chatbiAnswerabilityPanel'),
           answerabilityCards: document.querySelectorAll('.answerabilityMiniGrid > article').length,
-          scorecardPanel: !!document.querySelector('.chatbiScorecardPanel'),
-          scorecardCards: document.querySelectorAll('.answerabilityScoreGrid > article').length,
-          domainGrid: !!document.querySelector('.answerabilityDomainGrid'),
+	          scorecardPanel: !!document.querySelector('.chatbiScorecardPanel'),
+	          scorecardCards: document.querySelectorAll('.answerabilityScoreGrid > article').length,
+	          certifiedRuleCoverage: !!document.querySelector('.certifiedRuleCoverage'),
+	          certifiedRuleCards: document.querySelectorAll('.certifiedRuleCoverage .answerabilityScoreGrid > article').length,
+	          answerabilityGapReasons: !!document.querySelector('.answerabilityGapReasons'),
+	          domainGrid: !!document.querySelector('.answerabilityDomainGrid'),
           weakQueue: !!document.querySelector('.answerabilityWeakQueue'),
           form: !!document.querySelector('.chatbiForm'),
           filters: !!document.querySelector('.chatbiFilters'),
@@ -731,10 +757,10 @@ for label in expected:
           dryRun: !!document.querySelector('.chatBox button')
         }))()
         """)
-        if chatbi["summaryCards"] < 4 or not chatbi["answerabilityPanel"] or chatbi["answerabilityCards"] < 2 or not chatbi["scorecardPanel"] or chatbi["scorecardCards"] < 4 or not chatbi["domainGrid"] or not chatbi["weakQueue"] or not chatbi["form"] or not chatbi["filters"] or not chatbi["dryRun"]:
+        if chatbi["summaryCards"] < 4 or not chatbi["answerabilityPanel"] or chatbi["answerabilityCards"] < 2 or not chatbi["scorecardPanel"] or chatbi["scorecardCards"] < 4 or not chatbi["certifiedRuleCoverage"] or chatbi["certifiedRuleCards"] < 3 or not chatbi["answerabilityGapReasons"] or not chatbi["domainGrid"] or not chatbi["weakQueue"] or not chatbi["form"] or not chatbi["filters"] or not chatbi["dryRun"]:
           raise SystemExit(f"ChatBI certification feature check failed: {chatbi}")
         chatbi_sections = check_workbench_sections([
-            {"label": "评分运营", "selectors": [".chatbiAnswerabilityPanel", ".chatbiScorecardPanel"]},
+            {"label": "评分运营", "selectors": [".chatbiAnswerabilityPanel", ".chatbiScorecardPanel", ".certifiedRuleCoverage"]},
             {"label": "上下文生成", "selectors": [".chatbiWorkbench"]},
             {"label": "认证队列", "selectors": [".chatbiFilters", ".contextCards"]},
         ])
@@ -786,10 +812,11 @@ for label in expected:
           crosswalkMatrix: !!document.querySelector('.crosswalkMatrixTable'),
           scoreBlocks: document.querySelectorAll('.kbScoreGrid').length,
           knowledgeRulesWorkbench: !!document.querySelector('.knowledgeRulesWorkbench'),
-          ruleSummaryCards: document.querySelectorAll('.knowledgeRuleSummaryGrid > article').length,
-          ruleCards: document.querySelectorAll('.knowledgeRuleCard').length,
-          ruleExports: document.querySelectorAll('.knowledgeRuleExportActions a').length,
-          createRuleButtons: document.querySelectorAll('.createKnowledgeRuleButton').length
+	          ruleSummaryCards: document.querySelectorAll('.knowledgeRuleSummaryGrid > article').length,
+	          ruleCards: document.querySelectorAll('.knowledgeRuleCard').length,
+	          ruleExports: document.querySelectorAll('.knowledgeRuleExportActions a').length,
+	          ruleCertificationControls: document.querySelectorAll('.knowledgeRuleCertificationControls').length,
+	          createRuleButtons: document.querySelectorAll('.createKnowledgeRuleButton').length
         }))()
         """)
         if require_kb_governance and (
@@ -799,9 +826,10 @@ for label in expected:
             or not kb["staleFindings"]
             or not kb["crosswalkMatrix"]
             or not kb["knowledgeRulesWorkbench"]
-            or kb["ruleSummaryCards"] < 4
-            or kb["ruleExports"] < 2
-            or kb["createRuleButtons"] < 1
+	            or kb["ruleSummaryCards"] < 4
+	            or kb["ruleExports"] < 2
+	            or kb["ruleCertificationControls"] < 1
+	            or kb["createRuleButtons"] < 1
         ):
           raise SystemExit(f"KB governance feature check failed: {kb}")
         kb_layout = js("""

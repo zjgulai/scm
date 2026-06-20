@@ -815,6 +815,41 @@ Boundary:
 - no ERP/Jijia writeback;
 - scenario object paths are seed-backed product demonstrations until connected to live ERP/API evidence.
 
+## 13. P3-A Local Role/Rule/ChatBI Linkage Status
+
+Verified locally at: `2026-06-20T14:45:00+0800`
+
+| Item | Status | Evidence |
+|---|---|---|
+| Role object detail drawer | `passed_local` | Browser Harness found `.roleObjectDrawer`, `.roleObjectMetrics=4`, `.roleObjectEvidence=true`, `.roleObjectActions=true` |
+| Role rule coverage | `passed_local` | `GET /api/roles/workbenches/role_inventory` returned `ruleCoverage`; Browser Harness found `.roleRuleCoverage` |
+| Role playbook readiness | `passed_local` | Role detail returned `playbookReadiness`; Browser Harness found `.roleScenarioPlaybookPanel` |
+| Recommendation handoff | `passed_local` | Workflow smoke `roleWorkbench.recommendationHandoff`; Browser Harness found role handoff entry |
+| Knowledge rule certification | `passed_local` | Workflow smoke `knowledgeRule.certify`, `knowledgeRule.detail`, `knowledgeRule.deprecate`; Browser Harness found `.knowledgeRuleCertificationControls=3` |
+| Empty-rule ledger seed | `passed_local` | Temporary HEAD SQLite copy with `knowledge_rules=0` started on `127.0.0.1:5175`, then returned `total=3`, `certified=3`, `runtime_gate_status=chatbi_runtime_candidate` |
+| ChatBI certified rule coverage | `passed_local` | Workflow smoke `chatbiAnswerability.certifiedRuleCoverage`, `chatbi.dryRunCertifiedRuleLinked`; Browser Harness found `.certifiedRuleCoverage=true`, `certifiedRuleCards=3`, `.answerabilityGapReasons=true` |
+| Provider eval gate | `passed_local` | Workflow smoke `providerEvalGate.offlineReadiness`; Browser Harness found `.providerEvalGate=true`, `providerEvalCases=1` |
+| Responsive density gate | `passed_local` | Browser Harness checked `1350x900`, `1024x900`, `768x900`, `390x900`; role/AI KB/ChatBI/KPI/object height ratios stayed under thresholds |
+
+Verification commands:
+
+```bash
+node --check drafts/prototypes/scm-data-governance-workbench-v0/server/index.mjs
+npm run build
+SCM_WORKBENCH_URL=http://127.0.0.1:5174 npm run smoke:workflows
+REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_WORKBENCH_URL=http://127.0.0.1:5174 npm run smoke:browser
+```
+
+Local boundary:
+
+- local Browser Harness and workflow smoke used the local prototype service;
+- public deployment and public read-only Browser Harness are not yet claimed in this section;
+- no provider call;
+- no ERP/Jijia/WMS/TMS writeback;
+- role recommendation handoff writes only a local governance action draft;
+- knowledge rule certification is a semantic governance state, not a source-system configuration change.
+- empty-ledger seed rules are local governance demo assets and still require owner review before business use.
+
 ## 11. Batch 4 Local Knowledge Rules Status
 
 Verified locally at: `2026-06-19`

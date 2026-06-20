@@ -181,6 +181,10 @@ type KnowledgeRule = {
   owner: string;
   priority: string;
   lifecycle_status: string;
+  certified_at?: string;
+  deprecated_at?: string;
+  certification_policy?: string;
+  runtime_gate_status?: string;
   workflow_id: string;
   reviewer: string;
   review_note: string;
@@ -192,16 +196,32 @@ type KnowledgeRuleSummary = {
   total: number;
   draft: number;
   certified: number;
+  deprecated?: number;
   conflicts: number;
   byStatus: AnyRow[];
   byTargetObject: AnyRow[];
   byConflictStatus: AnyRow[];
+  byRuntimeGate?: AnyRow[];
   boundary: {
     mode: string;
     importAllowed: boolean;
     providerCalls: boolean;
     erpWriteback: boolean;
   };
+};
+
+type CertifiedRuleCoverage = {
+  summary: {
+    certifiedRules: number;
+    matchedRules: number;
+    candidateMetrics: number;
+    coveredCandidateMetrics: number;
+    coverageRate: number;
+    runtimeGateStatus: string;
+  };
+  matchedRules: AnyRow[];
+  gapReasons: string[];
+  missingMetricIds: string[];
 };
 
 type AiEvidence = {
@@ -547,6 +567,7 @@ type ChatbiAnswerabilityScorecard = {
   };
   answerabilityBuckets: AnyRow[];
   domainScorecards: AnyRow[];
+  certifiedRuleCoverage: CertifiedRuleCoverage;
   weakContexts: AnyRow[];
   policy: {
     answerPolicy: string;
@@ -677,6 +698,28 @@ type AipObjectDetail = {
   boundary: AnyRow;
 };
 
+type RoleObjectDetail = {
+  role: {
+    id: string;
+    roleCode: string;
+    roleName: string;
+    owner: string;
+  };
+  object: AipObject;
+  objectDetail: AipObjectDetail | null;
+  metrics: Metric[];
+  events: (AipEvent & { display_name?: string; object_type?: string; object_owner?: string })[];
+  recommendations: AipRecommendation[];
+  knowledgeRules: KnowledgeRule[];
+  evidenceSummary: {
+    sourceRefs: number;
+    eventEvidenceRefs: number;
+    ruleEvidenceRefs: number;
+    recommendationEvidenceRefs: number;
+  };
+  actions: AnyRow;
+};
+
 type AipTraceDetail = {
   trace: AipTrace;
   steps: AipTraceStep[];
@@ -782,6 +825,8 @@ type RolePlaybook = {
   id: string;
   role_id: string;
   playbook_name: string;
+  scenario_type?: string;
+  readiness_status?: string;
   trigger_condition: string;
   action_template: Record<string, unknown>;
   evidence_refs: unknown[];
@@ -810,6 +855,10 @@ type AgentEvalCase = {
   question: string;
   expected_answerability: string;
   required_evidence_refs: unknown[];
+  readiness_status?: string;
+  coverage_score?: number;
+  budget_policy?: string;
+  manual_approval_required?: boolean;
   status: string;
 };
 
@@ -828,6 +877,66 @@ type RoleDomainProfile = {
   cadence: string;
   metricRefs: string[];
   objectTypes: string[];
+};
+
+type RoleRuleCoverage = {
+  summary: {
+    totalRules: number;
+    certifiedRules: number;
+    reviewedRules: number;
+    conflictRules: number;
+    metricRefs: number;
+    coveredMetrics: number;
+    coverageRate: number;
+    runtimeGateStatus: string;
+  };
+  objectTypeCoverage: Array<{ objectType: string; totalRules: number; certifiedRules: number }>;
+  rules: KnowledgeRule[];
+};
+
+type RolePlaybookReadiness = {
+  id: string;
+  playbookName: string;
+  scenarioType: string;
+  readinessStatus: string;
+  evidenceCount: number;
+  certifiedRules: number;
+  actionTier: string;
+  productionWrites: boolean;
+  providerCalls: boolean;
+};
+
+type ProviderEvalGateCase = {
+  id: string;
+  scenarioType: string;
+  question: string;
+  expectedAnswerability: string;
+  readinessStatus: string;
+  coverageScore: number;
+  evidenceCount: number;
+  promptCount: number;
+  budgetPolicy: string;
+  manualApprovalRequired: boolean;
+  providerCalls: boolean;
+};
+
+type ProviderEvalGate = {
+  summary: {
+    evalCases: number;
+    readyForManualReview: number;
+    blockedByMissingEvidence: number;
+    providerPolicyStatus: string;
+    providerCalls: boolean;
+    erpWriteback: boolean;
+  };
+  cases: ProviderEvalGateCase[];
+  recentAudits: ProviderCallAudit[];
+  boundary: {
+    mode: string;
+    providerCalls: boolean;
+    providerEnablement: boolean;
+    manualApprovalRequired: boolean;
+  };
 };
 
 type RoleWorkstream = {
@@ -1002,6 +1111,10 @@ type RoleWorkbenchDetail = {
   objects: AipObject[];
   events: (AipEvent & { display_name?: string; object_type?: string; object_owner?: string })[];
   recommendations: AipRecommendation[];
+  objectDetails: RoleObjectDetail[];
+  ruleCoverage: RoleRuleCoverage;
+  recommendationHandoffs: WorkbenchOperation[];
+  playbookReadiness: RolePlaybookReadiness[];
   playbooks: RolePlaybook[];
   metrics: Metric[];
   evalCases: AgentEvalCase[];
@@ -1010,6 +1123,7 @@ type RoleWorkbenchDetail = {
   promptVersions: PromptVersion[];
   providerCallAudits: ProviderCallAudit[];
   providerGatewaySummary: ProviderGatewaySummary;
+  providerEvalGate: ProviderEvalGate;
   platformReadiness: PlatformReadinessPayload;
   actionBoundary: AnyRow;
 };
@@ -4578,11 +4692,24 @@ function ChatBiPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenA
       refusal_like_count: 0,
       providerCalls: false,
       erpWriteback: false
-    },
-    answerabilityBuckets: [],
-    domainScorecards: [],
-    weakContexts: [],
-    policy: {
+	    },
+	    answerabilityBuckets: [],
+	    domainScorecards: [],
+	    certifiedRuleCoverage: {
+	      summary: {
+	        certifiedRules: 0,
+	        matchedRules: 0,
+	        candidateMetrics: 0,
+	        coveredCandidateMetrics: 0,
+	        coverageRate: 0,
+	        runtimeGateStatus: "partial_or_blocked_by_rule_gap"
+	      },
+	      matchedRules: [],
+	      gapReasons: [],
+	      missingMetricIds: []
+	    },
+	    weakContexts: [],
+	    policy: {
       answerPolicy: "certified_metric_only",
       refusalRule: "未认证指标或弱证据上下文只进入治理队列。",
       evidenceExport: "local evidence package",
@@ -4752,8 +4879,38 @@ function ChatBiPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenA
             <strong>{scorecard.data.summary.evidence_count || 0}</strong>
             <small>local KB evidence only</small>
           </article>
-        </div>
-        <p className="scorecardPolicy">{scorecard.data.policy.refusalRule}</p>
+	        </div>
+	        <div className="certifiedRuleCoverage">
+	          <div className="surfaceHead compactHead">
+	            <h4>认证知识规则覆盖</h4>
+	            <Badge tone={scorecard.data.certifiedRuleCoverage.summary.matchedRules ? "good" : "warn"}>
+	              {scorecard.data.certifiedRuleCoverage.summary.runtimeGateStatus}
+	            </Badge>
+	          </div>
+	          <div className="answerabilityScoreGrid compact">
+	            <article>
+	              <span>认证规则</span>
+	              <strong>{scorecard.data.certifiedRuleCoverage.summary.certifiedRules}</strong>
+	              <small>certified knowledge rules</small>
+	            </article>
+	            <article>
+	              <span>匹配规则</span>
+	              <strong>{scorecard.data.certifiedRuleCoverage.summary.matchedRules}</strong>
+	              <small>matched by metric/object/question</small>
+	            </article>
+	            <article>
+	              <span>指标覆盖</span>
+	              <strong>{Math.round(Number(scorecard.data.certifiedRuleCoverage.summary.coverageRate || 0) * 100)}%</strong>
+	              <small>{scorecard.data.certifiedRuleCoverage.summary.coveredCandidateMetrics}/{scorecard.data.certifiedRuleCoverage.summary.candidateMetrics} candidate metrics</small>
+	            </article>
+	          </div>
+	          <div className="answerabilityGapReasons">
+	            {scorecard.data.certifiedRuleCoverage.gapReasons.length
+	              ? scorecard.data.certifiedRuleCoverage.gapReasons.map((reason) => <span key={reason}>{reason}</span>)
+	              : <span>no_rule_gap</span>}
+	          </div>
+	        </div>
+	        <p className="scorecardPolicy">{scorecard.data.policy.refusalRule}</p>
         <div className="answerabilityDomainGrid">
           {scorecard.data.domainScorecards.length ? scorecard.data.domainScorecards.slice(0, 8).map((domain) => (
             <article key={String(domain.l1_domain)}>
@@ -4830,15 +4987,27 @@ function ChatBiPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenA
             <textarea value={question} onChange={(event) => setQuestion(event.target.value)} />
             <button onClick={dryRun}>{running ? "判断中..." : "Dry-run"}</button>
           </div>
-          {result ? (
-            <div className="dryRunResult">
-              <div className="ledgerItemHead">
-                <strong>{result.answerable ? "命中认证上下文" : "拒答"}</strong>
-                <Badge tone={result.answerable ? "good" : "bad"}>{result.policy}</Badge>
-              </div>
-              {result.rejectReason ? <p>{result.rejectReason}</p> : <p>{result.answerPreview}</p>}
-              <pre>{JSON.stringify(result.candidates || [], null, 2)}</pre>
-            </div>
+	          {result ? (
+	            <div className="dryRunResult">
+	              <div className="ledgerItemHead">
+	                <strong>{result.answerable ? "命中认证上下文" : "拒答"}</strong>
+	                <Badge tone={result.runtimeGateStatus === "certified_metric_and_rule" ? "good" : result.answerable ? "warn" : "bad"}>
+	                  {result.runtimeGateStatus || result.policy}
+	                </Badge>
+	              </div>
+	              {result.rejectReason ? <p>{result.rejectReason}</p> : <p>{result.answerPreview}</p>}
+	              {result.certifiedRuleCoverage ? (
+	                <div className="certifiedRuleCoverage compact">
+	                  <strong>认证规则覆盖：{result.certifiedRuleCoverage.summary.matchedRules}/{result.certifiedRuleCoverage.summary.certifiedRules}</strong>
+	                  {result.gapReasons?.length ? (
+	                    <div className="answerabilityGapReasons">
+	                      {result.gapReasons.map((reason: string) => <span key={reason}>{reason}</span>)}
+	                    </div>
+	                  ) : null}
+	                </div>
+	              ) : null}
+	              <pre>{JSON.stringify(result.candidates || [], null, 2)}</pre>
+	            </div>
           ) : null}
         </div>
       </div>
@@ -4966,10 +5135,12 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
     total: 0,
     draft: 0,
     certified: 0,
+    deprecated: 0,
     conflicts: 0,
     byStatus: [],
     byTargetObject: [],
     byConflictStatus: [],
+    byRuntimeGate: [],
     boundary: { mode: "local_rule_governance", importAllowed: false, providerCalls: false, erpWriteback: false }
   });
   const rules = useApi<KnowledgeRule[]>(rulePath, []);
@@ -5049,9 +5220,13 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
         target_metric_ids: rule.target_metric_ids.join(", "),
         target_dimension_ids: rule.target_dimension_ids.join(", "),
         condition_expression: rule.condition_expression,
-        conflict_status: rule.conflict_status,
-        lifecycle_status: rule.lifecycle_status,
-        owner: rule.owner,
+	        conflict_status: rule.conflict_status,
+	        lifecycle_status: rule.lifecycle_status,
+	        runtime_gate_status: rule.runtime_gate_status || "candidate_only",
+	        certification_policy: rule.certification_policy || "",
+	        certified_at: rule.certified_at || "",
+	        deprecated_at: rule.deprecated_at || "",
+	        owner: rule.owner,
         priority: rule.priority,
         workflow_id: rule.workflow_id,
         source_card_id: rule.source_card_id,
@@ -5084,17 +5259,25 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
     }
   }
 
-  async function reviewRule(rule: KnowledgeRule, status: "reviewed" | "certified" | "rejected") {
+  async function reviewRule(rule: KnowledgeRule, status: "reviewed" | "certified" | "rejected" | "deprecated") {
     setActiveRuleId(rule.id);
     try {
-      const payload = await api<{ ok: boolean; rule: KnowledgeRule }>(`/api/knowledge-rules/${encodeURIComponent(rule.id)}/review`, {
+      const route = status === "certified"
+        ? `/api/knowledge-rules/${encodeURIComponent(rule.id)}/certify`
+        : status === "deprecated"
+          ? `/api/knowledge-rules/${encodeURIComponent(rule.id)}/deprecate`
+          : `/api/knowledge-rules/${encodeURIComponent(rule.id)}/review`;
+      const payload = await api<{ ok: boolean; rule: KnowledgeRule }>(route, {
         method: "POST",
         body: JSON.stringify({
           status,
-          conflictStatus: status === "rejected" ? "rejected" : rule.conflict_status === "conflict" ? "conflict" : "clear",
+          runtimeGateStatus: status === "certified" ? "chatbi_runtime_candidate" : status === "deprecated" ? "deprecated" : undefined,
+          conflictStatus: ["rejected", "deprecated"].includes(status) ? "rejected" : rule.conflict_status === "conflict" ? "conflict" : "clear",
           reviewer: "local_user",
           reviewNote: status === "certified"
             ? "UI owner review: rule can be used by semantic governance and AIP recommendation cards."
+            : status === "deprecated"
+              ? "UI owner review: rule deprecated; no longer eligible for ChatBI runtime."
             : status === "rejected"
               ? "UI owner review: rule rejected; evidence retained for audit."
               : "UI owner review: rule checked, pending certification."
@@ -5381,20 +5564,22 @@ function KbPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset
                 <Badge tone={rule.conflict_status === "conflict" ? "warn" : "good"}>{rule.conflict_status}</Badge>
               </div>
               <p>{rule.condition_expression}</p>
-              <div className="ruleMetaGrid">
-                <span>{rule.rule_code}</span>
-                <span>{rule.target_object_type}</span>
-                <span>{rule.priority}</span>
-                <span>{rule.lifecycle_status}</span>
-              </div>
-              <small>{rule.source_card_title || rule.source_card_id} / rec {rule.recommendation_count || 0}</small>
-              <div className="qualityActions">
-                <button className="textButton" onClick={() => openRule(rule)}>详情</button>
-                <button className="textButton" onClick={() => reviewRule(rule, "reviewed")} disabled={activeRuleId === rule.id}>标记已审</button>
-                <button className="textButton" onClick={() => reviewRule(rule, "certified")} disabled={activeRuleId === rule.id || rule.conflict_status === "conflict"}>认证</button>
-                <button className="textButton" onClick={() => runRule(rule)} disabled={activeRuleId === rule.id}>触发建议卡</button>
-                <button className="textButton" onClick={() => reviewRule(rule, "rejected")} disabled={activeRuleId === rule.id}>拒绝</button>
-              </div>
+	              <div className="ruleMetaGrid">
+	                <span>{rule.rule_code}</span>
+	                <span>{rule.target_object_type}</span>
+	                <span>{rule.priority}</span>
+	                <span>{rule.lifecycle_status}</span>
+	                <span>{rule.runtime_gate_status || "candidate_only"}</span>
+	              </div>
+	              <small>{rule.source_card_title || rule.source_card_id} / rec {rule.recommendation_count || 0} / certified {rule.certified_at || "--"}</small>
+	              <div className="qualityActions knowledgeRuleCertificationControls">
+	                <button className="textButton" onClick={() => openRule(rule)}>详情</button>
+	                <button className="textButton" onClick={() => reviewRule(rule, "reviewed")} disabled={activeRuleId === rule.id}>标记已审</button>
+	                <button className="textButton" onClick={() => reviewRule(rule, "certified")} disabled={activeRuleId === rule.id || rule.conflict_status === "conflict"}>认证</button>
+	                <button className="textButton" onClick={() => runRule(rule)} disabled={activeRuleId === rule.id}>触发建议卡</button>
+	                <button className="textButton" onClick={() => reviewRule(rule, "rejected")} disabled={activeRuleId === rule.id}>拒绝</button>
+	                <button className="textButton" onClick={() => reviewRule(rule, "deprecated")} disabled={activeRuleId === rule.id || rule.lifecycle_status === "deprecated"}>废弃</button>
+	              </div>
             </article>
           )) : <div className="empty compact">暂无知识规则。可从知识卡片生成规则候选。</div>}
         </div>
@@ -6219,6 +6404,23 @@ const emptyRoleDetail: RoleWorkbenchDetail = {
   objects: [],
   events: [],
   recommendations: [],
+  objectDetails: [],
+  ruleCoverage: {
+    summary: {
+      totalRules: 0,
+      certifiedRules: 0,
+      reviewedRules: 0,
+      conflictRules: 0,
+      metricRefs: 0,
+      coveredMetrics: 0,
+      coverageRate: 0,
+      runtimeGateStatus: "blocked_by_missing_certified_rules"
+    },
+    objectTypeCoverage: [],
+    rules: []
+  },
+  recommendationHandoffs: [],
+  playbookReadiness: [],
   playbooks: [],
   metrics: [],
   evalCases: [],
@@ -6241,6 +6443,24 @@ const emptyRoleDetail: RoleWorkbenchDetail = {
       erpWriteback: false,
       allowedCallStatuses: ["blocked_disabled", "blocked_manual_gate_required"],
       policy: "dry_run_audit_only_until_provider_enabled_with_owner_approval_eval_and_budget"
+    }
+	  },
+  providerEvalGate: {
+    summary: {
+      evalCases: 0,
+      readyForManualReview: 0,
+      blockedByMissingEvidence: 0,
+      providerPolicyStatus: "all_disabled",
+      providerCalls: false,
+      erpWriteback: false
+    },
+    cases: [],
+    recentAudits: [],
+    boundary: {
+      mode: "offline_eval_gate_only",
+      providerCalls: false,
+      providerEnablement: false,
+      manualApprovalRequired: true
     }
   },
   platformReadiness: emptyPlatformReadiness,
@@ -6300,11 +6520,14 @@ type RoleDetailSectionId = typeof roleDetailSections[number]["id"];
 
 function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; onOpenAsset: (asset: AssetRef) => void }) {
   const [selectedRoleId, setSelectedRoleId] = useState("role_inventory");
+  const [selectedRoleObjectId, setSelectedRoleObjectId] = useState("");
   const [activeRoleSection, setActiveRoleSection] = useState<RoleDetailSectionId>("command");
   const [selectedRoleTargetIds, setSelectedRoleTargetIds] = useState<string[]>([]);
   const [refresh, setRefresh] = useState(0);
   const [actionNote, setActionNote] = useState("");
   const [drafting, setDrafting] = useState(false);
+  const [handoffNote, setHandoffNote] = useState("");
+  const [handoffId, setHandoffId] = useState("");
   const [providerAuditNote, setProviderAuditNote] = useState("");
   const [providerDryRun, setProviderDryRun] = useState(false);
   const [roleFilters, setRoleFilters] = useState({
@@ -6326,6 +6549,9 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
   const roleDomain = detail.data.domainProfile;
   const firstObject = detail.data.objects[0];
   const firstEvent = detail.data.events[0];
+  const selectedRoleObjectDetail = detail.data.objectDetails.find((item) => item.object.id === selectedRoleObjectId)
+    || detail.data.objectDetails[0]
+    || null;
   const openEvents = detail.data.events.filter((event) => event.status !== "closed");
   const criticalEvents = openEvents.filter((event) => ["critical", "high"].includes(event.severity));
   const activeRecommendations = detail.data.recommendations.filter((recommendation) => !["done", "replayed", "rejected"].includes(recommendation.approval_status));
@@ -6380,8 +6606,19 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
 
   useEffect(() => {
     setSelectedRoleTargetIds([]);
+    setSelectedRoleObjectId("");
     roleBatchPager.setPage(1);
   }, [activeRole.id]);
+
+  useEffect(() => {
+    if (!detail.data.objects.length) {
+      setSelectedRoleObjectId("");
+      return;
+    }
+    if (!selectedRoleObjectId || !detail.data.objects.some((object) => object.id === selectedRoleObjectId)) {
+      setSelectedRoleObjectId(detail.data.objects[0].id);
+    }
+  }, [activeRole.id, detail.data.objects.map((object) => object.id).join("|"), selectedRoleObjectId]);
 
   function toggleRoleTarget(id: string) {
     setSelectedRoleTargetIds((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
@@ -6462,6 +6699,28 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
       setProviderAuditNote(`记录失败：${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setProviderDryRun(false);
+    }
+  }
+
+  async function handoffRecommendation(recommendation: AipRecommendation) {
+    setHandoffId(recommendation.id);
+    setHandoffNote("");
+    try {
+      const payload = await api<{ ok: boolean; operation: WorkbenchOperation; role: RoleWorkbench }>(`/api/roles/recommendations/${encodeURIComponent(recommendation.id)}/handoff`, {
+        method: "POST",
+        body: JSON.stringify({
+          roleId: activeRole.id,
+          owner: activeRole.owner,
+          priority: recommendation.priority,
+          createdBy: "local_user"
+        })
+      });
+      setHandoffNote(`建议卡已承接到 ${payload.role.role_name}：${payload.operation.id}，等待 Owner 审核。`);
+      setRefresh((value) => value + 1);
+    } catch (err) {
+      setHandoffNote(`承接失败：${err instanceof Error ? err.message : String(err)}`);
+    } finally {
+      setHandoffId("");
     }
   }
 
@@ -6624,8 +6883,8 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
               </label>
               <button className="textButton" type="button" onClick={clearRoleFilters}>清空筛选</button>
             </div>
-            <div className="roleSlaShiftGrid">
-              <section className="roleSlaPanel">
+	            <div className="roleSlaShiftGrid">
+	              <section className="roleSlaPanel">
                 <div className="sectionLabel">
                   <span>SLA</span>
                   <strong>角色 SLA 摘要</strong>
@@ -6645,28 +6904,50 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
                   <strong>{shiftLabel}</strong>
                   <span>{shiftCadence}</span>
                   <small>本阶段只形成角色工作流节奏提示，不启用排班系统。</small>
-                </div>
-              </section>
-            </div>
-            <div className="roleQueueGrid">
+	                </div>
+	              </section>
+	            </div>
+	            <div className="roleRuleCoverage">
+	              <article>
+	                <span>角色认证规则</span>
+	                <strong>{detail.data.ruleCoverage.summary.certifiedRules}/{detail.data.ruleCoverage.summary.totalRules}</strong>
+	                <small>{detail.data.ruleCoverage.summary.runtimeGateStatus}</small>
+	              </article>
+	              <article>
+	                <span>指标覆盖率</span>
+	                <strong>{Math.round(Number(detail.data.ruleCoverage.summary.coverageRate || 0) * 100)}%</strong>
+	                <small>{detail.data.ruleCoverage.summary.coveredMetrics}/{detail.data.ruleCoverage.summary.metricRefs} role metrics</small>
+	              </article>
+	              <article>
+	                <span>规则冲突</span>
+	                <strong>{detail.data.ruleCoverage.summary.conflictRules}</strong>
+	                <small>conflict rules</small>
+	              </article>
+	              <article>
+	                <span>建议承接</span>
+	                <strong>{detail.data.recommendationHandoffs.length}</strong>
+	                <small>handoff operations</small>
+	              </article>
+	            </div>
+	            <div className="roleQueueGrid">
               <article>
                 <div className="surfaceHead">
                   <h3>对象队列</h3>
                   <Badge tone="blue">{detail.data.objects.length} objects</Badge>
                 </div>
-                <div className="roleQueueList">
-                  {detail.data.objects.slice(0, 8).map((object) => (
-                    <button key={object.id} onClick={() => onOpenAsset(aipObjectAsset(object))}>
-                      <span>
-                        <strong>{object.display_name}</strong>
-                        <small>{object.object_type} / {object.object_key}</small>
+	                <div className="roleQueueList">
+	                  {detail.data.objects.slice(0, 8).map((object) => (
+	                    <button key={object.id} className={selectedRoleObjectId === object.id ? "active" : ""} onClick={() => setSelectedRoleObjectId(object.id)}>
+	                      <span>
+	                        <strong>{object.display_name}</strong>
+	                        <small>{object.object_type} / {object.object_key}</small>
                       </span>
                       <Badge tone={toneFromStatus(object.risk_level)}>{object.risk_level}</Badge>
                     </button>
                   ))}
                   {!detail.data.objects.length ? <div className="empty compact">暂无对象队列。</div> : null}
-                </div>
-              </article>
+	                </div>
+	              </article>
               <article>
                 <div className="surfaceHead">
                   <h3>事件队列</h3>
@@ -6690,21 +6971,82 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
                   <h3>推荐动作</h3>
                   <Badge tone="blue">{detail.data.recommendations.length} cards</Badge>
                 </div>
-                <div className="roleQueueList">
-                  {detail.data.recommendations.slice(0, 8).map((recommendation) => (
-                    <button key={recommendation.id} onClick={() => onOpenAsset(aipRecommendationAsset(recommendation))}>
-                      <span>
-                        <strong>{recommendation.recommendation_title}</strong>
-                        <small>{recommendation.owner} / {recommendation.scenario_type}</small>
-                      </span>
-                      <Badge tone={toneFromStatus(recommendation.approval_status)}>{recommendation.approval_status}</Badge>
-                    </button>
-                  ))}
-                  {!detail.data.recommendations.length ? <div className="empty compact">暂无推荐动作。</div> : null}
-                </div>
-              </article>
-            </div>
-            <div className="roleActionPanel">
+	                <div className="roleQueueList">
+	                  {detail.data.recommendations.slice(0, 8).map((recommendation) => (
+	                    <article className="roleRecommendationRow" key={recommendation.id}>
+	                      <button onClick={() => onOpenAsset(aipRecommendationAsset(recommendation))}>
+	                        <span>
+	                          <strong>{recommendation.recommendation_title}</strong>
+	                          <small>{recommendation.owner} / {recommendation.scenario_type}</small>
+	                        </span>
+	                        <Badge tone={toneFromStatus(recommendation.approval_status)}>{recommendation.approval_status}</Badge>
+	                      </button>
+	                      <button className="textButton roleRecommendationHandoff" disabled={handoffId === recommendation.id} onClick={() => handoffRecommendation(recommendation)}>
+	                        {handoffId === recommendation.id ? "承接中..." : "承接为角色任务"}
+	                      </button>
+	                    </article>
+	                  ))}
+	                  {!detail.data.recommendations.length ? <div className="empty compact">暂无推荐动作。</div> : null}
+	                </div>
+	              </article>
+	            </div>
+	            {selectedRoleObjectDetail ? (
+	              <aside className="roleObjectDrawer">
+	                <div className="surfaceHead">
+	                  <div>
+	                    <p className="eyebrow">Object 360</p>
+	                    <h3>{selectedRoleObjectDetail.object.display_name}</h3>
+	                    <p className="muted">{selectedRoleObjectDetail.object.object_type} / {selectedRoleObjectDetail.object.object_key}</p>
+	                  </div>
+	                  <div className="badgeCluster">
+	                    <Badge tone={toneFromStatus(selectedRoleObjectDetail.object.risk_level)}>{selectedRoleObjectDetail.object.risk_level}</Badge>
+	                    <Badge tone="blue">{selectedRoleObjectDetail.object.health_score} health</Badge>
+	                  </div>
+	                </div>
+	                <div className="roleObjectMetrics">
+	                  <article>
+	                    <span>事件</span>
+	                    <strong>{selectedRoleObjectDetail.events.length}</strong>
+	                    <small>role scoped</small>
+	                  </article>
+	                  <article>
+	                    <span>指标</span>
+	                    <strong>{selectedRoleObjectDetail.metrics.length}</strong>
+	                    <small>role metrics</small>
+	                  </article>
+	                  <article>
+	                    <span>知识规则</span>
+	                    <strong>{selectedRoleObjectDetail.knowledgeRules.length}</strong>
+	                    <small>matched rules</small>
+	                  </article>
+	                  <article>
+	                    <span>建议卡</span>
+	                    <strong>{selectedRoleObjectDetail.recommendations.length}</strong>
+	                    <small>handoff ready</small>
+	                  </article>
+	                </div>
+	                <div className="roleObjectEvidence">
+	                  <div>
+	                    <strong>证据覆盖</strong>
+	                    <small>source {selectedRoleObjectDetail.evidenceSummary.sourceRefs} / event {selectedRoleObjectDetail.evidenceSummary.eventEvidenceRefs} / rule {selectedRoleObjectDetail.evidenceSummary.ruleEvidenceRefs} / rec {selectedRoleObjectDetail.evidenceSummary.recommendationEvidenceRefs}</small>
+	                  </div>
+	                  <div className="answerabilityGapReasons">
+	                    {selectedRoleObjectDetail.knowledgeRules.slice(0, 4).map((rule) => <span key={rule.id}>{rule.rule_code}</span>)}
+	                    {!selectedRoleObjectDetail.knowledgeRules.length ? <span>missing_certified_rule_binding</span> : null}
+	                  </div>
+	                </div>
+	                <div className="roleObjectActions">
+	                  <button className="textButton" onClick={() => onOpenAsset(aipObjectAsset(selectedRoleObjectDetail.object))}>打开对象资产</button>
+	                  <button className="textButton" onClick={() => createActionDraft("single")} disabled={drafting}>生成角色行动</button>
+	                  {selectedRoleObjectDetail.recommendations[0] ? (
+	                    <button className="textButton" onClick={() => handoffRecommendation(selectedRoleObjectDetail.recommendations[0])} disabled={handoffId === selectedRoleObjectDetail.recommendations[0].id}>
+	                      承接首条建议卡
+	                    </button>
+	                  ) : null}
+	                </div>
+	              </aside>
+	            ) : null}
+	            <div className="roleActionPanel">
               <div>
                 <p className="eyebrow">Ledger action</p>
                 <h3>本地行动草稿</h3>
@@ -6744,27 +7086,38 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
                   {drafting ? "创建中..." : "创建批量行动草稿"}
                 </button>
               </div>
-            </div>
-            {actionNote ? <div className="kbNotice">{actionNote}</div> : null}
-            <div className="roleSupportingGrid">
-              <section className="rolePlaybookPanel">
-                <div className="surfaceHead">
-                  <h3>角色 Playbook</h3>
-                  <Badge tone="blue">{detail.data.playbooks.length}</Badge>
-                </div>
-                <div className="playbookList">
-                  {detail.data.playbooks.map((playbook) => (
-                    <article key={playbook.id}>
-                      <div className="ledgerItemHead">
-                        <strong>{playbook.playbook_name}</strong>
-                        <Badge tone={toneFromStatus(playbook.priority)}>{playbook.priority}</Badge>
-                      </div>
-                      <p>{playbook.trigger_condition}</p>
-                      <small>{cellValue(playbook.action_template)}</small>
-                    </article>
-                  ))}
-                </div>
-              </section>
+	            </div>
+	            {actionNote ? <div className="kbNotice">{actionNote}</div> : null}
+	            {handoffNote ? <div className="kbNotice">{handoffNote}</div> : null}
+	            <div className="roleSupportingGrid">
+	              <section className="rolePlaybookPanel roleScenarioPlaybookPanel">
+	                <div className="surfaceHead">
+	                  <div>
+	                    <h3>角色 Playbook</h3>
+	                    <p className="muted">按角色场景把对象、事件、指标、证据和动作模板串成可审核 SOP。</p>
+	                  </div>
+	                  <Badge tone="blue">{detail.data.playbooks.length}</Badge>
+	                </div>
+	                <div className="playbookList">
+	                  {detail.data.playbooks.map((playbook) => (
+	                    <article key={playbook.id}>
+	                      <div className="ledgerItemHead">
+	                        <strong>{playbook.playbook_name}</strong>
+	                        <Badge tone={toneFromStatus(detail.data.playbookReadiness.find((item) => item.id === playbook.id)?.readinessStatus || playbook.priority)}>
+	                          {detail.data.playbookReadiness.find((item) => item.id === playbook.id)?.readinessStatus || playbook.priority}
+	                        </Badge>
+	                      </div>
+	                      <p>{playbook.trigger_condition}</p>
+	                      <small>{cellValue(playbook.action_template)}</small>
+	                      <div className="playbookReadiness">
+	                        <span>{detail.data.playbookReadiness.find((item) => item.id === playbook.id)?.scenarioType || playbook.scenario_type || "role_exception"}</span>
+	                        <span>{detail.data.playbookReadiness.find((item) => item.id === playbook.id)?.evidenceCount || 0} evidence</span>
+	                        <span>{detail.data.playbookReadiness.find((item) => item.id === playbook.id)?.certifiedRules || 0} certified rules</span>
+	                      </div>
+	                    </article>
+	                  ))}
+	                </div>
+	              </section>
               <section className="providerPolicyPanel">
                 <div className="surfaceHead">
                   <div>
@@ -6776,13 +7129,37 @@ function RoleWorkbenchPanel({ module, onOpenAsset }: { module: WorkbenchModule; 
                     <Badge tone="blue">{detail.data.providerGatewaySummary.blockedCalls} blocked</Badge>
                   </div>
                 </div>
-                <div className="providerReadinessStats">
-                  <div><span>决策记录</span><strong>{detail.data.providerGatewaySummary.decisionRecords}</strong></div>
-                  <div><span>Prompt 版本</span><strong>{detail.data.providerGatewaySummary.promptVersions}</strong></div>
-                  <div><span>Call audit</span><strong>{detail.data.providerGatewaySummary.callAudits}</strong></div>
-                  <div><span>首选候选</span><strong>{detail.data.providerGatewaySummary.preferredProvider || "--"}</strong></div>
-                </div>
-                <div className="providerPolicyList providerReadinessList">
+	                <div className="providerReadinessStats">
+	                  <div><span>决策记录</span><strong>{detail.data.providerGatewaySummary.decisionRecords}</strong></div>
+	                  <div><span>Prompt 版本</span><strong>{detail.data.providerGatewaySummary.promptVersions}</strong></div>
+	                  <div><span>Call audit</span><strong>{detail.data.providerGatewaySummary.callAudits}</strong></div>
+	                  <div><span>首选候选</span><strong>{detail.data.providerGatewaySummary.preferredProvider || "--"}</strong></div>
+	                </div>
+	                <div className="providerEvalGate">
+	                  <div className="surfaceHead compactHead">
+	                    <div>
+	                      <h4>离线 Eval Gate</h4>
+	                      <p className="muted">只做启用前检查：证据、prompt、规则覆盖、预算与人工审批，不调用 DeepSeek/Kimi。</p>
+	                    </div>
+	                    <Badge tone={detail.data.providerEvalGate.summary.readyForManualReview ? "blue" : "warn"}>
+	                      {detail.data.providerEvalGate.summary.readyForManualReview} ready / {detail.data.providerEvalGate.summary.blockedByMissingEvidence} blocked
+	                    </Badge>
+	                  </div>
+	                  <div className="providerEvalGrid">
+	                    {(detail.data.providerEvalGate.cases || []).slice(0, 4).map((item: AnyRow) => (
+	                      <article key={String(item.id)}>
+	                        <div className="ledgerItemHead">
+	                          <strong>{cellValue(item.scenarioType)}</strong>
+	                          <Badge tone={toneFromStatus(String(item.readinessStatus))}>{cellValue(item.readinessStatus)}</Badge>
+	                        </div>
+	                        <p>{cellValue(item.question)}</p>
+	                        <small>score {cellValue(item.coverageScore)} / evidence {cellValue(item.evidenceCount)} / prompt {cellValue(item.promptCount)} / {cellValue(item.budgetPolicy)}</small>
+	                      </article>
+	                    ))}
+	                    {!(detail.data.providerEvalGate.cases || []).length ? <div className="empty compact">暂无 eval case。</div> : null}
+	                  </div>
+	                </div>
+	                <div className="providerPolicyList providerReadinessList">
                   {detail.data.providerPolicies.map((policy) => (
                     <article key={policy.id}>
                       <div className="ledgerItemHead">

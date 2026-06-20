@@ -642,6 +642,61 @@ const reviewedKnowledgeRule = await request(`/api/knowledge-rules/${knowledgeRul
 });
 assert(reviewedKnowledgeRule.rule?.lifecycle_status === "reviewed", "Knowledge rule review failed", reviewedKnowledgeRule);
 
+const certifiedKnowledgeRule = await request(`/api/knowledge-rules/${knowledgeRule.rule.id}/certify`, {
+  method: "POST",
+  body: JSON.stringify({
+    reviewer: "p0_knowledge_rule_smoke",
+    conflictStatus: "clear",
+    runtimeGateStatus: "chatbi_runtime_candidate",
+    reviewNote: "Smoke certifies this knowledge rule for local semantic governance only."
+  })
+});
+assert(certifiedKnowledgeRule.rule?.lifecycle_status === "certified", "Knowledge rule certification failed", certifiedKnowledgeRule);
+assert(certifiedKnowledgeRule.rule?.runtime_gate_status === "chatbi_runtime_candidate", "Knowledge rule runtime gate missing", certifiedKnowledgeRule.rule);
+
+const knowledgeRuleDetail = await request(`/api/knowledge-rules/${knowledgeRule.rule.id}`);
+assert(knowledgeRuleDetail.certification?.chatbiEligible === true, "Knowledge rule detail should mark certified runtime eligibility", knowledgeRuleDetail.certification);
+
+const semanticGuardrailRule = await request("/api/knowledge-rules", {
+  method: "POST",
+  body: JSON.stringify({
+    ruleName: `P3-A ChatBI semantic guardrail ${stamp}`,
+    targetObjectType: "inventory_batch",
+    targetMetricIds: [chatMetric.id],
+    conditionExpression: smokeQuestion,
+    ruleType: "semantic_guardrail",
+    priority: "P1",
+    evidenceRefs: [{ type: "smoke", ref: "scripts/smoke-core-workflows.mjs" }],
+    actionTemplate: {
+      recommendationTitle: "ChatBI certified rule coverage smoke",
+      recommendationDetail: "Smoke semantic guardrail binds certified ChatBI metric to certified knowledge rule.",
+      actionOptions: ["verify metric", "verify certified rule", "return governed answer"]
+    },
+    createdBy: "p3a_rule_smoke"
+  })
+});
+const certifiedSemanticGuardrailRule = await request(`/api/knowledge-rules/${semanticGuardrailRule.rule.id}/certify`, {
+  method: "POST",
+  body: JSON.stringify({
+    reviewer: "p3a_rule_smoke",
+    conflictStatus: "clear",
+    runtimeGateStatus: "chatbi_runtime_candidate",
+    reviewNote: "P3-A smoke certifies the semantic guardrail for ChatBI coverage linkage."
+  })
+});
+assert(certifiedSemanticGuardrailRule.rule?.runtime_gate_status === "chatbi_runtime_candidate", "Semantic guardrail runtime gate missing", certifiedSemanticGuardrailRule.rule);
+
+const dryRunWithCertifiedRule = await request("/api/chatbi/dry-run", {
+  method: "POST",
+  body: JSON.stringify({ question: smokeQuestion })
+});
+assert(dryRunWithCertifiedRule.answerable === true, "ChatBI dry-run should still answer certified metric after rule certification", dryRunWithCertifiedRule);
+assert(dryRunWithCertifiedRule.runtimeGateStatus === "certified_metric_and_rule", "ChatBI dry-run did not link certified rule coverage", dryRunWithCertifiedRule);
+assert(dryRunWithCertifiedRule.certifiedRuleCoverage?.summary?.matchedRules >= 1, "ChatBI dry-run missing certified rule coverage", dryRunWithCertifiedRule.certifiedRuleCoverage);
+
+const chatbiScorecardAfterRule = await request("/api/chatbi/answerability-scorecard");
+assert(chatbiScorecardAfterRule.certifiedRuleCoverage?.summary?.certifiedRules >= 1, "ChatBI scorecard missing certified rule coverage", chatbiScorecardAfterRule.certifiedRuleCoverage);
+
 const triggeredKnowledgeRule = await request(`/api/knowledge-rules/${knowledgeRule.rule.id}/run`, {
   method: "POST",
   body: JSON.stringify({ actor: "p0_knowledge_rule_smoke" })
@@ -655,7 +710,30 @@ assert(
 
 const knowledgeRuleSummary = await request("/api/knowledge-rules/summary");
 assert(knowledgeRuleSummary.total >= 1, "Knowledge rule summary missing rules", knowledgeRuleSummary);
+assert(knowledgeRuleSummary.certified >= 1, "Knowledge rule summary missing certified count", knowledgeRuleSummary);
+assert(Array.isArray(knowledgeRuleSummary.byRuntimeGate), "Knowledge rule runtime gate summary missing", knowledgeRuleSummary);
 assert(knowledgeRuleSummary.boundary?.providerCalls === false && knowledgeRuleSummary.boundary?.erpWriteback === false, "Knowledge rule boundary changed", knowledgeRuleSummary.boundary);
+
+const deprecatedRule = await request("/api/knowledge-rules", {
+  method: "POST",
+  body: JSON.stringify({
+    ruleName: `P3-A deprecated rule smoke ${stamp}`,
+    targetObjectType: "inventory_batch",
+    targetMetricIds: ["business_available_qty"],
+    conditionExpression: `deprecated_smoke_${Date.now()} = true`,
+    ruleType: "diagnostic",
+    createdBy: "p3a_rule_smoke"
+  })
+});
+const deprecatedRuleReview = await request(`/api/knowledge-rules/${deprecatedRule.rule.id}/deprecate`, {
+  method: "POST",
+  body: JSON.stringify({
+    reviewer: "p3a_rule_smoke",
+    reviewNote: "Smoke validates deprecated lifecycle without touching source systems."
+  })
+});
+assert(deprecatedRuleReview.rule?.lifecycle_status === "deprecated", "Knowledge rule deprecate transition failed", deprecatedRuleReview.rule);
+assert(deprecatedRuleReview.rule?.runtime_gate_status === "deprecated", "Deprecated rule runtime gate missing", deprecatedRuleReview.rule);
 
 const knowledgeRuleExport = await request("/api/export/knowledge-rules?format=json");
 assert(knowledgeRuleExport.boundary?.mode === "read_only_export", "Knowledge rule JSON export is not read-only", knowledgeRuleExport.boundary);
@@ -939,10 +1017,14 @@ for (const roleId of requiredRoleIds) {
   assert(roleDetail.role?.id === roleId, `Role detail failed for ${roleId}`, roleDetail);
   assert(roleDetail.domainProfile?.operatingQuestion, `Role domain profile missing operating question for ${roleId}`, roleDetail.domainProfile);
   assert(Array.isArray(roleDetail.domainProfile?.inputAssets) && roleDetail.domainProfile.inputAssets.length >= 3, `Role domain profile missing input assets for ${roleId}`, roleDetail.domainProfile);
-  assert(Array.isArray(roleDetail.workstreams) && roleDetail.workstreams.length >= 4, `Role workstreams missing for ${roleId}`, roleDetail.workstreams);
-  assert(Array.isArray(roleDetail.filterOptions?.objectTypes) && roleDetail.filterOptions.objectTypes.length >= 1, `Role filter options missing object types for ${roleId}`, roleDetail.filterOptions);
-  assert(roleDetail.actionBoundary?.providerCalls === false && roleDetail.actionBoundary?.erpWriteback === false, `Role action boundary changed for ${roleId}`, roleDetail.actionBoundary);
-}
+	  assert(Array.isArray(roleDetail.workstreams) && roleDetail.workstreams.length >= 4, `Role workstreams missing for ${roleId}`, roleDetail.workstreams);
+	  assert(Array.isArray(roleDetail.filterOptions?.objectTypes) && roleDetail.filterOptions.objectTypes.length >= 1, `Role filter options missing object types for ${roleId}`, roleDetail.filterOptions);
+	  assert(Array.isArray(roleDetail.objectDetails) && roleDetail.objectDetails.length >= 1, `Role object 360 details missing for ${roleId}`, roleDetail.objectDetails);
+	  assert(roleDetail.ruleCoverage?.summary?.runtimeGateStatus, `Role rule coverage missing for ${roleId}`, roleDetail.ruleCoverage);
+	  assert(Array.isArray(roleDetail.playbookReadiness), `Role playbook readiness missing for ${roleId}`, roleDetail.playbookReadiness);
+	  assert(roleDetail.providerEvalGate?.summary?.providerCalls === false, `Role provider eval gate boundary changed for ${roleId}`, roleDetail.providerEvalGate);
+	  assert(roleDetail.actionBoundary?.providerCalls === false && roleDetail.actionBoundary?.erpWriteback === false, `Role action boundary changed for ${roleId}`, roleDetail.actionBoundary);
+	}
 
 const plannerFiltered = await request("/api/roles/workbenches/role_planner?objectType=sku&riskLevel=high");
 assert(plannerFiltered.activeFilters?.objectType === "sku", "Role filter did not echo objectType", plannerFiltered.activeFilters);
@@ -955,7 +1037,15 @@ assert(inventoryRoleDetail.objects?.some((object) => object.id === "obj_batch_fb
 assert(inventoryRoleDetail.events?.some((event) => event.event_type === "negative_available_inventory"), "Inventory role missing negative inventory event", inventoryRoleDetail.events);
 assert(inventoryRoleDetail.playbooks?.some((playbook) => playbook.id === "pb_inventory_negative"), "Inventory role missing negative inventory playbook", inventoryRoleDetail.playbooks);
 assert(inventoryRoleDetail.evalCases?.some((item) => item.scenario_type === "negative_available_inventory"), "Inventory role missing eval case", inventoryRoleDetail.evalCases);
+assert(inventoryRoleDetail.objectDetails?.some((item) => item.object?.id === "obj_batch_fba_negative_available"), "Inventory role missing object detail drawer payload", inventoryRoleDetail.objectDetails);
+assert(inventoryRoleDetail.playbookReadiness?.some((item) => item.id === "pb_inventory_negative"), "Inventory role missing playbook readiness payload", inventoryRoleDetail.playbookReadiness);
+assert(inventoryRoleDetail.providerEvalGate?.summary?.providerCalls === false, "Inventory role provider eval gate changed boundary", inventoryRoleDetail.providerEvalGate);
 assert(inventoryRoleDetail.actionBoundary?.providerCalls === false && inventoryRoleDetail.actionBoundary?.erpWriteback === false, "Inventory role action boundary changed", inventoryRoleDetail.actionBoundary);
+
+const inventoryObjectDetail = await request("/api/roles/workbenches/role_inventory/objects/obj_batch_fba_negative_available");
+assert(inventoryObjectDetail.object?.id === "obj_batch_fba_negative_available", "Role object detail endpoint did not resolve target object", inventoryObjectDetail);
+assert(Array.isArray(inventoryObjectDetail.metrics), "Role object detail missing metrics", inventoryObjectDetail);
+assert(inventoryObjectDetail.actions?.providerCalls === false && inventoryObjectDetail.actions?.erpWriteback === false, "Role object detail action boundary changed", inventoryObjectDetail.actions);
 
 const roleJsonExport = await request("/api/roles/workbenches/role_inventory/export?format=json");
 assert(roleJsonExport.boundary?.mode === "read_only_role_domain_export", "Role JSON export boundary changed", roleJsonExport.boundary);
@@ -1008,6 +1098,25 @@ const roleBulkPayload = JSON.parse(roleBulkActionDraft.operation.operation_paylo
 assert(roleBulkTargets.length >= 3, "Role bulk action draft did not retain multiple targets", roleBulkActionDraft.operation);
 assert(roleBulkPayload.batchMode === "bulk", "Role bulk action payload missing batchMode", roleBulkPayload);
 assert(roleBulkPayload.selectedTargetCount >= 3, "Role bulk action payload missing selected target count", roleBulkPayload);
+
+const recommendationHandoff = await request(`/api/roles/recommendations/${triggeredKnowledgeRule.recommendation.recommendation.id}/handoff`, {
+  method: "POST",
+  body: JSON.stringify({
+    roleId: "role_inventory",
+    owner: "p0_role_smoke",
+    priority: "P0",
+    createdBy: "p0_role_smoke"
+  })
+});
+assert(recommendationHandoff.operation?.operation_type === "recommendation_role_handoff", "Recommendation handoff did not create role operation", recommendationHandoff);
+assert(recommendationHandoff.boundary?.providerCalls === false && recommendationHandoff.boundary?.erpWriteback === false, "Recommendation handoff boundary changed", recommendationHandoff.boundary);
+
+const inventoryRoleAfterHandoff = await request("/api/roles/workbenches/role_inventory");
+assert(
+  inventoryRoleAfterHandoff.recommendationHandoffs?.some((operation) => operation.id === recommendationHandoff.operation.id),
+  "Inventory role detail missing recommendation handoff operation",
+  inventoryRoleAfterHandoff.recommendationHandoffs
+);
 assert(roleBulkPayload.slaStatus === "critical", "Role bulk action payload missing SLA status", roleBulkPayload);
 assert(roleBulkPayload.shiftCadence === "daily control tower", "Role bulk action payload missing shift cadence", roleBulkPayload);
 assert(roleBulkActionDraft.boundary?.providerCalls === false && roleBulkActionDraft.boundary?.erpWriteback === false, "Role bulk action boundary changed", roleBulkActionDraft.boundary);
@@ -1207,7 +1316,9 @@ console.log(
         "chatbiSummary.answerabilityGovernance",
         "chatbiAnswerability.scorecard",
         "chatbiAnswerability.domainCoverage",
+        "chatbiAnswerability.certifiedRuleCoverage",
         "chatbi.dryRun",
+        "chatbi.dryRunCertifiedRuleLinked",
         "aiChat.supportedOrPartial",
         "aiChat.evidenceExportJson",
         "aiChat.evidenceExportMarkdown",
@@ -1219,6 +1330,9 @@ console.log(
         "kbCrosswalkMatrix.read",
         "knowledgeRule.createFromCard",
         "knowledgeRule.review",
+        "knowledgeRule.certify",
+        "knowledgeRule.detail",
+        "knowledgeRule.deprecate",
         "knowledgeRule.triggerRecommendation",
         "knowledgeRule.exportJson",
         "knowledgeRule.exportExcel",
@@ -1253,8 +1367,12 @@ console.log(
         "roleWorkbench.domainProfiles",
         "roleWorkbench.filters",
         "roleWorkbench.inventoryDetail",
+        "roleWorkbench.objectDetail",
+        "roleWorkbench.ruleCoverage",
+        "roleWorkbench.playbookReadiness",
         "roleWorkbench.actionDraft",
         "roleWorkbench.bulkActionDraft",
+        "roleWorkbench.recommendationHandoff",
         "roleWorkbench.domainExportJson",
         "roleWorkbench.domainExportExcel",
         "providerGatewayPolicies.readDisabled",
@@ -1265,6 +1383,7 @@ console.log(
         "promptVersion.createDraftDisabled",
         "providerCallAudit.blockedDryRun",
         "providerCallAudit.filter",
+        "providerEvalGate.offlineReadiness",
         "platformReadiness.summary",
         "platformReadiness.rbacPolicies",
         "platformReadiness.postgresTriggers",

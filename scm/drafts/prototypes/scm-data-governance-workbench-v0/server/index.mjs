@@ -59,6 +59,7 @@ ensureKnowledgeRulesSchema();
 ensureRoleProviderGovernanceSchema();
 ensureProviderGatewayReadinessSchema();
 ensurePlatformReadinessSchema();
+seedKnowledgeRulesIfEmpty();
 
 function json(res, payload, status = 200) {
   const body = JSON.stringify(payload);
@@ -2167,6 +2168,116 @@ function ensureKnowledgeRulesSchema() {
     CREATE INDEX IF NOT EXISTS idx_knowledge_rule_conflicts_rule ON knowledge_rule_conflicts(rule_id, status);
     CREATE INDEX IF NOT EXISTS idx_knowledge_rule_conflicts_peer ON knowledge_rule_conflicts(conflicting_rule_id, status);
   `);
+  ensureTableColumn("knowledge_rules", "certified_at", "TEXT NOT NULL DEFAULT ''");
+  ensureTableColumn("knowledge_rules", "deprecated_at", "TEXT NOT NULL DEFAULT ''");
+  ensureTableColumn("knowledge_rules", "certification_policy", "TEXT NOT NULL DEFAULT 'owner_review_required'");
+  ensureTableColumn("knowledge_rules", "runtime_gate_status", "TEXT NOT NULL DEFAULT 'candidate_only'");
+}
+
+function findKnowledgeRuleSeedCard(titleHints = []) {
+  for (const hint of titleHints) {
+    const row = get(
+      `SELECT id
+       FROM kb_cards
+       WHERE title LIKE ? OR summary LIKE ?
+       ORDER BY
+         CASE evidence_level WHEN 'source_extracted' THEN 0 WHEN 'derived_synthesis' THEN 1 ELSE 2 END,
+         created_at DESC,
+         title
+       LIMIT 1`,
+      [`%${hint}%`, `%${hint}%`]
+    );
+    if (row?.id) return row.id;
+  }
+  return "";
+}
+
+function seedKnowledgeRulesIfEmpty() {
+  if (tableCount("knowledge_rules") > 0) return;
+  const seeds = [
+    {
+      ruleCode: "KR-SEED-NEGATIVE-AVAILABLE-INVENTORY",
+      ruleName: "FBA 可用库存为负必须进入对象化诊断",
+      titleHints: ["备货库存规则指标字典", "备货库存业务规则总览", "备货库存"],
+      sourceDomainId: "stocking-rules",
+      targetObjectType: "inventory_batch",
+      targetMetricIds: ["SCM-MECE-L3-027", "SCM-MECE-L3-044", "SCM-MECE-L3-138"],
+      targetDimensionIds: ["dim_sku", "dim_warehouse", "dim_inventory_status", "dim_snapshot_date"],
+      conditionExpression: "business_available_qty < 0",
+      priority: "P0",
+      actionTemplate: {
+        recommendationTitle: "FBA 可用库存为负诊断",
+        recommendationDetail: "业务可用库存小于 0 时，先串联 SKU、Warehouse、InventoryBatch、平台预占、同步延迟和批次状态证据，再进入人工复核。",
+        actionOptions: ["核对平台预占/同步延迟", "复核批次状态与库存流水", "生成角色行动草稿并保留审计证据"]
+      }
+    },
+    {
+      ruleCode: "KR-SEED-STOCKOUT-RISK-COVERAGE",
+      ruleName: "断货风险必须同时校验库存覆盖与供给连续性",
+      titleHints: ["安全库存", "需求预测", "三道防线", "断货"],
+      sourceDomainId: "supply-chain-operations",
+      targetObjectType: "sku",
+      targetMetricIds: ["SCM-MECE-L3-010", "SCM-MECE-L3-113", "SCM-MECE-L3-116"],
+      targetDimensionIds: ["dim_sku", "dim_listing", "dim_channel", "dim_snapshot_date"],
+      conditionExpression: "stockout_days > 0 OR available_days < safety_stock_days",
+      priority: "P1",
+      actionTemplate: {
+        recommendationTitle: "断货风险供给连续性诊断",
+        recommendationDetail: "断货风险不能只看单点库存，需要同时复核 ForecastVersion、PurchasePlan、PO、Shipment 与 Listing 动销证据。",
+        actionOptions: ["复核预测版本与安全库存", "核对 PO/Shipment ETA", "进入计划/采购角色承接流"]
+      }
+    },
+    {
+      ruleCode: "KR-SEED-AGING-OVERSTOCK-COST",
+      ruleName: "库龄超储判断必须联动成本与动销",
+      titleHints: ["高成本-高库存", "库龄", "仓配-库存-运输", "总成本"],
+      sourceDomainId: "supply-chain-operations",
+      targetObjectType: "inventory_batch",
+      targetMetricIds: ["SCM-MECE-L3-038", "SCM-MECE-L3-039", "SCM-MECE-L3-041", "SCM-MECE-L3-080"],
+      targetDimensionIds: ["dim_sku", "dim_warehouse", "dim_cost_type", "dim_month"],
+      conditionExpression: "storage_age_days > threshold_days AND recent_sales_qty < sales_threshold",
+      priority: "P1",
+      actionTemplate: {
+        recommendationTitle: "库龄超储成本诊断",
+        recommendationDetail: "库龄/超储不能只看仓储费，需要把 InventoryBatch、Warehouse、Listing 销速、促销/清仓策略和 CostEvent 一起判断。",
+        actionOptions: ["核对库龄分段与成本口径", "联动 Listing 动销与清仓策略", "生成成本/库存角色复核任务"]
+      }
+    }
+  ];
+  seeds.forEach((seed) => {
+    const result = createKnowledgeRule({
+      sourceCardId: findKnowledgeRuleSeedCard(seed.titleHints),
+      sourceDomainId: seed.sourceDomainId,
+      ruleCode: seed.ruleCode,
+      ruleName: seed.ruleName,
+      ruleType: "semantic_guardrail",
+      targetObjectType: seed.targetObjectType,
+      targetMetricIds: seed.targetMetricIds,
+      targetDimensionIds: seed.targetDimensionIds,
+      conditionExpression: seed.conditionExpression,
+      actionTemplate: seed.actionTemplate,
+      owner: "knowledge_governance_owner",
+      priority: seed.priority,
+      createdBy: "system_seed"
+    });
+    if (result?.rule?.id) {
+      reviewKnowledgeRule(result.rule.id, {
+        status: "certified",
+        reviewer: "system_seed",
+        reviewNote: "Seeded certified rule for public read-only demo and ChatBI runtime-gate validation.",
+        certificationPolicy: "seeded_owner_review_required_before_business_use",
+        runtimeGateStatus: "chatbi_runtime_candidate"
+      });
+    }
+  });
+  writeAudit("knowledge_rule.seeded", "knowledge_rule", "seed_public_demo_rules", {
+    count: seeds.length,
+    boundary: {
+      providerCalls: false,
+      erpWriteback: false,
+      sourceKnowledgeCardsModified: false
+    }
+  }, "system_seed");
 }
 
 function ensureRoleProviderGovernanceSchema() {
@@ -2235,6 +2346,12 @@ function ensureRoleProviderGovernanceSchema() {
 
     CREATE INDEX IF NOT EXISTS idx_agent_eval_cases_role ON agent_eval_cases(role_id, scenario_type, status);
   `);
+  ensureTableColumn("role_playbooks", "scenario_type", "TEXT NOT NULL DEFAULT ''");
+  ensureTableColumn("role_playbooks", "readiness_status", "TEXT NOT NULL DEFAULT 'draft'");
+  ensureTableColumn("agent_eval_cases", "readiness_status", "TEXT NOT NULL DEFAULT 'blocked_by_missing_evidence'");
+  ensureTableColumn("agent_eval_cases", "coverage_score", "REAL NOT NULL DEFAULT 0");
+  ensureTableColumn("agent_eval_cases", "budget_policy", "TEXT NOT NULL DEFAULT 'offline_only_no_provider_call'");
+  ensureTableColumn("agent_eval_cases", "manual_approval_required", "INTEGER NOT NULL DEFAULT 1");
 }
 
 function ensureProviderGatewayReadinessSchema() {
@@ -2451,7 +2568,8 @@ function rowToAgentEvalCase(row) {
   if (!row) return null;
   return {
     ...row,
-    required_evidence_refs: parseJsonValue(row.required_evidence_refs, [])
+    required_evidence_refs: parseJsonValue(row.required_evidence_refs, []),
+    manual_approval_required: Boolean(row.manual_approval_required)
   };
 }
 
@@ -4326,6 +4444,176 @@ function getRoleRecommendations(role, limit = 50) {
   ).map(rowToRecommendation);
 }
 
+function getRoleKnowledgeRules(role, limit = 80) {
+  const types = roleObjectTypes(role);
+  const metrics = Array.isArray(role?.metric_refs) ? role.metric_refs.filter(Boolean) : [];
+  const candidates = getKnowledgeRules(new URL(`http://local/api/knowledge-rules?limit=${limit}`));
+  return candidates.filter((rule) => {
+    if (types.includes(rule.target_object_type)) return true;
+    const ruleMetrics = Array.isArray(rule.target_metric_ids) ? rule.target_metric_ids : [];
+    return ruleMetrics.some((metricId) => metrics.includes(metricId));
+  });
+}
+
+function getRoleRecommendationHandoffs(recommendations = []) {
+  const recommendationIds = recommendations.map((item) => item.id).filter(Boolean);
+  if (!recommendationIds.length) return [];
+  return all(
+    `SELECT * FROM workbench_operations
+     WHERE operation_type = 'recommendation_role_handoff'
+     ORDER BY updated_at DESC
+     LIMIT 300`
+  )
+    .map((operation) => ({
+      ...operation,
+      target_asset_ids: parseJsonValue(operation.target_asset_ids, []),
+      operation_payload: parseJsonValue(operation.operation_payload, {})
+    }))
+    .filter((operation) => operation.target_asset_ids.some((id) => recommendationIds.includes(id)) || recommendationIds.includes(operation.operation_payload?.recommendationId));
+}
+
+function getRoleRuleCoverage(role) {
+  const rules = getRoleKnowledgeRules(role, 120);
+  const certified = rules.filter((rule) => rule.lifecycle_status === "certified");
+  const objectTypes = roleObjectTypes(role);
+  const objectTypeCoverage = objectTypes.map((objectType) => ({
+    objectType,
+    totalRules: rules.filter((rule) => rule.target_object_type === objectType).length,
+    certifiedRules: certified.filter((rule) => rule.target_object_type === objectType).length
+  }));
+  const metricRefs = Array.isArray(role?.metric_refs) ? role.metric_refs.filter(Boolean) : [];
+  const coveredMetrics = new Set();
+  certified.forEach((rule) => (rule.target_metric_ids || []).forEach((metricId) => {
+    if (metricRefs.includes(metricId)) coveredMetrics.add(metricId);
+  }));
+  return {
+    summary: {
+      totalRules: rules.length,
+      certifiedRules: certified.length,
+      reviewedRules: rules.filter((rule) => rule.lifecycle_status === "reviewed").length,
+      conflictRules: rules.filter((rule) => rule.conflict_status === "conflict").length,
+      metricRefs: metricRefs.length,
+      coveredMetrics: coveredMetrics.size,
+      coverageRate: metricRefs.length ? Number((coveredMetrics.size / metricRefs.length).toFixed(4)) : 0,
+      runtimeGateStatus: certified.length ? "role_has_certified_rules" : "blocked_by_missing_certified_rules"
+    },
+    objectTypeCoverage,
+    rules: rules.slice(0, 12)
+  };
+}
+
+function buildRoleObjectDetail(role, object, scopedEvents = [], scopedRecommendations = []) {
+  const objectDetail = getAipObjectDetail(object.id);
+  const roleRules = getRoleKnowledgeRules(role, 120)
+    .filter((rule) => rule.target_object_type === object.object_type || (rule.target_metric_ids || []).some((metricId) => (role.metric_refs || []).includes(metricId)))
+    .slice(0, 8);
+  const relatedEvents = scopedEvents.filter((event) => event.object_id === object.id).slice(0, 8);
+  const relatedRecommendations = scopedRecommendations.filter((item) => item.target_object_id === object.id || item.target_object_type === object.object_type).slice(0, 8);
+  return {
+    role: {
+      id: role.id,
+      roleCode: role.role_code,
+      roleName: role.role_name,
+      owner: role.owner
+    },
+    object,
+    objectDetail,
+    metrics: getRoleMetrics(role).slice(0, 8),
+    events: relatedEvents,
+    recommendations: relatedRecommendations,
+    knowledgeRules: roleRules,
+    evidenceSummary: {
+      sourceRefs: Array.isArray(object.source_refs) ? object.source_refs.length : 0,
+      eventEvidenceRefs: relatedEvents.reduce((sum, event) => sum + (Array.isArray(event.evidence_refs) ? event.evidence_refs.length : 0), 0),
+      ruleEvidenceRefs: roleRules.reduce((sum, rule) => sum + (Array.isArray(rule.evidence_refs) ? rule.evidence_refs.length : 0), 0),
+      recommendationEvidenceRefs: relatedRecommendations.reduce((sum, recommendation) => sum + (Array.isArray(recommendation.evidence_refs) ? recommendation.evidence_refs.length : 0), 0)
+    },
+    actions: {
+      canCreateRoleDraft: true,
+      canCreateRecommendationHandoff: relatedRecommendations.length > 0,
+      actionTier: "L1",
+      providerCalls: false,
+      erpWriteback: false
+    }
+  };
+}
+
+function getRoleWorkbenchObjectDetail(roleId, objectId) {
+  const role = rowToRoleWorkbench(get("SELECT * FROM role_workbenches WHERE id = ? OR role_code = ?", [roleId, roleId]));
+  if (!role) return null;
+  const objects = getRoleObjects(role, 300);
+  const object = objects.find((item) => item.id === objectId);
+  if (!object) return null;
+  const objectIds = new Set(objects.map((item) => item.id));
+  const events = getRoleEvents(role, 300).filter((event) => objectIds.has(event.object_id));
+  const recommendations = getRoleRecommendations(role, 300).filter((item) => !item.target_object_id || objectIds.has(item.target_object_id) || item.owner === role.owner);
+  return buildRoleObjectDetail(role, object, events, recommendations);
+}
+
+function buildRolePlaybookReadiness(role, playbooks = [], ruleCoverage = null) {
+  const coverage = ruleCoverage || getRoleRuleCoverage(role);
+  return playbooks.map((playbook) => {
+    const evidenceRefs = Array.isArray(playbook.evidence_refs) ? playbook.evidence_refs : [];
+    const actionTemplate = playbook.action_template || {};
+    const ready = coverage.summary.certifiedRules > 0 && evidenceRefs.length > 0;
+    return {
+      id: playbook.id,
+      playbookName: playbook.playbook_name,
+      scenarioType: playbook.scenario_type || actionTemplate.scenarioType || actionTemplate.scenario_type || "role_exception",
+      readinessStatus: ready ? "ready_for_owner_review" : "blocked_by_missing_rule_or_evidence",
+      evidenceCount: evidenceRefs.length,
+      certifiedRules: coverage.summary.certifiedRules,
+      actionTier: actionTemplate.actionTier || actionTemplate.action_tier || "L1",
+      productionWrites: false,
+      providerCalls: false
+    };
+  });
+}
+
+function buildProviderEvalGate(role, evalCases = [], policies = [], prompts = [], audits = [], ruleCoverage = null) {
+  const coverage = ruleCoverage || getRoleRuleCoverage(role);
+  const policyDisabled = policies.every((policy) => policy.status === "disabled");
+  const rows = evalCases.map((item) => {
+    const evidenceCount = Array.isArray(item.required_evidence_refs) ? item.required_evidence_refs.length : 0;
+    const promptCount = prompts.filter((prompt) => prompt.eval_case_id === item.id || prompt.role_id === role.id).length;
+    const score = Math.min(100, evidenceCount * 20 + promptCount * 20 + Math.round(coverage.summary.coverageRate * 40));
+    const readinessStatus = score >= 60 && coverage.summary.certifiedRules > 0
+      ? "ready_for_manual_review"
+      : "blocked_by_missing_evidence";
+    return {
+      id: item.id,
+      scenarioType: item.scenario_type,
+      question: item.question,
+      expectedAnswerability: item.expected_answerability,
+      readinessStatus,
+      coverageScore: score,
+      evidenceCount,
+      promptCount,
+      budgetPolicy: item.budget_policy || "offline_only_no_provider_call",
+      manualApprovalRequired: item.manual_approval_required !== false,
+      providerCalls: false
+    };
+  });
+  return {
+    summary: {
+      evalCases: rows.length,
+      readyForManualReview: rows.filter((row) => row.readinessStatus === "ready_for_manual_review").length,
+      blockedByMissingEvidence: rows.filter((row) => row.readinessStatus !== "ready_for_manual_review").length,
+      providerPolicyStatus: policyDisabled ? "all_disabled" : "mixed_policy_review_required",
+      providerCalls: false,
+      erpWriteback: false
+    },
+    cases: rows,
+    recentAudits: audits.slice(0, 6),
+    boundary: {
+      mode: "offline_eval_gate_only",
+      providerCalls: false,
+      providerEnablement: false,
+      manualApprovalRequired: true
+    }
+  };
+}
+
 function getProviderGatewayPolicies(url = new URL("http://local/api/provider-gateway/policies")) {
   const clauses = [];
   const params = [];
@@ -4805,6 +5093,15 @@ function getRoleWorkbenchDetail(id, url = new URL("http://local/api/roles/workbe
   const recommendations = filterRoleRecommendations(unfilteredRecommendations, filters)
     .filter((item) => !filters.objectType || !item.target_object_id || filteredObjectIds.has(item.target_object_id) || item.owner === role.owner)
     .slice(0, filters.limit);
+  const playbooks = all("SELECT * FROM role_playbooks WHERE role_id = ? ORDER BY priority, id", [role.id]).map(rowToRolePlaybook);
+  const evalCases = getAgentEvalCases(new URL(`http://local/api/agent-evals?roleId=${encodeURIComponent(role.id)}&limit=100`));
+  const providerPolicies = getProviderGatewayPolicies();
+  const providerDecisionRecords = getProviderDecisionRecords();
+  const promptVersions = getPromptVersions(new URL(`http://local/api/provider-gateway/prompt-versions?roleId=${encodeURIComponent(role.id)}&limit=100`));
+  const providerCallAudits = getProviderCallAudits();
+  const ruleCoverage = getRoleRuleCoverage(role);
+  const objectDetails = objects.slice(0, 8).map((object) => buildRoleObjectDetail(role, object, events, recommendations));
+  const recommendationHandoffs = getRoleRecommendationHandoffs(recommendations);
   return {
     role,
     domainProfile: roleDomainProfile(role),
@@ -4814,14 +5111,19 @@ function getRoleWorkbenchDetail(id, url = new URL("http://local/api/roles/workbe
     objects,
     events,
     recommendations,
-    playbooks: all("SELECT * FROM role_playbooks WHERE role_id = ? ORDER BY priority, id", [role.id]).map(rowToRolePlaybook),
+    objectDetails,
+    ruleCoverage,
+    recommendationHandoffs,
+    playbookReadiness: buildRolePlaybookReadiness(role, playbooks, ruleCoverage),
+    playbooks,
     metrics: getRoleMetrics(role),
-    evalCases: getAgentEvalCases(new URL(`http://local/api/agent-evals?roleId=${encodeURIComponent(role.id)}&limit=100`)),
-    providerPolicies: getProviderGatewayPolicies(),
-    providerDecisionRecords: getProviderDecisionRecords(),
-    promptVersions: getPromptVersions(new URL(`http://local/api/provider-gateway/prompt-versions?roleId=${encodeURIComponent(role.id)}&limit=100`)),
-    providerCallAudits: getProviderCallAudits(),
+    evalCases,
+    providerPolicies,
+    providerDecisionRecords,
+    promptVersions,
+    providerCallAudits,
     providerGatewaySummary: getProviderGatewaySummary(),
+    providerEvalGate: buildProviderEvalGate(role, evalCases, providerPolicies, promptVersions, providerCallAudits, ruleCoverage),
     platformReadiness: getPlatformReadinessSummary(),
     actionBoundary: {
       mode: "role_action_draft_only",
@@ -4961,6 +5263,76 @@ function createRoleActionDraft(roleId, body) {
     operation,
     boundary: {
       mode: "local_ledger_action_draft",
+      productionWrites: false,
+      providerCalls: false,
+      erpWriteback: false
+    }
+  };
+}
+
+function inferRoleForRecommendation(recommendation, explicitRoleId = "") {
+  if (explicitRoleId) {
+    const explicitRole = rowToRoleWorkbench(get("SELECT * FROM role_workbenches WHERE id = ? OR role_code = ?", [explicitRoleId, explicitRoleId]));
+    if (explicitRole) return explicitRole;
+  }
+  const roles = getRoleWorkbenches(new URL("http://local/api/roles/workbenches?limit=100"));
+  return roles.find((role) => roleObjectTypes(role).includes(recommendation.target_object_type))
+    || roles.find((role) => role.id === "role_inventory")
+    || roles[0]
+    || null;
+}
+
+function createRoleRecommendationHandoff(recommendationId, body = {}) {
+  const detail = getAipRecommendationDetail(recommendationId);
+  if (!detail?.recommendation) return null;
+  const recommendation = detail.recommendation;
+  const role = inferRoleForRecommendation(recommendation, normalizeText(body.roleId || body.role_id));
+  if (!role) return null;
+  const actor = normalizeText(body.actor || body.createdBy || body.created_by, "local_user");
+  const targetIds = [recommendation.id, role.id, recommendation.target_object_id].filter(Boolean);
+  const operation = createWorkbenchOperation({
+    moduleId: "role-workbench",
+    operationType: "recommendation_role_handoff",
+    targetAssetType: "recommendation_card",
+    targetAssetIds: targetIds,
+    operationTitle: normalizeText(body.operationTitle || body.title, `${role.role_name} 承接建议卡：${recommendation.recommendation_title}`),
+    operationSummary: normalizeText(
+      body.operationSummary || body.summary,
+      "建议卡进入角色任务队列，形成审批、执行反馈和复盘记录；本阶段只写 SQLite 治理账本，不调用 provider，不写回 ERP/Jijia。"
+    ),
+    operationPayload: {
+      source: "recommendation_card",
+      recommendationId: recommendation.id,
+      recommendationStatus: recommendation.approval_status,
+      roleId: role.id,
+      roleCode: role.role_code,
+      traceId: recommendation.trace_id,
+      targetObjectId: recommendation.target_object_id,
+      targetObjectType: recommendation.target_object_type,
+      actionTier: recommendation.action_tier || "L1",
+      approvalRequired: true,
+      replayRequired: true,
+      providerCalls: false,
+      erpWriteback: false
+    },
+    owner: normalizeText(body.owner, role.owner || recommendation.owner),
+    priority: normalizeText(body.priority, recommendation.priority || "P1"),
+    createdBy: actor,
+    status: "review_pending"
+  });
+  writeAudit("recommendation_card.role_handoff_created", "recommendation_card", recommendation.id, {
+    operationId: operation.id,
+    roleId: role.id,
+    targetIds,
+    providerCalls: false,
+    erpWriteback: false
+  }, actor);
+  return {
+    recommendation,
+    role,
+    operation,
+    boundary: {
+      mode: "local_role_handoff_only",
       productionWrites: false,
       providerCalls: false,
       erpWriteback: false
@@ -5830,6 +6202,129 @@ function getKnowledgeRuleConflicts(ruleId = "") {
   );
 }
 
+function getCertifiedKnowledgeRules(limit = 500) {
+  return getKnowledgeRules(new URL(`http://local/api/knowledge-rules?status=certified&limit=${limit}`))
+    .filter((rule) => rule.runtime_gate_status !== "deprecated");
+}
+
+function getKnowledgeRuleDetail(id) {
+  const rule = rowToKnowledgeRule(get("SELECT * FROM knowledge_rules WHERE id = ? OR rule_code = ?", [id, id]));
+  if (!rule) return null;
+  const metricIds = Array.isArray(rule.target_metric_ids) ? rule.target_metric_ids.filter(Boolean) : [];
+  const dimensionIds = Array.isArray(rule.target_dimension_ids) ? rule.target_dimension_ids.filter(Boolean) : [];
+  const metrics = metricIds.length
+    ? all(`SELECT * FROM metrics WHERE id IN (${metricIds.map(() => "?").join(",")}) OR code IN (${metricIds.map(() => "?").join(",")}) ORDER BY level, code`, [...metricIds, ...metricIds])
+    : [];
+  const dimensions = dimensionIds.length
+    ? all(`SELECT * FROM dimensions WHERE id IN (${dimensionIds.map(() => "?").join(",")}) ORDER BY dimension_type, id`, dimensionIds)
+    : [];
+  const sourceCard = rule.source_card_id ? getKbCard(rule.source_card_id) : null;
+  const workflow = rule.workflow_id ? get("SELECT * FROM workflow_instances WHERE id = ?", [rule.workflow_id]) : null;
+  const recommendations = all(
+    `SELECT * FROM recommendation_cards
+     WHERE scenario_type = 'knowledge_rule_trigger'
+       AND evidence_refs LIKE ?
+     ORDER BY updated_at DESC, priority
+     LIMIT 20`,
+    [`%${rule.id}%`]
+  ).map(rowToRecommendation);
+  return {
+    rule,
+    sourceCard,
+    metrics,
+    dimensions,
+    workflow,
+    conflicts: getKnowledgeRuleConflicts(rule.id),
+    recommendations,
+    certification: {
+      lifecycleStatus: rule.lifecycle_status,
+      runtimeGateStatus: rule.runtime_gate_status || "candidate_only",
+      certifiedAt: rule.certified_at || "",
+      deprecatedAt: rule.deprecated_at || "",
+      policy: rule.certification_policy || "owner_review_required",
+      chatbiEligible: rule.lifecycle_status === "certified" && rule.runtime_gate_status === "chatbi_runtime_candidate"
+    },
+    boundary: {
+      mode: "local_rule_governance",
+      importAllowed: false,
+      providerCalls: false,
+      erpWriteback: false,
+      sourceSystemWriteback: false
+    }
+  };
+}
+
+function ruleMatchesQuestionOrContext(rule, question, contexts = []) {
+  const metricIds = new Set(contexts.map((context) => context.metric_id).filter(Boolean));
+  const ruleMetricIds = Array.isArray(rule.target_metric_ids) ? rule.target_metric_ids.filter(Boolean) : [];
+  if (ruleMetricIds.some((metricId) => metricIds.has(metricId))) return true;
+  const normalized = normalizeText(question).toLowerCase();
+  if (!normalized) return false;
+  const tokens = [
+    rule.rule_code,
+    rule.rule_name,
+    rule.rule_type,
+    rule.target_object_type,
+    rule.condition_expression,
+    ...ruleMetricIds
+  ]
+    .map((value) => normalizeText(value).toLowerCase())
+    .filter(Boolean);
+  if (tokens.some((token) => token && (normalized.includes(token) || token.includes(normalized)))) return true;
+  const zhObjectHints = {
+    inventory_batch: ["库存", "批次", "库龄", "负库存", "可用库存"],
+    warehouse: ["仓", "仓库", "库位"],
+    sku: ["sku", "产品", "商品"],
+    listing: ["listing", "链接", "销量"],
+    shipment: ["物流", "货件", "在途", "eta"],
+    po: ["采购", "po", "订单", "供应商"],
+    supplier: ["供应商", "交期", "履约"],
+    cost_event: ["成本", "仓储费", "费用", "毛利"],
+    forecast_version: ["预测", "计划", "备货"],
+    return_order: ["退货", "售后"]
+  };
+  return (zhObjectHints[rule.target_object_type] || []).some((hint) => normalized.includes(hint.toLowerCase()));
+}
+
+function certifiedRuleCoverageForContexts(contexts = [], question = "") {
+  const certifiedRules = getCertifiedKnowledgeRules(500);
+  const matchedRules = certifiedRules.filter((rule) => ruleMatchesQuestionOrContext(rule, question, contexts));
+  const metricIds = new Set(contexts.map((context) => context.metric_id).filter(Boolean));
+  const coveredMetricIds = new Set();
+  matchedRules.forEach((rule) => {
+    (rule.target_metric_ids || []).forEach((metricId) => {
+      if (metricIds.has(metricId)) coveredMetricIds.add(metricId);
+    });
+  });
+  const missingMetricIds = Array.from(metricIds).filter((metricId) => !coveredMetricIds.has(metricId));
+  const gapReasons = [];
+  if (!certifiedRules.length) gapReasons.push("no_certified_knowledge_rules");
+  if (contexts.length && !matchedRules.length) gapReasons.push("certified_metric_without_matching_rule");
+  if (missingMetricIds.length) gapReasons.push("some_candidate_metrics_lack_certified_rule_binding");
+  if (!contexts.length) gapReasons.push("no_certified_metric_context_matched");
+  return {
+    summary: {
+      certifiedRules: certifiedRules.length,
+      matchedRules: matchedRules.length,
+      candidateMetrics: metricIds.size,
+      coveredCandidateMetrics: coveredMetricIds.size,
+      coverageRate: metricIds.size ? Number((coveredMetricIds.size / metricIds.size).toFixed(4)) : 0,
+      runtimeGateStatus: matchedRules.length ? "certified_metric_and_rule" : "partial_or_blocked_by_rule_gap"
+    },
+    matchedRules: matchedRules.slice(0, 8).map((rule) => ({
+      id: rule.id,
+      ruleCode: rule.rule_code,
+      ruleName: rule.rule_name,
+      targetObjectType: rule.target_object_type,
+      targetMetricIds: rule.target_metric_ids,
+      runtimeGateStatus: rule.runtime_gate_status,
+      certifiedAt: rule.certified_at
+    })),
+    gapReasons,
+    missingMetricIds
+  };
+}
+
 function getKnowledgeRules(url) {
   const clauses = [];
   const params = [];
@@ -5885,10 +6380,12 @@ function getKnowledgeRuleSummary() {
     total: tableCount("knowledge_rules"),
     draft: scalar("SELECT COUNT(*) AS count FROM knowledge_rules WHERE lifecycle_status IN ('draft', 'review_pending')"),
     certified: scalar("SELECT COUNT(*) AS count FROM knowledge_rules WHERE lifecycle_status = 'certified'"),
+    deprecated: scalar("SELECT COUNT(*) AS count FROM knowledge_rules WHERE lifecycle_status = 'deprecated'"),
     conflicts: scalar("SELECT COUNT(*) AS count FROM knowledge_rule_conflicts WHERE status = 'open'"),
     byStatus: all("SELECT lifecycle_status, COUNT(*) AS count FROM knowledge_rules GROUP BY lifecycle_status ORDER BY count DESC"),
     byTargetObject: all("SELECT target_object_type, COUNT(*) AS count FROM knowledge_rules GROUP BY target_object_type ORDER BY count DESC"),
     byConflictStatus: all("SELECT conflict_status, COUNT(*) AS count FROM knowledge_rules GROUP BY conflict_status ORDER BY count DESC"),
+    byRuntimeGate: all("SELECT runtime_gate_status, COUNT(*) AS count FROM knowledge_rules GROUP BY runtime_gate_status ORDER BY count DESC"),
     boundary: {
       mode: "local_rule_governance",
       importAllowed: false,
@@ -6007,20 +6504,38 @@ function reviewKnowledgeRule(id, body) {
   const reviewNote = normalizeText(body.reviewNote || body.review_note, "Knowledge rule reviewed in local ledger.");
   const conflictStatus = normalizeText(body.conflictStatus || body.conflict_status, status === "rejected" ? "rejected" : current.conflict_status);
   const updatedAt = nowIso();
+  const certifiedAt = status === "certified" ? updatedAt : current.certified_at || "";
+  const deprecatedAt = status === "deprecated" ? updatedAt : current.deprecated_at || "";
+  const certificationPolicy = normalizeText(body.certificationPolicy || body.certification_policy, current.certification_policy || "owner_review_required");
+  const runtimeGateStatus = normalizeText(
+    body.runtimeGateStatus || body.runtime_gate_status,
+    status === "certified"
+      ? "chatbi_runtime_candidate"
+      : status === "deprecated"
+        ? "deprecated"
+        : status === "reviewed"
+          ? "owner_reviewed"
+          : status === "rejected"
+            ? "rejected"
+            : current.runtime_gate_status || "candidate_only"
+  );
   run(
-    "UPDATE knowledge_rules SET lifecycle_status = ?, conflict_status = ?, reviewer = ?, review_note = ?, updated_at = ? WHERE id = ?",
-    [status, conflictStatus, reviewer, reviewNote, updatedAt, id]
+    `UPDATE knowledge_rules
+     SET lifecycle_status = ?, conflict_status = ?, reviewer = ?, review_note = ?,
+         certified_at = ?, deprecated_at = ?, certification_policy = ?, runtime_gate_status = ?, updated_at = ?
+     WHERE id = ?`,
+    [status, conflictStatus, reviewer, reviewNote, certifiedAt, deprecatedAt, certificationPolicy, runtimeGateStatus, updatedAt, id]
   );
   if (current.workflow_id) {
     completeWorkflowStep(current.workflow_id, "conflict_review", conflictStatus === "conflict" ? "pending" : "completed", reviewer, reviewNote);
-    completeWorkflowStep(current.workflow_id, "binding_review", ["reviewed", "certified", "rejected"].includes(status) ? "completed" : "pending", reviewer, reviewNote);
-    completeWorkflowStep(current.workflow_id, "certification_decision", status === "certified" ? "approved" : status === "rejected" ? "rejected" : "pending", reviewer, reviewNote);
-    setWorkflowStatus(current.workflow_id, status === "certified" ? "approved" : status, reviewer, reviewNote);
+    completeWorkflowStep(current.workflow_id, "binding_review", ["reviewed", "certified", "rejected", "deprecated"].includes(status) ? "completed" : "pending", reviewer, reviewNote);
+    completeWorkflowStep(current.workflow_id, "certification_decision", status === "certified" ? "approved" : ["rejected", "deprecated"].includes(status) ? "rejected" : "pending", reviewer, reviewNote);
+    setWorkflowStatus(current.workflow_id, status === "certified" ? "approved" : status === "deprecated" ? "closed" : status, reviewer, reviewNote);
   }
-  if (status === "rejected") {
+  if (["rejected", "deprecated"].includes(status)) {
     run("UPDATE knowledge_rule_conflicts SET status = 'closed' WHERE rule_id = ? OR conflicting_rule_id = ?", [id, id]);
   }
-  writeAudit("knowledge_rule.reviewed", "knowledge_rule", id, { status, conflictStatus, reviewNote }, reviewer);
+  writeAudit("knowledge_rule.reviewed", "knowledge_rule", id, { status, conflictStatus, runtimeGateStatus, certificationPolicy, reviewNote }, reviewer);
   return {
     rule: rowToKnowledgeRule(get("SELECT * FROM knowledge_rules WHERE id = ?", [id])),
     conflicts: getKnowledgeRuleConflicts(id)
@@ -8191,6 +8706,8 @@ function getChatbiAnswerabilityScorecard() {
       statuses: Array.from(item.statuses.entries()).map(([status, count]) => ({ status, count }))
     }))
     .sort((a, b) => b.weak_contexts - a.weak_contexts || b.total_contexts - a.total_contexts);
+  const certifiedContexts = rows.filter((row) => row.status === "certified" && row.answer_policy === "certified_metric_only");
+  const certifiedRuleCoverage = certifiedRuleCoverageForContexts(certifiedContexts, "");
   return {
     summary: {
       total,
@@ -8206,6 +8723,7 @@ function getChatbiAnswerabilityScorecard() {
     },
     answerabilityBuckets: Array.from(bucketMap.entries()).map(([answerability, count]) => ({ answerability, count })),
     domainScorecards,
+    certifiedRuleCoverage,
     weakContexts: weakContexts.slice(0, 18).map((row) => ({
       id: row.id,
       metric_id: row.metric_id,
@@ -8298,13 +8816,17 @@ function dryRunChatbi(question) {
         .filter(Boolean)
         .some((value) => normalized.includes(String(value).toLowerCase()) || String(value).includes(question));
     }).slice(0, 5);
+    const certifiedRuleCoverage = certifiedRuleCoverageForContexts(sampleMatches, question);
     return {
       answerable: false,
       policy: "certified_metric_only",
+      runtimeGateStatus: "blocked_by_missing_certified_metric",
       rejectReason: sampleMatches.length
         ? "命中本地证据样本，但该样本尚未认证为正式指标上下文。"
         : "未命中认证指标。ChatBI V0 不对未认证指标或原始表做自由 NL2SQL。",
       evidence: [],
+      certifiedRuleCoverage,
+      gapReasons: certifiedRuleCoverage.gapReasons,
       candidates: sampleMatches.map((context) => ({
         contextId: context.id,
         questionSample: context.question_sample,
@@ -8316,11 +8838,20 @@ function dryRunChatbi(question) {
       }))
     };
   }
+  const certifiedRuleCoverage = certifiedRuleCoverageForContexts(candidates, question);
+  const runtimeGateStatus = certifiedRuleCoverage.summary.matchedRules
+    ? "certified_metric_and_rule"
+    : "partial_certified_metric_rule_gap";
   return {
     answerable: true,
     policy: "certified_metric_only",
-    rejectReason: "",
-    answerPreview: "已命中认证指标。V0 仅返回指标口径、可用维度与证据链，不执行真实 SQL。",
+    runtimeGateStatus,
+    rejectReason: runtimeGateStatus === "certified_metric_and_rule" ? "" : "已命中认证指标，但缺少匹配的已认证知识规则；只能作为口径预览进入治理复核。",
+    answerPreview: runtimeGateStatus === "certified_metric_and_rule"
+      ? "已命中认证指标与认证知识规则。V0 仅返回指标口径、可用维度与证据链，不执行真实 SQL。"
+      : "已命中认证指标，但认证规则覆盖不足；返回 partial 预览和 gap reason，不执行真实 SQL。",
+    certifiedRuleCoverage,
+    gapReasons: certifiedRuleCoverage.gapReasons,
     candidates: candidates.map((context) => ({
       metricId: context.metric_id,
       code: context.code,
@@ -8383,10 +8914,27 @@ const server = createServer(async (req, res) => {
         const body = await readBody(req);
         return json(res, { ok: true, ...createKnowledgeRule(body) }, 201);
       }
+      const knowledgeRuleDetail = url.pathname.match(/^\/api\/knowledge-rules\/([^/]+)$/);
+      if (req.method === "GET" && knowledgeRuleDetail) {
+        const detail = getKnowledgeRuleDetail(knowledgeRuleDetail[1]);
+        return detail ? json(res, detail) : json(res, { error: "Knowledge rule not found" }, 404);
+      }
       const knowledgeRuleReview = url.pathname.match(/^\/api\/knowledge-rules\/([^/]+)\/review$/);
       if (req.method === "POST" && knowledgeRuleReview) {
         const body = await readBody(req);
         const result = reviewKnowledgeRule(knowledgeRuleReview[1], body);
+        return result ? json(res, { ok: true, ...result }) : json(res, { error: "Knowledge rule not found" }, 404);
+      }
+      const knowledgeRuleCertify = url.pathname.match(/^\/api\/knowledge-rules\/([^/]+)\/certify$/);
+      if (req.method === "POST" && knowledgeRuleCertify) {
+        const body = await readBody(req);
+        const result = reviewKnowledgeRule(knowledgeRuleCertify[1], { ...body, status: "certified", runtimeGateStatus: body.runtimeGateStatus || "chatbi_runtime_candidate" });
+        return result ? json(res, { ok: true, ...result }) : json(res, { error: "Knowledge rule not found" }, 404);
+      }
+      const knowledgeRuleDeprecate = url.pathname.match(/^\/api\/knowledge-rules\/([^/]+)\/deprecate$/);
+      if (req.method === "POST" && knowledgeRuleDeprecate) {
+        const body = await readBody(req);
+        const result = reviewKnowledgeRule(knowledgeRuleDeprecate[1], { ...body, status: "deprecated", runtimeGateStatus: "deprecated" });
         return result ? json(res, { ok: true, ...result }) : json(res, { error: "Knowledge rule not found" }, 404);
       }
       const knowledgeRuleRun = url.pathname.match(/^\/api\/knowledge-rules\/([^/]+)\/run$/);
@@ -8490,11 +9038,22 @@ const server = createServer(async (req, res) => {
       }
       if (req.method === "GET" && url.pathname === "/api/roles/summary") return json(res, getRoleGovernanceSummary());
       if (req.method === "GET" && url.pathname === "/api/roles/workbenches") return json(res, getRoleWorkbenches(url));
+      const roleWorkbenchObjectRoute = url.pathname.match(/^\/api\/roles\/workbenches\/([^/]+)\/objects\/([^/]+)$/);
+      if (req.method === "GET" && roleWorkbenchObjectRoute) {
+        const detail = getRoleWorkbenchObjectDetail(roleWorkbenchObjectRoute[1], roleWorkbenchObjectRoute[2]);
+        return detail ? json(res, detail) : json(res, { error: "Role object detail not found" }, 404);
+      }
       const roleActionDraftRoute = url.pathname.match(/^\/api\/roles\/workbenches\/([^/]+)\/action-draft$/);
       if (req.method === "POST" && roleActionDraftRoute) {
         const body = await readBody(req);
         const result = createRoleActionDraft(roleActionDraftRoute[1], body);
         return result ? json(res, { ok: true, ...result }, 201) : json(res, { error: "Role workbench not found" }, 404);
+      }
+      const roleRecommendationHandoffRoute = url.pathname.match(/^\/api\/roles\/recommendations\/([^/]+)\/handoff$/);
+      if (req.method === "POST" && roleRecommendationHandoffRoute) {
+        const body = await readBody(req);
+        const result = createRoleRecommendationHandoff(roleRecommendationHandoffRoute[1], body);
+        return result ? json(res, { ok: true, ...result }, 201) : json(res, { error: "Recommendation handoff target not found" }, 404);
       }
       const roleWorkbenchExportRoute = url.pathname.match(/^\/api\/roles\/workbenches\/([^/]+)\/export$/);
       if (req.method === "GET" && roleWorkbenchExportRoute) {

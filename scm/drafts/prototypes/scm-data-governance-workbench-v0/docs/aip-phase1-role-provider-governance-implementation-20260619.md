@@ -1,8 +1,8 @@
 ---
 title: "AIP Phase 1 Role Provider Governance Implementation"
 date: "2026-06-19"
-status: "implemented_local"
-boundary: "local prototype implementation; SQLite ledger only; provider gateway policies remain disabled; no ERP/Jijia writeback"
+status: "implemented_local_p3a_extended"
+boundary: "local prototype implementation; SQLite ledger only; provider gateway policies remain disabled; no provider call; no ERP/Jijia/WMS/TMS writeback"
 ---
 
 # AIP Phase 1 Role Provider Governance Implementation
@@ -54,6 +54,8 @@ Agent eval cases:
 - `GET /api/roles/workbenches`
 - `GET /api/roles/workbenches/:id`
 - `POST /api/roles/workbenches/:id/action-draft`
+- `GET /api/roles/workbenches/:roleId/objects/:objectId`
+- `POST /api/roles/recommendations/:recommendationId/handoff`
 - `GET /api/provider-gateway/policies`
 - `GET /api/agent-evals`
 - `GET /api/workbench/role-workbench`
@@ -73,6 +75,13 @@ The role workbench page includes:
 - agent eval case panel;
 - role metric table;
 - `创建行动草稿` button that writes only to `workbench_operations`.
+
+P3-A extension:
+
+- object queue click opens `.roleObjectDrawer`;
+- drawer shows `.roleObjectMetrics`, `.roleObjectEvidence` and `.roleObjectActions`;
+- role detail includes `.roleRuleCoverage`, `.roleScenarioPlaybookPanel` and `.providerEvalGate`;
+- recommendation cards can be handed off to role action drafts without executing writeback.
 
 ## Verification
 
@@ -94,6 +103,22 @@ Smoke evidence:
 - role summary: `roles=5`, `rolePlaybooks=5`, `evalCases=5`, `providerPolicies=2`, `disabledProviders=2`;
 - role smoke workflows: `roleSummary.read`, `roleWorkbenches.read`, `roleWorkbench.inventoryDetail`, `roleWorkbench.actionDraft`, `providerGatewayPolicies.readDisabled`, `agentEvalCases.read`, `roleWorkbench.exportJson`, `roleWorkbench.exportExcel`;
 - Browser Harness checked all 14 modules across `1350x900`, `1024x900`, `768x900`, `390x900` without horizontal overflow.
+
+P3-A local verification added:
+
+```bash
+SCM_WORKBENCH_URL=http://127.0.0.1:5174 npm run smoke:workflows
+REQUIRE_WORKBENCH_OPERATIONS=1 REQUIRE_KB_GOVERNANCE=1 REQUIRE_AI_FEEDBACK=1 REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_WORKBENCH_URL=http://127.0.0.1:5174 npm run smoke:browser
+```
+
+P3-A smoke evidence:
+
+- `roleWorkbench.objectDetail`
+- `roleWorkbench.ruleCoverage`
+- `roleWorkbench.playbookReadiness`
+- `roleWorkbench.recommendationHandoff`
+- `providerEvalGate.offlineReadiness`
+- Browser Harness `.roleObjectDrawer`, `.roleObjectMetrics`, `.roleObjectEvidence`, `.roleObjectActions`, `.roleScenarioPlaybookPanel`, `.providerEvalGate`
 
 ## Boundaries
 

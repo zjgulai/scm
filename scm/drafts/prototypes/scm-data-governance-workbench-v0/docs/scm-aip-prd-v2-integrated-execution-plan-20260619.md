@@ -398,11 +398,11 @@ REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm
 |---|---|---|
 | AIP-B4-001 | `deployed` | `GET /api/chatbi/summary` 和 `GET /api/chatbi/answerability-scorecard` 返回 answerability bucket、L1 领域覆盖、弱证据队列和 no-provider/no-writeback 边界；ChatBI 页新增 `.chatbiAnswerabilityPanel`、`.chatbiScorecardPanel`；公开站点 Browser Harness 强校验通过 |
 | AIP-B4-002 | `deployed` | `GET /api/ai-chat/messages/:messageId/evidence-export?format=json/markdown` 支持单条证据包导出；`GET /api/ai-chat/evidence-exports` 支持跨消息证据导出台账；AI 对话页新增 `.aiEvidenceExportActions`、`.aiEvidenceExportRegistry`；公开站点当前为空态且 Browser Harness 通过 |
-| AIP-B4-003 | `implemented_local` | `scripts/migrations/008_knowledge_rules.sql` 新增 `knowledge_rules`、`knowledge_rule_conflicts` |
-| AIP-B4-004 | `implemented_local` | AI 知识库卡片新增 `.createKnowledgeRuleButton`，`POST /api/knowledge-rules` 可从知识卡创建规则候选 |
-| AIP-B4-005 | `implemented_local_initial` | 规则候选记录 `target_object_type`、`target_metric_ids`、`target_dimension_ids`，推断逻辑仍需 owner 复核 |
-| AIP-B4-006 | `implemented_local_initial` | 使用 `conflict_key` 检测同对象/同指标/同条件冲突，写入 `knowledge_rule_conflicts` 和 workflow |
-| AIP-B4-007 | `implemented_local` | `POST /api/knowledge-rules/:id/run` 生成 `scenario_type=knowledge_rule_trigger` 的 Recommendation Card，不自动执行 |
+| AIP-B4-003 | `implemented_local_certification_extended` | `knowledge_rules`、`knowledge_rule_conflicts` 已有；P3-A 追加 `certified_at`、`deprecated_at`、`certification_policy`、`runtime_gate_status` 兼容列 |
+| AIP-B4-004 | `implemented_local_certification_extended` | AI 知识库卡片新增 `.createKnowledgeRuleButton`；P3-A 追加 `.knowledgeRuleCertificationControls`，支持 review/certify/reject/deprecate/run |
+| AIP-B4-005 | `implemented_local_certification_extended` | 规则候选记录对象、指标、维度绑定；P3-A 追加规则详情 API 和 ChatBI certified-rule coverage |
+| AIP-B4-006 | `implemented_local_certification_extended` | `conflict_key` 冲突检测进入 workflow；P3-A 追加 rejected/deprecated 后关闭 open conflict |
+| AIP-B4-007 | `implemented_local_role_handoff_extended` | `POST /api/knowledge-rules/:id/run` 生成本地 Recommendation Card；P3-A 追加 recommendation -> role action draft 承接流 |
 | AIP-B4-008 | `implemented_local_scope_adjusted` | 知识规则支持 JSON/Excel 导出；审计日志本身沿用既有工作台能力，未在本批新增单独审计导出模块 |
 
 本地验收命令：
@@ -425,7 +425,7 @@ REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm
 后置边界：
 
 - 规则推断是启发式初版，不替代 Owner 口径裁决。
-- 规则认证尚未成为 ChatBI 强制 runtime gate。
+- P3-A 已把规则认证接入 ChatBI dry-run 的 runtime gate 解释层；仍不是外部 provider 或源系统强制执行。
 - 公开站点未在本批次部署。
 
 ## 9. Batch 5：角色工作台、Provider、权限、数据库演进
@@ -568,6 +568,13 @@ REQUIRE_AIP_PHASE1=1 REQUIRE_AIP_SCENARIOS=1 SCM_SKIP_PUBLIC_BROWSER_SMOKE=1 npm
 - [x] AIP-B5-013 SQLite -> Postgres 触发条件
 - [x] AIP-B5-014 Postgres schema compatibility review
 - [x] AIP-B5-015 受控 write-back 评估
+- [x] P3-A-002 角色对象详情抽屉：本地通过 `.roleObjectDrawer`、对象 metrics/evidence/actions 验收
+- [x] P3-A-003 角色场景 Playbook 面板：本地通过 `.roleScenarioPlaybookPanel` 和 `playbookReadiness`
+- [x] P3-A-004 知识规则认证状态机：本地通过 certify/detail/deprecate workflow smoke
+- [x] P3-A-005 ChatBI 认证规则联动：本地通过 `certifiedRuleCoverage` 和 gap reasons
+- [x] P3-A-006 Recommendation Card 角色承接流：本地通过 recommendation handoff
+- [x] P3-A-007 Provider 离线 Eval Gate：本地通过 provider eval readiness，provider 仍 disabled
+- [x] P3-A-008 页面密度门禁扩展：本地 Browser Harness 覆盖 role、AI KB、ChatBI、KPI、object 页面阈值
 
 Batch 5 第一片已完成：
 
@@ -600,6 +607,14 @@ Batch 5 第二片已完成：
 - Prompt versions 均为 `draft_disabled`，绑定 role、eval case、scenario 和 evidence contract；
 - `blocked-dry-run` 只记录本地 call audit，不发送任何外部 provider 请求；
 - 角色工作台 Provider Gateway 面板可查看决策、prompt 和 blocked audit。
+
+P3-A 本地增强已完成，等待公网部署验收：
+
+- 角色对象详情从列表进入抽屉式对象工作区，串联对象属性、风险指标、证据和本地行动草稿；
+- 知识规则从候选运行层升级为带认证/废弃状态和 runtime gate 字段的语义治理资产；
+- ChatBI dry-run 可解释认证规则覆盖和缺口原因，不再只依赖文本证据匹配；
+- Recommendation Card 可承接到角色 action draft，但仍只写本地治理 ledger；
+- Provider eval gate 只显示离线 readiness、预算策略和人工审批要求，DeepSeek/Kimi 仍为 disabled。
 
 ## 12. 验收矩阵
 

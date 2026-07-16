@@ -1,21 +1,21 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-16T00:36:23.269Z",
+  "generatedAt": "2026-07-16T04:55:45.146Z",
   "source": {
     "repository": "zjgulai/data_analysis_expert",
-    "mergedMainCommit": "5434ae931a84d0addb35f341c2c520b3ad0466ed",
-    "sourceHeadCommit": "e7cc2f7cb6d89a39a255c6961271fa219582a312",
+    "mergedMainCommit": "91f074121fc5e98c6852852e0c33090514cb6433",
+    "sourceHeadCommit": "aba978cc866017acd337f6096950dd325fc0c158",
     "pathPrefix": "scm/drafts/prototypes/scm-data-governance-workbench-v0",
-    "fileCount": 161,
-    "aggregateSha256": "43f28cc55d69c24bf19ba41119b21d1608540c4b01e8fff1c20723585219d1b6"
+    "fileCount": 162,
+    "aggregateSha256": "6e790dd9daaf3af0f17fc3ee22d4c017f9cc719e5623c398a729a30edd127774"
   },
   "target": {
     "repository": "zjgulai/scm",
     "baseCommit": "315775f9398507e0cdbf47d2441c82bc8e0593ad",
     "branch": "codex/scm-standalone-sync-20260716",
     "pathBase": "repository_root",
-    "candidateFileCountExcludingManifest": 170,
-    "aggregateSha256": "dc7b3fa136a0e3d001bdfa03400ebac0afef4f7f8d46462ffad79eb0a090091f"
+    "candidateFileCountExcludingManifest": 171,
+    "aggregateSha256": "9a1479bc8eb5a859ffece11985c064710f31ecec838060f4dfc2e00b4b015e83"
   },
   "mappingPolicy": {
     "sourcePrefixStripped": true,
@@ -108,10 +108,10 @@
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/data/governance_workbench.sqlite",
       "targetPath": "data/governance_workbench.sqlite",
-      "sourceSizeBytes": 35053568,
-      "sourceSha256": "cb91dd0d63dad2d62d73f7da5c7058254b08ac36feb139921a38121dcf61cc99",
-      "targetSizeBytes": 35053568,
-      "targetSha256": "cb91dd0d63dad2d62d73f7da5c7058254b08ac36feb139921a38121dcf61cc99",
+      "sourceSizeBytes": 7884800,
+      "sourceSha256": "e54a92a1432b9bf9f2afe65fbb5ff6bc73dfaa9578efacad773e4d77b56813bc",
+      "targetSizeBytes": 7884800,
+      "targetSha256": "e54a92a1432b9bf9f2afe65fbb5ff6bc73dfaa9578efacad773e4d77b56813bc",
       "adaptation": null
     },
     {
@@ -495,19 +495,19 @@
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/import-assets.mjs",
       "targetPath": "scripts/import-assets.mjs",
-      "sourceSizeBytes": 59750,
-      "sourceSha256": "560e83422c336641f3dbbb05a0981ec2a15202f2b437868117753098d71d2958",
-      "targetSizeBytes": 59750,
-      "targetSha256": "560e83422c336641f3dbbb05a0981ec2a15202f2b437868117753098d71d2958",
+      "sourceSizeBytes": 62820,
+      "sourceSha256": "36b359a46d9393d79bec41d11005c1508a8d567fdaf77cd1a6dcdf4602a6cb02",
+      "targetSizeBytes": 62820,
+      "targetSha256": "36b359a46d9393d79bec41d11005c1508a8d567fdaf77cd1a6dcdf4602a6cb02",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/preprod-check.mjs",
       "targetPath": "scripts/preprod-check.mjs",
-      "sourceSizeBytes": 18168,
-      "sourceSha256": "3ed1bb98dc8954821b007c8a88b6a9729f4eb6c185bafe36c3229054cd5dc59e",
-      "targetSizeBytes": 18168,
-      "targetSha256": "3ed1bb98dc8954821b007c8a88b6a9729f4eb6c185bafe36c3229054cd5dc59e",
+      "sourceSizeBytes": 19397,
+      "sourceSha256": "c5063605120d969035cdfc51cadfa8f6d9a42f1dde044e6ba69452b00c291d12",
+      "targetSizeBytes": 19397,
+      "targetSha256": "c5063605120d969035cdfc51cadfa8f6d9a42f1dde044e6ba69452b00c291d12",
       "adaptation": null
     },
     {
@@ -540,19 +540,19 @@
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/smoke-import-gate.mjs",
       "targetPath": "scripts/smoke-import-gate.mjs",
-      "sourceSizeBytes": 9371,
-      "sourceSha256": "b43e0e753406b688e3d31a4bc3e6bff748ace8976dcf8e837511df87d07fa76c",
-      "targetSizeBytes": 9371,
-      "targetSha256": "b43e0e753406b688e3d31a4bc3e6bff748ace8976dcf8e837511df87d07fa76c",
+      "sourceSizeBytes": 31103,
+      "sourceSha256": "038a641ac489add33ef1255d3068ad1e2276b47458e7db2aae0a2b5a3fe68d06",
+      "targetSizeBytes": 31103,
+      "targetSha256": "038a641ac489add33ef1255d3068ad1e2276b47458e7db2aae0a2b5a3fe68d06",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/smoke-manual-gate-receipts.mjs",
       "targetPath": "scripts/smoke-manual-gate-receipts.mjs",
-      "sourceSizeBytes": 9852,
-      "sourceSha256": "6e9dae04586225d767af70cc2cb8ead160c98a0a38a5f174f0d6f8b4953091aa",
-      "targetSizeBytes": 9852,
-      "targetSha256": "6e9dae04586225d767af70cc2cb8ead160c98a0a38a5f174f0d6f8b4953091aa",
+      "sourceSizeBytes": 9819,
+      "sourceSha256": "b4589e2d8395a496fbeaa87544e72ed5b96c7a0cd3f35c1f0ed7c79db74bd634",
+      "targetSizeBytes": 9819,
+      "targetSha256": "b4589e2d8395a496fbeaa87544e72ed5b96c7a0cd3f35c1f0ed7c79db74bd634",
       "adaptation": null
     },
     {
@@ -585,10 +585,10 @@
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/smoke-readonly.mjs",
       "targetPath": "scripts/smoke-readonly.mjs",
-      "sourceSizeBytes": 18284,
-      "sourceSha256": "c3316c0f31b17f75e2c52d499dee51b97afdaca7d2ae3120891d214cf6c6b099",
-      "targetSizeBytes": 18284,
-      "targetSha256": "c3316c0f31b17f75e2c52d499dee51b97afdaca7d2ae3120891d214cf6c6b099",
+      "sourceSizeBytes": 18378,
+      "sourceSha256": "c57713cb3946fe3ee99b9ba40fc45237f1ed7e8747024735977d622d4038ef2b",
+      "targetSizeBytes": 18378,
+      "targetSha256": "c57713cb3946fe3ee99b9ba40fc45237f1ed7e8747024735977d622d4038ef2b",
       "adaptation": null
     },
     {
@@ -607,6 +607,15 @@
       "sourceSha256": "d1df342fb5fbd27f19bb7e60d62742426ffe27c321e0a8b126ab8cc4ae7572a8",
       "targetSizeBytes": 22305,
       "targetSha256": "d1df342fb5fbd27f19bb7e60d62742426ffe27c321e0a8b126ab8cc4ae7572a8",
+      "adaptation": null
+    },
+    {
+      "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/workstation-paths.mjs",
+      "targetPath": "scripts/workstation-paths.mjs",
+      "sourceSizeBytes": 13598,
+      "sourceSha256": "4c2895ffb178f1a6527d8efee566831b5ff05b717937e8e0623a1edbc0138aca",
+      "targetSizeBytes": 13598,
+      "targetSha256": "4c2895ffb178f1a6527d8efee566831b5ff05b717937e8e0623a1edbc0138aca",
       "adaptation": null
     },
     {

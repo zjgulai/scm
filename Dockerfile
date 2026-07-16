@@ -6,6 +6,7 @@ RUN npm ci
 FROM deps AS build
 WORKDIR /app
 COPY index.html tsconfig.json vite.config.ts ./
+COPY public ./public
 COPY src ./src
 RUN npm run build
 
@@ -15,11 +16,14 @@ ENV NODE_ENV=production
 ENV HOST=0.0.0.0
 ENV PORT=5174
 
-COPY package*.json ./
-COPY --from=deps /app/node_modules ./node_modules
-COPY --from=build /app/dist ./dist
-COPY server ./server
-COPY data ./data
+COPY --chown=node:node package*.json ./
+COPY --from=deps --chown=node:node /app/node_modules ./node_modules
+COPY --from=build --chown=node:node /app/dist ./dist
+COPY --chown=node:node server ./server
+COPY --chown=node:node data ./data
+COPY --chown=node:node runtime ./runtime
+
+USER node
 
 EXPOSE 5174
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \

@@ -1,27 +1,38 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-07-16T04:55:45.146Z",
+  "generatedAt": "2026-07-17T17:31:57.000Z",
   "source": {
     "repository": "zjgulai/data_analysis_expert",
-    "mergedMainCommit": "91f074121fc5e98c6852852e0c33090514cb6433",
-    "sourceHeadCommit": "aba978cc866017acd337f6096950dd325fc0c158",
+    "mergedMainCommit": "03ecd9f41f67ccd5ef15d0d6834e241fcaa504f5",
+    "sourceHeadCommit": "edaafa8c989e0492da66c610eaa58b2b9dbccd8b",
     "pathPrefix": "scm/drafts/prototypes/scm-data-governance-workbench-v0",
-    "fileCount": 162,
-    "aggregateSha256": "6e790dd9daaf3af0f17fc3ee22d4c017f9cc719e5623c398a729a30edd127774"
+    "fileCount": 171,
+    "aggregateSha256": "2090e729b0715a77b8f96299a4dbe061282f9c843be52d583010fe9a99fc14e4"
   },
   "target": {
     "repository": "zjgulai/scm",
-    "baseCommit": "315775f9398507e0cdbf47d2441c82bc8e0593ad",
-    "branch": "codex/scm-standalone-sync-20260716",
+    "baseCommit": "d722c41353a549f757b19fc62efbb2530bedca47",
+    "branch": "codex/scm-review-remediation-sync-20260716",
     "pathBase": "repository_root",
-    "candidateFileCountExcludingManifest": 171,
-    "aggregateSha256": "9a1479bc8eb5a859ffece11985c064710f31ecec838060f4dfc2e00b4b015e83"
+    "candidateFileCountExcludingManifest": 180,
+    "aggregateSha256": "72a750f62c099fcba98fe8d773594d8e2f99030c4b86f782a04cd5891729b8ea"
   },
   "mappingPolicy": {
     "sourcePrefixStripped": true,
     "overwriteMappedPaths": true,
     "deleteTargetOnlyPaths": false,
     "preservedTargetOnlyCount": 9,
+    "preservedTargetOnlyFiles": [
+      { "path": "docs/ai-chat-phase4-implementation-20260618.md", "sizeBytes": 4653, "sha256": "b2c8622cb404a27482f2b2eb933340c818978bc22a0a8fb921409166248c1c28" },
+      { "path": "docs/ai-chat-phase5-contextual-governance-implementation-20260618.md", "sizeBytes": 5352, "sha256": "ee4bcb3c1119d52e1ec214ff7e07ea44b1c4853f4da461be27e9faa645cc3433" },
+      { "path": "docs/ai-knowledge-base-phase3-implementation-20260618.md", "sizeBytes": 3993, "sha256": "5c5b39009b3ebe2da04c721c79baf7c0f7e1b6bf7d3820599f723bbe109bacef" },
+      { "path": "docs/ledger-api-phase1-implementation-20260618.md", "sizeBytes": 3228, "sha256": "050288d491e21ef7af307add33aa2c47dedece7bde59d0e978f29bdfcb303171" },
+      { "path": "docs/ledger-ui-phase2-implementation-20260618.md", "sizeBytes": 3417, "sha256": "68d1c5784f9a9a24efd25122992dd73ed262bc02615b12c0c20c2bce26c8a757" },
+      { "path": "docs/second-iteration-data-model-design-20260618.md", "sizeBytes": 11265, "sha256": "a6e5efd384b20e8cbf4e8a3b1664ba08a31929489ca5a0573b884c9fbc21db8d" },
+      { "path": "docs/second-iteration-implementation-plan-20260618.md", "sizeBytes": 6726, "sha256": "257713a79a6abd7b093bf0682f43a0ec15ebf4bcdd30c9fe1ae530d90f55b18d" },
+      { "path": "docs/second-iteration-prd-20260618.md", "sizeBytes": 9595, "sha256": "ad31c76786009c9d11f5b062842bc778461a9c674c9f51d3c244882a3822262e" },
+      { "path": "docs/second-iteration-ui-information-architecture-20260618.md", "sizeBytes": 8735, "sha256": "e0f05f1319905c212e0d886a067cfe5142201235998fb68e79dbd3535a22f091" }
+    ],
     "adaptations": [
       {
         "path": "README.md",
@@ -99,19 +110,19 @@
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/README.md",
       "targetPath": "README.md",
-      "sourceSizeBytes": 5426,
-      "sourceSha256": "a664436f66c4b23e95dfab6a740496162fbf42f4e3a1dcca0aaa31ba5f2c12b1",
-      "targetSizeBytes": 5230,
-      "targetSha256": "1108d453096fb0e3e0f56c6d57dd3effb82ce2b7fb41365f7c947c8a5b350d13",
+      "sourceSizeBytes": 6611,
+      "sourceSha256": "d55afbe3a259861ebb4608223340cf99c1d7a3ad179f6fbb4754a506a0e0cba1",
+      "targetSizeBytes": 6415,
+      "targetSha256": "4105ebbdfa068d2cb25c5f6b41287104159ee433f924309b7c42d871c7430f55",
       "adaptation": "standalone_repository_root_commands"
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/data/governance_workbench.sqlite",
       "targetPath": "data/governance_workbench.sqlite",
-      "sourceSizeBytes": 7884800,
-      "sourceSha256": "e54a92a1432b9bf9f2afe65fbb5ff6bc73dfaa9578efacad773e4d77b56813bc",
-      "targetSizeBytes": 7884800,
-      "targetSha256": "e54a92a1432b9bf9f2afe65fbb5ff6bc73dfaa9578efacad773e4d77b56813bc",
+      "sourceSizeBytes": 7970816,
+      "sourceSha256": "3d972e46ec43a64ad69265f295af4ffd9039dfe721a0e9f7f22d02e9b7652af7",
+      "targetSizeBytes": 7970816,
+      "targetSha256": "3d972e46ec43a64ad69265f295af4ffd9039dfe721a0e9f7f22d02e9b7652af7",
       "adaptation": null
     },
     {
@@ -121,6 +132,15 @@
       "sourceSha256": "edc0446b981561c7daa5dd1147527d576e7f6b25e5b0e328e49ae90a2bbe036e",
       "targetSizeBytes": 687,
       "targetSha256": "edc0446b981561c7daa5dd1147527d576e7f6b25e5b0e328e49ae90a2bbe036e",
+      "adaptation": null
+    },
+    {
+      "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/data/knowledge-card-id-manifest.json",
+      "targetPath": "data/knowledge-card-id-manifest.json",
+      "sourceSizeBytes": 68258,
+      "sourceSha256": "4d811ea8582c1127a7deea1043b44b51f87de27281b6454689f57cebbd172773",
+      "targetSizeBytes": 68258,
+      "targetSha256": "4d811ea8582c1127a7deea1043b44b51f87de27281b6454689f57cebbd172773",
       "adaptation": null
     },
     {
@@ -252,19 +272,19 @@
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/docs/fulfillment-dashboard-aip-scm-integration-plan-draft-20260626.md",
       "targetPath": "docs/fulfillment-dashboard-aip-scm-integration-plan-draft-20260626.md",
-      "sourceSizeBytes": 5063,
-      "sourceSha256": "ffef13c3c201fbf5133202574ccfad03e26669838ab9cd8f2a0bed159abfa56b",
-      "targetSizeBytes": 5063,
-      "targetSha256": "ffef13c3c201fbf5133202574ccfad03e26669838ab9cd8f2a0bed159abfa56b",
+      "sourceSizeBytes": 6030,
+      "sourceSha256": "52d48b241a898d88d1a900598657f45637002bda61d4b03710d407f1bcb8fba1",
+      "targetSizeBytes": 6030,
+      "targetSha256": "52d48b241a898d88d1a900598657f45637002bda61d4b03710d407f1bcb8fba1",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/docs/tencent-cloud-lightserver-deployment-20260618.md",
       "targetPath": "docs/tencent-cloud-lightserver-deployment-20260618.md",
-      "sourceSizeBytes": 6959,
-      "sourceSha256": "7f1b24ceecfc86fa86c73603158abf1fcf8c2dbad4d2a186eb9cb9c8bcb03770",
-      "targetSizeBytes": 7141,
-      "targetSha256": "d73b090719339280477634ba13caec51135793fa82bc849b7861f48657357c4b",
+      "sourceSizeBytes": 7211,
+      "sourceSha256": "52c2525d36f650e5987ee709f0a9042d672fc85aaaa39c0a11a93802201844d1",
+      "targetSizeBytes": 7393,
+      "targetSha256": "a45b2ea3aef9902e3e705e5232eaa59f201f268a6ab8e9e8e523c119e3fcf65c",
       "adaptation": "standalone_scan_root_and_local_path_redaction"
     },
     {
@@ -324,19 +344,55 @@
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/migrations/20260701_loop3_business_closed_loops.apply.sql",
       "targetPath": "migrations/20260701_loop3_business_closed_loops.apply.sql",
-      "sourceSizeBytes": 10126,
-      "sourceSha256": "5e10fd2af68e216b91cd567196cb929ea126f80487ab7427b54756bb7a090571",
-      "targetSizeBytes": 10126,
-      "targetSha256": "5e10fd2af68e216b91cd567196cb929ea126f80487ab7427b54756bb7a090571",
+      "sourceSizeBytes": 10997,
+      "sourceSha256": "fb0c030d61d443396a232aa9414d0f0fd8a0703f3cfaa2d02cc0178a01e9142b",
+      "targetSizeBytes": 10997,
+      "targetSha256": "fb0c030d61d443396a232aa9414d0f0fd8a0703f3cfaa2d02cc0178a01e9142b",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/migrations/20260701_loop3_business_closed_loops.rollback.sql",
       "targetPath": "migrations/20260701_loop3_business_closed_loops.rollback.sql",
-      "sourceSizeBytes": 1009,
-      "sourceSha256": "fbf358dd456d1766d36e3778b0227c25add31af764a2c5686cffecd1059ea605",
-      "targetSizeBytes": 1009,
-      "targetSha256": "fbf358dd456d1766d36e3778b0227c25add31af764a2c5686cffecd1059ea605",
+      "sourceSizeBytes": 1309,
+      "sourceSha256": "ca92663a9bfddbfd5afd9ab4182d0efdfd3773d7beb118172f2cd120c639a427",
+      "targetSizeBytes": 1309,
+      "targetSha256": "ca92663a9bfddbfd5afd9ab4182d0efdfd3773d7beb118172f2cd120c639a427",
+      "adaptation": null
+    },
+    {
+      "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/migrations/20260716_certification_gate_remediation.apply.sql",
+      "targetPath": "migrations/20260716_certification_gate_remediation.apply.sql",
+      "sourceSizeBytes": 5532,
+      "sourceSha256": "9282987f3448f7ce4908fd0ff3f24f0eba8a44eda00ec3cce012324bcad394ed",
+      "targetSizeBytes": 5532,
+      "targetSha256": "9282987f3448f7ce4908fd0ff3f24f0eba8a44eda00ec3cce012324bcad394ed",
+      "adaptation": null
+    },
+    {
+      "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/migrations/20260716_certification_gate_remediation.rollback.sql",
+      "targetPath": "migrations/20260716_certification_gate_remediation.rollback.sql",
+      "sourceSizeBytes": 4172,
+      "sourceSha256": "2750d8ea4668b8a450d1b561fb5690f0aef0fcdecdb0544cde1f4563d3ae0896",
+      "targetSizeBytes": 4172,
+      "targetSha256": "2750d8ea4668b8a450d1b561fb5690f0aef0fcdecdb0544cde1f4563d3ae0896",
+      "adaptation": null
+    },
+    {
+      "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/migrations/20260716_decision_subject_reference.apply.sql",
+      "targetPath": "migrations/20260716_decision_subject_reference.apply.sql",
+      "sourceSizeBytes": 4698,
+      "sourceSha256": "0cc5a8e4a8b3b2987a0c73a46420ef6a63914ec7daea42f1e8a6611a8a1831e6",
+      "targetSizeBytes": 4698,
+      "targetSha256": "0cc5a8e4a8b3b2987a0c73a46420ef6a63914ec7daea42f1e8a6611a8a1831e6",
+      "adaptation": null
+    },
+    {
+      "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/migrations/20260716_decision_subject_reference.rollback.sql",
+      "targetPath": "migrations/20260716_decision_subject_reference.rollback.sql",
+      "sourceSizeBytes": 1012,
+      "sourceSha256": "59310bcb257c7cc092abcb0420713e181cc3a36a86191d654c2967d12b420c26",
+      "targetSizeBytes": 1012,
+      "targetSha256": "59310bcb257c7cc092abcb0420713e181cc3a36a86191d654c2967d12b420c26",
       "adaptation": null
     },
     {
@@ -351,10 +407,10 @@
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/package.json",
       "targetPath": "package.json",
-      "sourceSizeBytes": 1726,
-      "sourceSha256": "2505880bef0f4bdb6f396e69fd9c0ba2dc7d0ca44e0044f541e8aea8f2ed266b",
-      "targetSizeBytes": 1726,
-      "targetSha256": "2505880bef0f4bdb6f396e69fd9c0ba2dc7d0ca44e0044f541e8aea8f2ed266b",
+      "sourceSizeBytes": 1963,
+      "sourceSha256": "55fe469cbe20e7b37c7c7238096ef794c8aad00b7764c5578a7fa81a1faeed80",
+      "targetSizeBytes": 1963,
+      "targetSha256": "55fe469cbe20e7b37c7c7238096ef794c8aad00b7764c5578a7fa81a1faeed80",
       "adaptation": null
     },
     {
@@ -369,10 +425,10 @@
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/public/fulfillment-dashboard/app.js",
       "targetPath": "public/fulfillment-dashboard/app.js",
-      "sourceSizeBytes": 60386,
-      "sourceSha256": "95b435cd36bb7473fa348a9edf5e731edcf74d2637e72485f5659cd83db377a3",
-      "targetSizeBytes": 60386,
-      "targetSha256": "95b435cd36bb7473fa348a9edf5e731edcf74d2637e72485f5659cd83db377a3",
+      "sourceSizeBytes": 62046,
+      "sourceSha256": "5c171ef32b073fd0b88a8b2825bc47f0161e44e5bcaa80890e687bc7a21ad875",
+      "targetSizeBytes": 62046,
+      "targetSha256": "5c171ef32b073fd0b88a8b2825bc47f0161e44e5bcaa80890e687bc7a21ad875",
       "adaptation": null
     },
     {
@@ -405,10 +461,10 @@
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/public/fulfillment-dashboard/data/fulfillment_source_table_contract_20260626.csv",
       "targetPath": "public/fulfillment-dashboard/data/fulfillment_source_table_contract_20260626.csv",
-      "sourceSizeBytes": 6889,
-      "sourceSha256": "bc943c8f2f885fc8e860ca997140758c6e63873d602343eaa94400b60f25a06f",
-      "targetSizeBytes": 6889,
-      "targetSha256": "bc943c8f2f885fc8e860ca997140758c6e63873d602343eaa94400b60f25a06f",
+      "sourceSizeBytes": 7049,
+      "sourceSha256": "0bb7884448302a025dc5677cf8bb7d260435f9a3f6250cca0405ee1e087b7fcc",
+      "targetSizeBytes": 7049,
+      "targetSha256": "0bb7884448302a025dc5677cf8bb7d260435f9a3f6250cca0405ee1e087b7fcc",
       "adaptation": null
     },
     {
@@ -423,28 +479,28 @@
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/public/fulfillment-dashboard/docs/fulfillment-dashboard-readonly-data-contract-draft-20260626.md",
       "targetPath": "public/fulfillment-dashboard/docs/fulfillment-dashboard-readonly-data-contract-draft-20260626.md",
-      "sourceSizeBytes": 8990,
-      "sourceSha256": "8f49ef4961409dba095459246ce473c924553a3eaf171aea7dba21a080b41726",
-      "targetSizeBytes": 8990,
-      "targetSha256": "8f49ef4961409dba095459246ce473c924553a3eaf171aea7dba21a080b41726",
+      "sourceSizeBytes": 9256,
+      "sourceSha256": "76446ab43d015a149da9075648c57ba5781336350542d9be32bd3edb199af041",
+      "targetSizeBytes": 9256,
+      "targetSha256": "76446ab43d015a149da9075648c57ba5781336350542d9be32bd3edb199af041",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/public/fulfillment-dashboard/docs/fulfillment-dashboard-sql-bi-logic-draft-20260626.md",
       "targetPath": "public/fulfillment-dashboard/docs/fulfillment-dashboard-sql-bi-logic-draft-20260626.md",
-      "sourceSizeBytes": 11803,
-      "sourceSha256": "7ae8da188ba356d1fa036b6b50d4e5bb3a43029726f4a84b491593ebfefa1b52",
-      "targetSizeBytes": 11803,
-      "targetSha256": "7ae8da188ba356d1fa036b6b50d4e5bb3a43029726f4a84b491593ebfefa1b52",
+      "sourceSizeBytes": 13023,
+      "sourceSha256": "6b44115ad335da9538479d86b445875cc344b223d165fac6a36a84c145c56c24",
+      "targetSizeBytes": 13023,
+      "targetSha256": "6b44115ad335da9538479d86b445875cc344b223d165fac6a36a84c145c56c24",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/public/fulfillment-dashboard/docs/metric-system-and-dictionary-draft-20260625.md",
       "targetPath": "public/fulfillment-dashboard/docs/metric-system-and-dictionary-draft-20260625.md",
-      "sourceSizeBytes": 8872,
-      "sourceSha256": "029c4da191c343fd9ee0153ce833fba473dd15ac54446506ff4a45f9b22eb4d5",
-      "targetSizeBytes": 8872,
-      "targetSha256": "029c4da191c343fd9ee0153ce833fba473dd15ac54446506ff4a45f9b22eb4d5",
+      "sourceSizeBytes": 9264,
+      "sourceSha256": "a5d534ef74b6ea7287f88cdabfd445302857b443c18167b80a1c2e5ef94cc63a",
+      "targetSizeBytes": 9264,
+      "targetSha256": "a5d534ef74b6ea7287f88cdabfd445302857b443c18167b80a1c2e5ef94cc63a",
       "adaptation": null
     },
     {
@@ -460,9 +516,9 @@
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/public/fulfillment-dashboard/styles.css",
       "targetPath": "public/fulfillment-dashboard/styles.css",
       "sourceSizeBytes": 22029,
-      "sourceSha256": "ebd8c386a038a1aca8788b7ded9bd791d19c8af3aad141588d6acb952994b828",
+      "sourceSha256": "7f97995eac6b88358d429b8113974e6254fe30b4a2f83cbefc75ee8c4a4918c7",
       "targetSizeBytes": 22029,
-      "targetSha256": "ebd8c386a038a1aca8788b7ded9bd791d19c8af3aad141588d6acb952994b828",
+      "targetSha256": "7f97995eac6b88358d429b8113974e6254fe30b4a2f83cbefc75ee8c4a4918c7",
       "adaptation": null
     },
     {
@@ -486,100 +542,127 @@
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/export-manual-gate-resolution-pack.mjs",
       "targetPath": "scripts/export-manual-gate-resolution-pack.mjs",
-      "sourceSizeBytes": 16594,
-      "sourceSha256": "d1e44fee3bc16e79edcd7a366508ba6ce231e8760919cea51fd0daa2654a5e6e",
-      "targetSizeBytes": 16594,
-      "targetSha256": "d1e44fee3bc16e79edcd7a366508ba6ce231e8760919cea51fd0daa2654a5e6e",
+      "sourceSizeBytes": 17557,
+      "sourceSha256": "d4cbff60814b845c2d512428ace1aa3e0d016f1e9f6bfa1c1446b425e6873eb0",
+      "targetSizeBytes": 17557,
+      "targetSha256": "d4cbff60814b845c2d512428ace1aa3e0d016f1e9f6bfa1c1446b425e6873eb0",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/import-assets.mjs",
       "targetPath": "scripts/import-assets.mjs",
-      "sourceSizeBytes": 62820,
-      "sourceSha256": "36b359a46d9393d79bec41d11005c1508a8d567fdaf77cd1a6dcdf4602a6cb02",
-      "targetSizeBytes": 62820,
-      "targetSha256": "36b359a46d9393d79bec41d11005c1508a8d567fdaf77cd1a6dcdf4602a6cb02",
+      "sourceSizeBytes": 74087,
+      "sourceSha256": "f01f512f85ca623af4cfaa0a4b9b0ab0ebe0b8ce3c5c15ce69f4d75cd80307f9",
+      "targetSizeBytes": 74087,
+      "targetSha256": "f01f512f85ca623af4cfaa0a4b9b0ab0ebe0b8ce3c5c15ce69f4d75cd80307f9",
+      "adaptation": null
+    },
+    {
+      "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/manual-gate-status-contract.mjs",
+      "targetPath": "scripts/manual-gate-status-contract.mjs",
+      "sourceSizeBytes": 955,
+      "sourceSha256": "06954111556c577f2ea020a7647faa3a2a9cc5e9b2c7d8eb9fabb70202755c05",
+      "targetSizeBytes": 955,
+      "targetSha256": "06954111556c577f2ea020a7647faa3a2a9cc5e9b2c7d8eb9fabb70202755c05",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/preprod-check.mjs",
       "targetPath": "scripts/preprod-check.mjs",
-      "sourceSizeBytes": 19397,
-      "sourceSha256": "c5063605120d969035cdfc51cadfa8f6d9a42f1dde044e6ba69452b00c291d12",
-      "targetSizeBytes": 19397,
-      "targetSha256": "c5063605120d969035cdfc51cadfa8f6d9a42f1dde044e6ba69452b00c291d12",
+      "sourceSizeBytes": 27872,
+      "sourceSha256": "f5f0bb9b751eb143b69af80b69eb473daf1dc978808d5e1dbe5b9b8cb9b0b9b6",
+      "targetSizeBytes": 27872,
+      "targetSha256": "f5f0bb9b751eb143b69af80b69eb473daf1dc978808d5e1dbe5b9b8cb9b0b9b6",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/smoke-api.mjs",
       "targetPath": "scripts/smoke-api.mjs",
-      "sourceSizeBytes": 43015,
-      "sourceSha256": "44fde1582df6e2280f874e35b2687c5af2cda95d29a714c48a2be919d256ea40",
-      "targetSizeBytes": 43015,
-      "targetSha256": "44fde1582df6e2280f874e35b2687c5af2cda95d29a714c48a2be919d256ea40",
+      "sourceSizeBytes": 50602,
+      "sourceSha256": "12c37ebdd185b0bb515cc6cb1e243434578901be34ebb654818696d66156861d",
+      "targetSizeBytes": 50602,
+      "targetSha256": "12c37ebdd185b0bb515cc6cb1e243434578901be34ebb654818696d66156861d",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/smoke-database-gate.mjs",
       "targetPath": "scripts/smoke-database-gate.mjs",
-      "sourceSizeBytes": 8647,
-      "sourceSha256": "ebad29bf31bacb725b6a7438334144c7178cba436c97aed7f9604b8197961e53",
-      "targetSizeBytes": 8647,
-      "targetSha256": "ebad29bf31bacb725b6a7438334144c7178cba436c97aed7f9604b8197961e53",
+      "sourceSizeBytes": 20288,
+      "sourceSha256": "8f4da3bbcd06f63a591004abf477c93044bb527673ad22454548a0128a9911d3",
+      "targetSizeBytes": 20288,
+      "targetSha256": "8f4da3bbcd06f63a591004abf477c93044bb527673ad22454548a0128a9911d3",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/smoke-deepseek-live.mjs",
       "targetPath": "scripts/smoke-deepseek-live.mjs",
-      "sourceSizeBytes": 10089,
-      "sourceSha256": "2f20ab8fee4141cbbc58db2752d965ee5b9cc954390c3535002b5383939532ef",
-      "targetSizeBytes": 10089,
-      "targetSha256": "2f20ab8fee4141cbbc58db2752d965ee5b9cc954390c3535002b5383939532ef",
+      "sourceSizeBytes": 10160,
+      "sourceSha256": "cb0bfe7d80fa95315c7bc68019f1cdf2da65d5843d3ada919f95aaf963525d58",
+      "targetSizeBytes": 10160,
+      "targetSha256": "cb0bfe7d80fa95315c7bc68019f1cdf2da65d5843d3ada919f95aaf963525d58",
+      "adaptation": null
+    },
+    {
+      "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/smoke-fulfillment-contracts.mjs",
+      "targetPath": "scripts/smoke-fulfillment-contracts.mjs",
+      "sourceSizeBytes": 8698,
+      "sourceSha256": "0004c4c62a695e8618c32030218428b7c1f29e0c94189881d588761802a53145",
+      "targetSizeBytes": 8698,
+      "targetSha256": "0004c4c62a695e8618c32030218428b7c1f29e0c94189881d588761802a53145",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/smoke-import-gate.mjs",
       "targetPath": "scripts/smoke-import-gate.mjs",
-      "sourceSizeBytes": 31103,
-      "sourceSha256": "038a641ac489add33ef1255d3068ad1e2276b47458e7db2aae0a2b5a3fe68d06",
-      "targetSizeBytes": 31103,
-      "targetSha256": "038a641ac489add33ef1255d3068ad1e2276b47458e7db2aae0a2b5a3fe68d06",
+      "sourceSizeBytes": 51786,
+      "sourceSha256": "0048c38b91cb58e8f25ab067de05968299b86395e56d8e2bd489a65b739b0617",
+      "targetSizeBytes": 51786,
+      "targetSha256": "0048c38b91cb58e8f25ab067de05968299b86395e56d8e2bd489a65b739b0617",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/smoke-manual-gate-receipts.mjs",
       "targetPath": "scripts/smoke-manual-gate-receipts.mjs",
-      "sourceSizeBytes": 9819,
-      "sourceSha256": "b4589e2d8395a496fbeaa87544e72ed5b96c7a0cd3f35c1f0ed7c79db74bd634",
-      "targetSizeBytes": 9819,
-      "targetSha256": "b4589e2d8395a496fbeaa87544e72ed5b96c7a0cd3f35c1f0ed7c79db74bd634",
+      "sourceSizeBytes": 18041,
+      "sourceSha256": "dc769842880a947c2ad1a0abeea7137ddf00c56196b1a54e4ffb6394f9bfccce",
+      "targetSizeBytes": 18041,
+      "targetSha256": "dc769842880a947c2ad1a0abeea7137ddf00c56196b1a54e4ffb6394f9bfccce",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/smoke-migration-gate.mjs",
       "targetPath": "scripts/smoke-migration-gate.mjs",
-      "sourceSizeBytes": 9636,
-      "sourceSha256": "09f8ec67006b29040d09421c266d4a12c7073f0ecf5198dfbc938a8479caba0e",
-      "targetSizeBytes": 9636,
-      "targetSha256": "09f8ec67006b29040d09421c266d4a12c7073f0ecf5198dfbc938a8479caba0e",
+      "sourceSizeBytes": 29887,
+      "sourceSha256": "dee7e20fa7b82bb606125858dabd4f4adba602eb6bb2b748776596d8c682f771",
+      "targetSizeBytes": 29887,
+      "targetSha256": "dee7e20fa7b82bb606125858dabd4f4adba602eb6bb2b748776596d8c682f771",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/smoke-path-contract.mjs",
       "targetPath": "scripts/smoke-path-contract.mjs",
-      "sourceSizeBytes": 7333,
-      "sourceSha256": "2c4cee7fa9a7f152e3a8c0d5b926470f6982e24fe6c0d0935646fc8958143411",
-      "targetSizeBytes": 7333,
-      "targetSha256": "2c4cee7fa9a7f152e3a8c0d5b926470f6982e24fe6c0d0935646fc8958143411",
+      "sourceSizeBytes": 13570,
+      "sourceSha256": "07f0b854c6604df130fc907b8450f97ce7ad9d25b03a38ff20dbef766262f546",
+      "targetSizeBytes": 13570,
+      "targetSha256": "07f0b854c6604df130fc907b8450f97ce7ad9d25b03a38ff20dbef766262f546",
+      "adaptation": null
+    },
+    {
+      "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/smoke-preprod-boundaries.mjs",
+      "targetPath": "scripts/smoke-preprod-boundaries.mjs",
+      "sourceSizeBytes": 12763,
+      "sourceSha256": "065414e5a6ba33962188c4f69859fcc65bf2ea7a2a16451246e2b0fe55c83ebc",
+      "targetSizeBytes": 12763,
+      "targetSha256": "065414e5a6ba33962188c4f69859fcc65bf2ea7a2a16451246e2b0fe55c83ebc",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/smoke-provider-gate.mjs",
       "targetPath": "scripts/smoke-provider-gate.mjs",
-      "sourceSizeBytes": 13511,
-      "sourceSha256": "bbe95a9742efefabecb65e0fd363f4f2ffeb38221767beb12aef3f133de1fa0f",
-      "targetSizeBytes": 13511,
-      "targetSha256": "bbe95a9742efefabecb65e0fd363f4f2ffeb38221767beb12aef3f133de1fa0f",
+      "sourceSizeBytes": 15272,
+      "sourceSha256": "ec4501ec881c08dc775c32e27688ddb227e51fc6cdeed58992759a26f51e552b",
+      "targetSizeBytes": 15272,
+      "targetSha256": "ec4501ec881c08dc775c32e27688ddb227e51fc6cdeed58992759a26f51e552b",
       "adaptation": null
     },
     {
@@ -592,48 +675,57 @@
       "adaptation": null
     },
     {
+      "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/smoke-ui-target-boundary.mjs",
+      "targetPath": "scripts/smoke-ui-target-boundary.mjs",
+      "sourceSizeBytes": 2892,
+      "sourceSha256": "02110ff9594a9c6c8503a890a25b262f595d1f2f1cd45ed84fdd2840211e1270",
+      "targetSizeBytes": 2892,
+      "targetSha256": "02110ff9594a9c6c8503a890a25b262f595d1f2f1cd45ed84fdd2840211e1270",
+      "adaptation": null
+    },
+    {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/smoke-ui.mjs",
       "targetPath": "scripts/smoke-ui.mjs",
-      "sourceSizeBytes": 24313,
-      "sourceSha256": "ca8c23931c1812c98121d06705b3f4af824543e32cc56ff980b8c7010d101902",
-      "targetSizeBytes": 24313,
-      "targetSha256": "ca8c23931c1812c98121d06705b3f4af824543e32cc56ff980b8c7010d101902",
+      "sourceSizeBytes": 31635,
+      "sourceSha256": "3d05ebe24c1d438472c9c5ce36646cbcb26b9045ab174ebeccc8301365ed3701",
+      "targetSizeBytes": 31635,
+      "targetSha256": "3d05ebe24c1d438472c9c5ce36646cbcb26b9045ab174ebeccc8301365ed3701",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/validate-manual-gate-receipts.mjs",
       "targetPath": "scripts/validate-manual-gate-receipts.mjs",
-      "sourceSizeBytes": 22305,
-      "sourceSha256": "d1df342fb5fbd27f19bb7e60d62742426ffe27c321e0a8b126ab8cc4ae7572a8",
-      "targetSizeBytes": 22305,
-      "targetSha256": "d1df342fb5fbd27f19bb7e60d62742426ffe27c321e0a8b126ab8cc4ae7572a8",
+      "sourceSizeBytes": 22535,
+      "sourceSha256": "2941fb65344917b2cdeee84755f78f470e420ee670bcdf04000e4144b650befd",
+      "targetSizeBytes": 22535,
+      "targetSha256": "2941fb65344917b2cdeee84755f78f470e420ee670bcdf04000e4144b650befd",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/scripts/workstation-paths.mjs",
       "targetPath": "scripts/workstation-paths.mjs",
-      "sourceSizeBytes": 13598,
-      "sourceSha256": "4c2895ffb178f1a6527d8efee566831b5ff05b717937e8e0623a1edbc0138aca",
-      "targetSizeBytes": 13598,
-      "targetSha256": "4c2895ffb178f1a6527d8efee566831b5ff05b717937e8e0623a1edbc0138aca",
+      "sourceSizeBytes": 15335,
+      "sourceSha256": "c221649d046104456043f0ce6195d7d56e924a111bd852830f1044359aed033d",
+      "targetSizeBytes": 15335,
+      "targetSha256": "c221649d046104456043f0ce6195d7d56e924a111bd852830f1044359aed033d",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/server/index.mjs",
       "targetPath": "server/index.mjs",
-      "sourceSizeBytes": 201269,
-      "sourceSha256": "e0a1770aaaee39d5c6ed0ad98636230273a5d201813e4c60916b88f2e752bab4",
-      "targetSizeBytes": 201269,
-      "targetSha256": "e0a1770aaaee39d5c6ed0ad98636230273a5d201813e4c60916b88f2e752bab4",
+      "sourceSizeBytes": 206922,
+      "sourceSha256": "51f0dc4f07286686b138134e7c0d178f663c3ddd25611758fc359a2f3ca7a70c",
+      "targetSizeBytes": 206922,
+      "targetSha256": "51f0dc4f07286686b138134e7c0d178f663c3ddd25611758fc359a2f3ca7a70c",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/src/main.tsx",
       "targetPath": "src/main.tsx",
-      "sourceSizeBytes": 155079,
-      "sourceSha256": "80e7d506c28cd3cf070dc12a9e759d0c6d5de937e68f6e4bbaca044a13ffc43c",
-      "targetSizeBytes": 155079,
-      "targetSha256": "80e7d506c28cd3cf070dc12a9e759d0c6d5de937e68f6e4bbaca044a13ffc43c",
+      "sourceSizeBytes": 155093,
+      "sourceSha256": "25209a203ee369d6a7bcd0cbf74e01ee46a1cb5ae2459a0c94c322e468e104e5",
+      "targetSizeBytes": 155093,
+      "targetSha256": "25209a203ee369d6a7bcd0cbf74e01ee46a1cb5ae2459a0c94c322e468e104e5",
       "adaptation": null
     },
     {
@@ -684,28 +776,28 @@
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/src/panels/decisionLoopPanels.tsx",
       "targetPath": "src/panels/decisionLoopPanels.tsx",
-      "sourceSizeBytes": 31446,
-      "sourceSha256": "648aced84162acb87aabf454e23f9c0111f497f2410e31c2128cee6789ed2046",
-      "targetSizeBytes": 31446,
-      "targetSha256": "648aced84162acb87aabf454e23f9c0111f497f2410e31c2128cee6789ed2046",
+      "sourceSizeBytes": 31567,
+      "sourceSha256": "721a22d880f6acf27028d84ddce743fc47049c61b0cae5024d4208211211d851",
+      "targetSizeBytes": 31567,
+      "targetSha256": "721a22d880f6acf27028d84ddce743fc47049c61b0cae5024d4208211211d851",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/src/panels/detailDrawer.tsx",
       "targetPath": "src/panels/detailDrawer.tsx",
-      "sourceSizeBytes": 7441,
-      "sourceSha256": "fec9b18eb1ec8c6091c7e487933c4fdd1153181a40ad6cafaba0b5337a2c75eb",
-      "targetSizeBytes": 7441,
-      "targetSha256": "fec9b18eb1ec8c6091c7e487933c4fdd1153181a40ad6cafaba0b5337a2c75eb",
+      "sourceSizeBytes": 9197,
+      "sourceSha256": "002748d46503441e3780547bf4338562e439a3d54b77c2b4e71b722f8dbad6b6",
+      "targetSizeBytes": 9197,
+      "targetSha256": "002748d46503441e3780547bf4338562e439a3d54b77c2b4e71b722f8dbad6b6",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/src/panels/detailDrawerSections.tsx",
       "targetPath": "src/panels/detailDrawerSections.tsx",
-      "sourceSizeBytes": 4526,
-      "sourceSha256": "b5e649c9c49d2f75e280f27516fa027481cff9df5023715cec8f8f896cbb5fe8",
-      "targetSizeBytes": 4526,
-      "targetSha256": "b5e649c9c49d2f75e280f27516fa027481cff9df5023715cec8f8f896cbb5fe8",
+      "sourceSizeBytes": 6721,
+      "sourceSha256": "7c9c6a108e76dcdf877028b0fe9a69c220b09081454c06d575d74258a3b49013",
+      "targetSizeBytes": 6721,
+      "targetSha256": "7c9c6a108e76dcdf877028b0fe9a69c220b09081454c06d575d74258a3b49013",
       "adaptation": null
     },
     {
@@ -738,10 +830,10 @@
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/src/panels/governancePanels.tsx",
       "targetPath": "src/panels/governancePanels.tsx",
-      "sourceSizeBytes": 21366,
-      "sourceSha256": "62f12a751c0e9956c4820d130ededbb19444992347f6db0291371c5ed38e990e",
-      "targetSizeBytes": 21366,
-      "targetSha256": "62f12a751c0e9956c4820d130ededbb19444992347f6db0291371c5ed38e990e",
+      "sourceSizeBytes": 21580,
+      "sourceSha256": "01b39ee6073eb06d5dda59b9d5b86d32be1a471b232535c0f93fbdb531b4b2ab",
+      "targetSizeBytes": 21580,
+      "targetSha256": "01b39ee6073eb06d5dda59b9d5b86d32be1a471b232535c0f93fbdb531b4b2ab",
       "adaptation": null
     },
     {
@@ -792,19 +884,19 @@
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/src/shared/ui.tsx",
       "targetPath": "src/shared/ui.tsx",
-      "sourceSizeBytes": 13857,
-      "sourceSha256": "a43430c76bbc0ed280345fc6c02d6cf5ed9036bead23faad7acdf3d6025e8ff5",
-      "targetSizeBytes": 13857,
-      "targetSha256": "a43430c76bbc0ed280345fc6c02d6cf5ed9036bead23faad7acdf3d6025e8ff5",
+      "sourceSizeBytes": 13920,
+      "sourceSha256": "c7f6ec5b329ee75ca801d0f58505a6e871902e73b982b24276e04253cc45b0a7",
+      "targetSizeBytes": 13920,
+      "targetSha256": "c7f6ec5b329ee75ca801d0f58505a6e871902e73b982b24276e04253cc45b0a7",
       "adaptation": null
     },
     {
       "sourcePath": "scm/drafts/prototypes/scm-data-governance-workbench-v0/src/styles.css",
       "targetPath": "src/styles.css",
-      "sourceSizeBytes": 94698,
-      "sourceSha256": "fc5505b055a9fdec48acf285ae65696d812b4b1173b5ad8172ba6be8a6176a78",
-      "targetSizeBytes": 94698,
-      "targetSha256": "fc5505b055a9fdec48acf285ae65696d812b4b1173b5ad8172ba6be8a6176a78",
+      "sourceSizeBytes": 94934,
+      "sourceSha256": "6cfea204bbfdeda41434ece0aaff1fd3a4af1069e04f0c280e391e4010bdf39f",
+      "targetSizeBytes": 94934,
+      "targetSha256": "6cfea204bbfdeda41434ece0aaff1fd3a4af1069e04f0c280e391e4010bdf39f",
       "adaptation": null
     },
     {
@@ -1517,53 +1609,6 @@
       "targetSizeBytes": 209,
       "targetSha256": "2af0357d96f8e3be4e373a5632eb70f6d74c69d0e101a7d18dd98b7c17bf1018",
       "adaptation": null
-    }
-  ],
-  "preservedTargetOnlyFiles": [
-    {
-      "path": "docs/ai-chat-phase4-implementation-20260618.md",
-      "sizeBytes": 4653,
-      "sha256": "b2c8622cb404a27482f2b2eb933340c818978bc22a0a8fb921409166248c1c28"
-    },
-    {
-      "path": "docs/ai-chat-phase5-contextual-governance-implementation-20260618.md",
-      "sizeBytes": 5352,
-      "sha256": "ee4bcb3c1119d52e1ec214ff7e07ea44b1c4853f4da461be27e9faa645cc3433"
-    },
-    {
-      "path": "docs/ai-knowledge-base-phase3-implementation-20260618.md",
-      "sizeBytes": 3993,
-      "sha256": "5c5b39009b3ebe2da04c721c79baf7c0f7e1b6bf7d3820599f723bbe109bacef"
-    },
-    {
-      "path": "docs/ledger-api-phase1-implementation-20260618.md",
-      "sizeBytes": 3228,
-      "sha256": "050288d491e21ef7af307add33aa2c47dedece7bde59d0e978f29bdfcb303171"
-    },
-    {
-      "path": "docs/ledger-ui-phase2-implementation-20260618.md",
-      "sizeBytes": 3417,
-      "sha256": "68d1c5784f9a9a24efd25122992dd73ed262bc02615b12c0c20c2bce26c8a757"
-    },
-    {
-      "path": "docs/second-iteration-data-model-design-20260618.md",
-      "sizeBytes": 11265,
-      "sha256": "a6e5efd384b20e8cbf4e8a3b1664ba08a31929489ca5a0573b884c9fbc21db8d"
-    },
-    {
-      "path": "docs/second-iteration-implementation-plan-20260618.md",
-      "sizeBytes": 6726,
-      "sha256": "257713a79a6abd7b093bf0682f43a0ec15ebf4bcdd30c9fe1ae530d90f55b18d"
-    },
-    {
-      "path": "docs/second-iteration-prd-20260618.md",
-      "sizeBytes": 9595,
-      "sha256": "ad31c76786009c9d11f5b062842bc778461a9c674c9f51d3c244882a3822262e"
-    },
-    {
-      "path": "docs/second-iteration-ui-information-architecture-20260618.md",
-      "sizeBytes": 8735,
-      "sha256": "e0f05f1319905c212e0d886a067cfe5142201235998fb68e79dbd3535a22f091"
     }
   ]
 }
